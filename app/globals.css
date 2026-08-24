@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+.font-en {
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.font-bn {
+  font-family: var(--font-hind-siliguri), sans-serif;
+}
+
+@layer base {
+  :root {
+    /* #071614 - Dark Teal */
+    --text: 165 70% 5%;
+    /* #f7fcfc - Light Teal White */
+    --background: 180 50% 98%;
+    /* #fa7d4e - Orange (HSL: 18, 95%, 64%) */
+    --primary: 18 95% 64%;
+    /* #ff3726 - Red (HSL: 5, 100%, 57%) */
+    --secondary: 5 100% 57%;
+    /* Using orange as accent */
+    --accent: 18 95% 64%;
+  }
+
+  .dark {
+    /* #e8f8f6 - Light Teal */
+    --text: 170 40% 94%;
+    /* #030707 - Near Black */
+    --background: 180 40% 2%;
+    /* Same orange in dark mode */
+    --primary: 18 95% 64%;
+    /* Same red in dark mode */
+    --secondary: 5 100% 57%;
+    /* Same orange as accent in dark mode */
+    --accent: 18 95% 64%;
+  }
+}
+
+@theme inline {
+  --color-text: hsl(var(--text));
+  --color-background: hsl(var(--background));
+  --color-primary: hsl(var(--primary));
+  --color-secondary: hsl(var(--secondary));
+  --color-accent: hsl(var(--accent));
+  
+  /* Support for opacity like text-primary/50 */
+  --color-text-rgb: var(--text);
+  --color-background-rgb: var(--background);
+  --color-primary-rgb: var(--primary);
+  --color-secondary-rgb: var(--secondary);
+  --color-accent-rgb: var(--accent);
+}

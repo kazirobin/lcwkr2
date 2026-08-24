@@ -1,0 +1,116 @@
+export type Snippet = {
+  id: number;
+  title: string;
+  description: string;
+  language: "tsx" | "ts" | "jsx" | "js" | "css" | "html";
+  code: string;
+};
+
+export const snippets: Snippet[] = [
+  {
+    id: 1,
+    title: "(5.00pm class)Chinese special for beginner",
+    description: "Attendances Form Link",
+    language: "tsx",
+    code: `https://forms.gle/8K7SB1wW9xAc6gJX6`,
+  },
+    {
+    id: 2,
+    title: "(5.00pm class)Chinese special for beginner",
+    description: "Registration Form Link",
+    language: "tsx",
+    code: `https://forms.gle/3WreFQcs2opZC1317`,
+  },
+{
+    id: 3,
+    title: "(5.00pm class)Chinese special for beginner",
+    description: "Activity Form Link",
+    language: "tsx",
+    code: `https://forms.gle/AVheo7e3taQf362C9`,
+  },
+  {
+    id: 4,
+    title: "(Class 9.00pm daily) HSK 1-2 Primary",
+    description: "Attendances Form Link",
+    language: "tsx",
+    code: `https://forms.gle/eF9ANkfetc37xmne6`,
+  },
+  {
+    id: 5,
+    title: "(Class 9.00pm daily) HSK 1-2 Primary",
+    description: "Registration Form Link",
+    language: "tsx",
+    code: `https://forms.gle/S12miqZDiTDoFF4L6`,
+  },
+  {
+    id: 6,
+    title: "(Class 10.10pm daily)Hsk 3 Intermediate",
+    description: "Attendances Form Link",
+    language: "tsx",
+    code: `https://forms.gle/Mimne7cTpheXVd1r8`,
+  },
+
+  {
+    id: 7,
+    title: "(Class 10.10pm daily)Hsk 3 Intermediate",
+    description: "Registration Form Link",
+    language: "tsx",
+    code: `https://forms.gle/NPvhLaxmh6rQaurS6`,
+  },
+
+  {
+    id: 8,
+    title: "Quiz LCWKR",
+    description: "Max width container",
+    language: "tsx",
+    code: `https://forms.gle/D47rbPPGH1A2v4bD6`,
+  },
+{
+    id: 9,
+    title: "Word List Prompt",
+    description: "for get words list",
+    language: "tsx",
+    code: `আমাকে নিচের প্রতিটি শব্দের জন্য এই ফরম্যাটে তথ্য দাও:
+
+1. **শব্দ** pinyin Meaning — character breakdown = meaning  
+   Example: উদাহরণ বাক্য। Pinyin. English meaning.  
+   Similar: সমার্থক শব্দ pinyin Meaning
+
+শব্দগুলি হলো (পিনয়িনে):
+tiānqì, zhèlǐ, tiān, xiàyǔ, le, yǔ, yǒudiǎnr, juéde, lěng`,
+  },
+{
+    id: 10,
+    title: "August 2026 New Members",
+    description: "Registration Form Link",
+    language: "tsx",
+    code: `https://www.cognitoforms.com/KaziRobin1/NewMembersAugust2026`,
+  },
+  {
+    id: 11,
+    title: "August 2026 New Members",
+    description: "Max width container",
+    language: "tsx",
+    code: `Learn Chinese with Kazi Robin-এ আপনাকে স্বাগতম! 🌸
+
+উপরে যে ছবিটি দিয়েছি, সেখানে থাকা Chinese Initials & Finals-এর সবগুলো উচ্চারণ মনোযোগ দিয়ে শিখুন।
+
+🎙️ এরপর সবগুলো একসাথে স্পষ্টভাবে উচ্চারণ করে একটি ভয়েস রেকর্ডিং করুন এবং এই ইনবক্সেই রিপ্লাই দিন।
+
+যদি Initials & Finals-এর উচ্চারণ শিখতে কোনো সমস্যা হয়, তাহলে আমাদের ওয়েবসাইটে যান:
+🌐 https://lcwkr.vercel.app/
+
+ওয়েবসাইটে "Pinyin Course" নামে একটি বাটন পাবেন। সেখানে ক্লিক করলে একটি Google Drive লিংক পাবেন। সেই লিংকে আমরা উচ্চারণ শেখার জন্য কয়েকটি ভিডিও দিয়েছি। ভিডিওগুলো দেখে অনুশীলন করলে সঠিক উচ্চারণ শিখতে অনেক সহজ হবে।
+
+📝 ভয়েস রেকর্ডিং পাঠানোর পর অনুগ্রহ করে নিচের New Members Form-টি সুন্দরভাবে পূরণ করুন:
+
+New Members Form:
+https://www.cognitoforms.com/KaziRobin1/NewMembersAugust2026
+
+✅ আপনার ভয়েস রেকর্ডিং শুনে সবকিছু ঠিক থাকলে আপনাকে আমাদের WhatsApp গ্রুপে অ্যাড করে দেওয়া হবে। এরপর আপনার ভয়েসটি গ্রুপে আপনার নাম উল্লেখ করে শেয়ার করা হবে, যাতে আমাদের মেন্টররা আপনার উচ্চারণ যাচাই করে প্রয়োজনীয় পরামর্শ দিতে পারেন।
+
+📚 এরপর থেকেই আপনি আমাদের HSK 1 ব্যাচে`,
+  },
+
+
+];
