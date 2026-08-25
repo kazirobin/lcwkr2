@@ -171,5 +171,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
+    {
+      rollNumber: "STU007",
+      nameEnglish: "Mahdi Islam",
+      whatsapp: "+8801805205369",
+      location: "Modonhat, Hathazari, Chattogram",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ]
 };
