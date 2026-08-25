@@ -252,7 +252,7 @@ export default function StudentsListPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Passcode (e.g. 8131)"
+                    placeholder="Enter Passcode (e.g. 1234)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);

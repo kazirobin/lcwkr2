@@ -414,7 +414,7 @@ export default function StudentDetailPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Admin Passcode (e.g. 8131)"
+                    placeholder="Enter Admin Passcode (e.g. 1234)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);
