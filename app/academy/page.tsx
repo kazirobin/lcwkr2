@@ -123,9 +123,8 @@ export default function AcademyMainPage() {
                 href={`/academy/students/${student.rollNumber}`}
                 className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all flex items-center gap-3 group"
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-600 flex items-center justify-center font-serif text-lg font-bold text-white">
-                  {student.nameChinese}
-                </div>
+             
+             
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-white text-sm truncate group-hover:text-emerald-400 transition-colors">
                     {student.nameEnglish}
