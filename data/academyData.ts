@@ -5,7 +5,7 @@ export const academyData: IAcademyData = {
   instructor: "Kazi Robin",
   courses: [
     {
-      courseId: "CHN-101",
+      courseId: "HSK-101",
       courseName: "Beginner Chinese (HSK 1)",
       targetLevel: "HSK 1",
       totalLessons: 15,
@@ -90,7 +90,7 @@ export const academyData: IAcademyData = {
       ]
     },
     {
-      courseId: "CHN-201",
+      courseId: "HSK-201",
       courseName: "Elementary Chinese (HSK 2)",
       targetLevel: "HSK 2",
       totalLessons: 15,
@@ -125,35 +125,51 @@ export const academyData: IAcademyData = {
   students: [
     {
       rollNumber: "STU001",
-      nameEnglish: "Sarah Chen",
-      whatsapp: "+8801711000001",
+      nameEnglish: "Rokibul",
+      whatsapp: "+8801744156928",
       location: "Dhaka, Bangladesh",
       avatarUrl: "https://example.com/avatars/stu001.png",
-      enrolledCourseIds: ["CHN-101", "CHN-201"]
+      enrolledCourseIds: ["HSK-101"]
     },
     {
       rollNumber: "STU002",
-      nameEnglish: "Liam Patel",
-      whatsapp: "+8801811000002",
-      location: "Chittagong, Bangladesh",
+      nameEnglish: "Redwan",
+      whatsapp: "+8801673550666",
+      location: "Banasree, Dhaka",
       avatarUrl: "https://example.com/avatars/stu002.png",
-      enrolledCourseIds: ["CHN-101"]
+      enrolledCourseIds: ["HSK-101"]
     },
     {
       rollNumber: "STU003",
-      nameEnglish: "Aisha Khan",
-      whatsapp: "+8801911000003",
-      location: "Sylhet, Bangladesh",
+      nameEnglish: "iftekhar Hasan Abir",
+      whatsapp: "+8801914006249",
+      location: "Karaniganj, Dhaka",
       avatarUrl: "https://example.com/avatars/stu003.png",
-      enrolledCourseIds: ["CHN-101"]
+      enrolledCourseIds: ["HSK-101"]
     },
     {
       rollNumber: "STU004",
-      nameEnglish: "Benjamin Lee",
-      whatsapp: "+8801611000004",
-      location: "Rajshahi, Bangladesh",
+      nameEnglish: "Suraiya Jahan Labone",
+      whatsapp: "+8801576963495",
+      location: "Uttar Kaunnara, Saturia Manikgonj, Dhaka",
       avatarUrl: "https://example.com/avatars/stu004.png",
-      enrolledCourseIds: ["CHN-101", "CHN-201"]
-    }
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU005",
+      nameEnglish: "Asif Mahamud",
+      whatsapp: "+8801318723849",
+      location: "Kgajura, Bagherpara, Jashore",
+      avatarUrl: "https://example.com/avatars/stu005.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU006",
+      nameEnglish: "Sabbir Hossain",
+      whatsapp: "+8801630218829",
+      location: "Kgajura, Bagherpara, Jashore",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ]
 };
