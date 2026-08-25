@@ -237,9 +237,9 @@ export const academyData: IAcademyData = {
     },
 {
       rollNumber: "STU0015",
-      nameEnglish: Saharia Al Mahamud,
-      whatsapp: +8801305890049,
-      location: Dinajpur, Rangpur, Bangladsh,
+      nameEnglish: "Saharia Al Mahamud",
+      whatsapp: "+8801305890049",
+      location: "Dinajpur, Rangpur, Bangladsh",
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
