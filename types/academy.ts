@@ -18,12 +18,12 @@ export interface IClassSession {
   time: string;
   status: "Scheduled" | "Completed" | "Cancelled";
   contentCovered: IContentCovered[];
-  presentStudents: string[];
-  absentStudents: string[];
+  presentStudents: (string | number)[];
+  absentStudents: (string | number)[];
 }
 
 export interface IExamResult {
-  rollNumber: string;
+  rollNumber: string | number;
   attended: boolean;
   score: number;
   grade: string;
@@ -46,13 +46,13 @@ export interface ICourse {
   totalLessons: number;
   totalClassesPlanned: number;
   completedClassesCount: number;
-  enrolledStudentRolls: string[];
+  enrolledStudentRolls: (string | number)[];
   classes: IClassSession[];
   weekendExams: IWeekendExam[];
 }
 
 export interface IStudent {
-  rollNumber: string;
+  rollNumber: string | number;
   nameEnglish: string;
   whatsapp: string;
   location: string;

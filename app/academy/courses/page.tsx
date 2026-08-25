@@ -3,7 +3,14 @@ import { ArrowLeft, BookOpen, ArrowUpRight } from "lucide-react";
 import { academyData } from "@/data/academyData";
 
 export default function CoursesListPage() {
-  const { courses } = academyData;
+  const { courses, students } = academyData;
+
+  // রিয়েল-টাইম এনরোল্ড স্টুডেন্ট সংখ্যা গণনার ফাংশন
+  const getEnrolledStudentCount = (courseId: string) => {
+    return students.filter((student) =>
+      student.enrolledCourseIds?.includes(courseId)
+    ).length;
+  };
 
   return (
     <div className="min-h-screen bg-background text-text py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
@@ -23,7 +30,11 @@ export default function CoursesListPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {courses.map((course) => {
-            const pct = Math.round((course.completedClassesCount / course.totalClassesPlanned) * 100);
+            const completedClasses = course.classes?.length ?? course.completedClassesCount ?? 0;
+            const pct = Math.round((completedClasses / course.totalClassesPlanned) * 100);
+            
+            // ডায়নামিকালি স্টুডেন্ট লিস্ট থেকে সঠিক সংখ্যা বের করা
+            const enrolledCount = getEnrolledStudentCount(course.courseId);
 
             return (
               <div
@@ -42,13 +53,13 @@ export default function CoursesListPage() {
 
                   <h2 className="text-xl font-bold text-text mt-3">{course.courseName}</h2>
                   <p className="text-xs text-text/50 mt-1">
-                    {course.totalLessons} Lessons in Syllabus • {course.enrolledStudentRolls.length} Students
+                    {course.totalLessons} Lessons in Syllabus • {enrolledCount} Enrolled Scholars
                   </p>
 
                   <div className="mt-4 p-3 rounded-xl bg-text/5 border border-text/10 text-xs flex justify-between">
                     <span className="text-text/50">Class Progress</span>
                     <span className="text-text font-mono font-bold">
-                      {course.completedClassesCount} / {course.totalClassesPlanned} ({pct}%)
+                      {completedClasses} / {course.totalClassesPlanned} ({pct}%)
                     </span>
                   </div>
                 </div>

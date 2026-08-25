@@ -11,12 +11,12 @@ export const academyData: IAcademyData = {
       totalLessons: 15,
       totalClassesPlanned: 24,
       completedClassesCount: 3,
-      enrolledStudentRolls: ["STU001", "STU002", "STU003", "STU004"],
+      enrolledStudentRolls: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
       classes: [
         {
-          classId: "CLS-CHN101-01",
+          classId: "CLS-HSK101-01",
           date: "2026-08-01",
-          time: "05:00 PM - 06:30 PM",
+          time: "09:00 PM - 10:10 PM",
           status: "Completed",
           contentCovered: [
             {
@@ -30,11 +30,11 @@ export const academyData: IAcademyData = {
               lessonProgress: "50% completed"
             }
           ],
-          presentStudents: ["STU001", "STU002", "STU003", "STU004"],
-          absentStudents: []
+          presentStudents: [1, 2, 3, 4],
+          absentStudents: [5, 6]
         },
         {
-          classId: "CLS-CHN101-02",
+          classId: "CLS-HSK101-02",
           date: "2026-08-03",
           time: "05:00 PM - 06:30 PM",
           status: "Completed",
@@ -50,11 +50,11 @@ export const academyData: IAcademyData = {
               lessonProgress: "100% completed"
             }
           ],
-          presentStudents: ["STU001", "STU002", "STU004"],
-          absentStudents: ["STU003"]
+          presentStudents: [1, 2, 4, 8],
+          absentStudents: [3]
         },
         {
-          classId: "CLS-CHN101-03",
+          classId: "CLS-HSK101-03",
           date: "2026-08-05",
           time: "05:00 PM - 06:30 PM",
           status: "Completed",
@@ -69,22 +69,22 @@ export const academyData: IAcademyData = {
               lessonProgress: "25% completed"
             }
           ],
-          presentStudents: ["STU001", "STU002", "STU004"],
-          absentStudents: ["STU003"]
+          presentStudents: [1, 2, 4],
+          absentStudents: [3]
         }
       ],
       weekendExams: [
         {
-          examId: "EXAM-CHN101-W1",
+          examId: "EXAM-HSK101-W1",
           examTitle: "Weekend Assessment 1 (Lesson 1-2)",
           date: "2026-08-07",
           totalMarks: 100,
           passMarks: 60,
           results: [
-            { rollNumber: "STU001", attended: true, score: 96, grade: "A+", remarks: "Excellent character strokes" },
-            { rollNumber: "STU002", attended: true, score: 84, grade: "B+", remarks: "Good vocabulary recall" },
-            { rollNumber: "STU003", attended: false, score: 0, grade: "F", remarks: "Absent" },
-            { rollNumber: "STU004", attended: true, score: 78, grade: "B", remarks: "Need more tone practice" }
+            { rollNumber: 1, attended: true, score: 96, grade: "A+", remarks: "Excellent character strokes" },
+            { rollNumber: 2, attended: true, score: 84, grade: "B+", remarks: "Good vocabulary recall" },
+            { rollNumber: 3, attended: false, score: 0, grade: "F", remarks: "Absent" },
+            { rollNumber: 4, attended: true, score: 78, grade: "B", remarks: "Need more tone practice" }
           ]
         }
       ]
@@ -96,10 +96,10 @@ export const academyData: IAcademyData = {
       totalLessons: 15,
       totalClassesPlanned: 30,
       completedClassesCount: 1,
-      enrolledStudentRolls: ["STU001", "STU004"],
+      enrolledStudentRolls: [1, 4],
       classes: [
         {
-          classId: "CLS-CHN201-01",
+          classId: "CLS-HSK201-01",
           date: "2026-08-06",
           time: "07:00 PM - 08:30 PM",
           status: "Completed",
@@ -115,7 +115,7 @@ export const academyData: IAcademyData = {
               lessonProgress: "50% completed"
             }
           ],
-          presentStudents: ["STU001", "STU004"],
+          presentStudents: [1, 4],
           absentStudents: []
         }
       ],
@@ -124,15 +124,15 @@ export const academyData: IAcademyData = {
   ],
   students: [
     {
-      rollNumber: "1",
+      rollNumber: 1,
       nameEnglish: "Rokibul",
       whatsapp: "+8801744156928",
       location: "Dhaka, Bangladesh",
       avatarUrl: "https://example.com/avatars/stu001.png",
-      enrolledCourseIds: ["HSK-101"]
+      enrolledCourseIds: ["HSK-101", "HSK-201"]
     },
     {
-      rollNumber: "2",
+      rollNumber: 2,
       nameEnglish: "Redwan",
       whatsapp: "+8801673550666",
       location: "Banasree, Dhaka",
@@ -140,24 +140,23 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "3",
+      rollNumber: 3,
       nameEnglish: "iftekhar Hasan Abir",
       whatsapp: "+8801914006249",
       location: "Karaniganj, Dhaka",
       avatarUrl: "https://example.com/avatars/stu003.png",
       enrolledCourseIds: ["HSK-101"]
     },
-    
     {
-      rollNumber: "4",
+      rollNumber: 4,
       nameEnglish: "Suraiya Jahan Labone",
       whatsapp: "+8801576963495",
       location: "Uttar Kaunnara, Saturia Manikgonj, Dhaka",
       avatarUrl: "https://example.com/avatars/stu004.png",
-      enrolledCourseIds: ["HSK-101"]
+      enrolledCourseIds: ["HSK-101", "HSK-201"]
     },
     {
-      rollNumber: "5",
+      rollNumber: 5,
       nameEnglish: "Asif Mahamud",
       whatsapp: "+8801318723849",
       location: "Kgajura, Bagherpara, Jashore",
@@ -165,7 +164,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "6",
+      rollNumber: 6,
       nameEnglish: "Sabbir Hossain",
       whatsapp: "+8801630218829",
       location: "Balu ghat, Dhaka cant; Dhaka-1206",
@@ -173,7 +172,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "7",
+      rollNumber: 7,
       nameEnglish: "Mahdi Islam",
       whatsapp: "+8801805205369",
       location: "Modonhat, Hathazari, Chattogram",
@@ -181,7 +180,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "8",
+      rollNumber: 8,
       nameEnglish: "Mahdi Islam Hadhin",
       whatsapp: "+8801805205369",
       location: "Hathazari, Chattogram",
@@ -189,23 +188,23 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "9",
+      rollNumber: 9,
       nameEnglish: "Sohag Sharma",
-      whatsapp: "+8801761636297***",
+      whatsapp: "+8801761636297",
       location: "Sitakundo",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "10",
+      rollNumber: 10,
       nameEnglish: "Asif Mahamud",
       whatsapp: "+8801318723849",
-      location: "Savar, Bagherpara, Jashore ",
+      location: "Savar, Bagherpara, Jashore",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "11",
+      rollNumber: 11,
       nameEnglish: "Tanvir",
       whatsapp: "+8801850118511",
       location: "Uttara, Dhaka",
@@ -213,31 +212,31 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "12",
+      rollNumber: 12,
       nameEnglish: "Shariar Roucafi",
-      whatsapp: "+86156 7910 1763",
-      location: "Nanchang, Jiangxi,china",
+      whatsapp: "+8615679101763",
+      location: "Nanchang, Jiangxi, China",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "13",
+      rollNumber: 13,
       nameEnglish: "M.M.B Tushar",
       whatsapp: "+8801873962540",
-      location: "Comilla ",
+      location: "Comilla",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "14",
+      rollNumber: 14,
       nameEnglish: "Maruf Hossain",
       whatsapp: "+8801998744436",
-      location: "Comilla ",
+      location: "Hijlgari, Chuadanga",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "15",
+      rollNumber: 15,
       nameEnglish: "Thakurdash Chandra Ray",
       whatsapp: "+8801780588812",
       location: "Khansama, Dinajpur",
@@ -245,23 +244,23 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "16",
-      nameEnglish: "Aiful islam ",
+      rollNumber: 16,
+      nameEnglish: "Aiful islam",
       whatsapp: "+8801816147180",
-      location: "mognama pekua, cox's bazar ",
+      location: "Mognama pekua, Cox's Bazar",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "17",
-      nameEnglish: "Jobayer Ahmed ",
+      rollNumber: 17,
+      nameEnglish: "Jobayer Ahmed",
       whatsapp: "+8801706898268",
-      location: "Mothijheel,Dhaka ",
+      location: "Motijheel, Dhaka",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "18",
+      rollNumber: 18,
       nameEnglish: "Sumaia Islam",
       whatsapp: "+8801608266181",
       location: "Mitford, Dhaka",
@@ -269,21 +268,20 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: "19",
+      rollNumber: 19,
       nameEnglish: "Fuad",
       whatsapp: "+8801922153836",
-      location: "dhaka",
+      location: "Dhanmondi, Dhaka",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
-
-{
-      rollNumber: "20",
+    {
+      rollNumber: 20,
       nameEnglish: "Saharia Al Mahamud",
       whatsapp: "+8801305890049",
-      location: "Dinajpur, Rangpur, Bangladsh",
-      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      location: "Dinajpur, Rangpur, Bangladesh",
+      avatarUrl: "https://example.com/avatars/stu020.png",
       enrolledCourseIds: ["HSK-101"]
-    },
+    }
   ]
 };
