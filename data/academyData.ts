@@ -147,6 +147,7 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://example.com/avatars/stu003.png",
       enrolledCourseIds: ["HSK-101"]
     },
+    
     {
       rollNumber: "4",
       nameEnglish: "Suraiya Jahan Labone",
@@ -276,5 +277,13 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 
+{
+      rollNumber: "20",
+      nameEnglish: "Saharia Al Mahamud",
+      whatsapp: "+8801305890049",
+      location: "Dinajpur, Rangpur, Bangladsh",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ]
 };
