@@ -62,16 +62,19 @@ export default function StudentsListPage() {
     return `${start} •••• ${end}`;
   };
 
-  // Dynamic calculations for attendance
-  const getStudentStats = (rollNumber: string, enrolledCourseIds: string[]) => {
+  // Dynamic calculations for attendance (Safe String & Number Matching)
+  const getStudentStats = (rollNumber: string | number, enrolledCourseIds: string[]) => {
     let totalHeld = 0;
     let totalAttended = 0;
+    const targetRoll = String(rollNumber).trim();
 
     courses.forEach((course) => {
       if (enrolledCourseIds.includes(course.courseId)) {
         const classes = course.classes ?? [];
         totalHeld += classes.length;
-        totalAttended += classes.filter((cls) => cls.presentStudents?.includes(rollNumber)).length;
+        totalAttended += classes.filter((cls) => 
+          cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
+        ).length;
       }
     });
 
@@ -140,7 +143,7 @@ export default function StudentsListPage() {
 
             return (
               <div
-                key={student.rollNumber}
+                key={String(student.rollNumber)}
                 className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 flex flex-col justify-between space-y-4 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all"
               >
                 <div className="space-y-3">
@@ -150,7 +153,7 @@ export default function StudentsListPage() {
                     </div>
                     <div className="min-w-0">
                       <h4 className="font-bold text-text text-sm truncate">{student.nameEnglish}</h4>
-                      <p className="text-xs font-mono text-text/50">{student.rollNumber}</p>
+                      <p className="text-xs font-mono text-text/50">Roll: {student.rollNumber}</p>
                     </div>
                   </div>
 
@@ -249,7 +252,7 @@ export default function StudentsListPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Passcode (e.g. 2026)"
+                    placeholder="Enter Passcode (e.g. 8131)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);
