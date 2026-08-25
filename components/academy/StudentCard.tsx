@@ -1,49 +1,100 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import { IStudent } from "@/types/academy";
+import { academyData } from "@/data/academyData";
 
 export default function StudentCard({ student }: { student: IStudent }) {
-  const firstCourseId = student.enrolledCourseIds[0];
-  const prog = student.courseProgress[firstCourseId];
+  const enrolledCourses = student.enrolledCourseIds ?? [];
+
+  // ১. ডায়নামিকালি কোর্সের ক্লাস থেকে মোট উপস্থিতি গণনা
+  let totalHeld = 0;
+  let totalAttended = 0;
+  const examScores: number[] = [];
+
+  academyData.courses.forEach((course) => {
+    if (enrolledCourses.includes(course.courseId)) {
+      // ক্লাস উপস্থিতি হিসাব
+      const classes = course.classes ?? [];
+      totalHeld += classes.length;
+      totalAttended += classes.filter((cls) =>
+        cls.presentStudents?.includes(student.rollNumber)
+      ).length;
+
+      // এক্সাম স্কোর হিসাব
+      (course.weekendExams ?? []).forEach((exam) => {
+        const result = exam.results?.find(
+          (r) => r.rollNumber === student.rollNumber && r.attended
+        );
+        if (result && typeof result.score === "number") {
+          examScores.push(result.score);
+        }
+      });
+    }
+  });
+
+  // উপস্থিতি হার (%)
+  const attendanceRate =
+    totalHeld > 0 ? `${((totalAttended / totalHeld) * 100).toFixed(0)}%` : "100%";
+
+  // এক্সাম এভারেজ
+  const examAvg =
+    examScores.length > 0
+      ? `${(examScores.reduce((a, b) => a + b, 0) / examScores.length).toFixed(1)} pts`
+      : "N/A";
 
   return (
-    <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between">
-      <div>
+    <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between space-y-4">
+      <div className="space-y-3">
+        {/* টপ প্রোফাইল অবতার ও নাম */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-600 flex items-center justify-center font-serif text-lg font-bold text-white shadow-md">
-            {student.nameChinese}
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-600 flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
+            {student.nameEnglish.charAt(0)}
           </div>
-          <div>
-            <h4 className="font-bold text-white text-sm">{student.nameEnglish}</h4>
+          <div className="min-w-0">
+            <h4 className="font-bold text-white text-sm truncate">{student.nameEnglish}</h4>
             <p className="text-xs font-mono text-slate-400">{student.rollNumber}</p>
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-slate-400">Attendance</span>
-            <span className="font-mono font-bold text-emerald-400">{prog?.attendanceRate || "100%"}</span>
+        {/* লোকেশন */}
+        {student.location && (
+          <div className="flex items-center gap-1 text-[11px] text-slate-400 truncate">
+            <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+            <span className="truncate">{student.location}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Exam Avg</span>
-            <span className="font-mono font-bold text-amber-400">
-              {prog?.examAverage !== null ? `${prog.examAverage} pts` : "N/A"}
+        )}
+
+        {/* ডায়নামিক প্রগ্রেস ও স্কোর বক্স */}
+        <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-400">Attendance</span>
+            <span className="font-mono font-bold text-emerald-400">
+              {attendanceRate} <span className="text-[10px] text-slate-500 font-normal">({totalAttended}/{totalHeld})</span>
             </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-400">Exam Avg</span>
+            <span className="font-mono font-bold text-amber-400">{examAvg}</span>
           </div>
         </div>
 
-        <div className="mt-3 flex gap-1 flex-wrap">
-          {student.enrolledCourseIds.map((cId) => (
-            <span key={cId} className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+        {/* এনরোল্ড কোর্স ব্যাজ */}
+        <div className="flex gap-1.5 flex-wrap pt-1">
+          {enrolledCourses.map((cId) => (
+            <span
+              key={cId}
+              className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60"
+            >
               {cId}
             </span>
           ))}
         </div>
       </div>
 
+      {/* প্রোফাইল লিংক */}
       <Link
         href={`/academy/students/${student.rollNumber}`}
-        className="mt-4 flex items-center justify-center gap-1 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition-colors"
+        className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition-colors"
       >
         View Profile & Scores <ArrowUpRight className="w-3.5 h-3.5" />
       </Link>
