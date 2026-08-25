@@ -120,9 +120,6 @@ export default function CourseDetailPage() {
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                                   <span className="font-semibold">{student?.nameEnglish || roll}</span>
-                                  {student?.nameChinese && (
-                                    <span className="text-[11px] opacity-75 font-serif">({student.nameChinese})</span>
-                                  )}
                                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
                                 </Link>
                               );
@@ -147,9 +144,6 @@ export default function CourseDetailPage() {
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                                   <span className="font-semibold">{student?.nameEnglish || roll}</span>
-                                  {student?.nameChinese && (
-                                    <span className="text-[11px] opacity-75 font-serif">({student.nameChinese})</span>
-                                  )}
                                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
                                 </Link>
                               );
@@ -191,9 +185,6 @@ export default function CourseDetailPage() {
                             <p className="font-semibold text-slate-200 group-hover:text-amber-400 transition-colors">
                               {student?.nameEnglish || r.rollNumber}
                             </p>
-                            {student?.nameChinese && (
-                              <p className="text-[10px] text-slate-500 font-serif">{student.nameChinese}</p>
-                            )}
                           </div>
                           <span
                             className={`font-mono text-xs font-bold px-1.5 py-0.5 rounded ${
