@@ -17,11 +17,22 @@ import ThemeButton from "./ThemeButton";
 const MAIN_LINKS = [
   { id: "home", href: "/", en: "Home", bn: "হোম" },
   { id: "intro", href: "/intro", en: "Intro", bn: "ইন্ট্রো" },
-  { id: "community", href: "/community", en: "Community", bn: "কমিউনিটি" },
 ] as const;
 
 // 2. Define your dropdown menus
 const DROPDOWNS = {
+  academy: {
+    id: "academy",
+    en: "Academy",
+    bn: "একাডেমি",
+    items: [
+      { href: "/academy", en: "Academy Hub", bn: "একাডেমি হাব" },
+      { href: "/academy/courses", en: "Mandarin Courses", bn: "কোর্সসমূহ" },
+      { href: "/academy/students", en: "Scholars Directory", bn: "শিক্ষার্থী তালিকা" },
+      { href: "/community", en: "Community", bn: "কমিউনিটি" },
+    ],
+    activePrefixes: ["/academy", "/community"],
+  },
   vocabulary: {
     id: "vocabulary",
     en: "Vocabulary",
@@ -42,7 +53,7 @@ const DROPDOWNS = {
       { href: "/apps", en: "Suggested Apps", bn: "প্রস্তাবিত অ্যাপস" },
       { href: "/pdf", en: "PDF", bn: "পিডিএফ" },
     ],
-    activePrefixes: ["/apps"],
+    activePrefixes: ["/apps", "/pdf"],
   },
 } as const;
 
@@ -78,7 +89,7 @@ export default function Nav() {
   const isActive = useCallback(
     (href: string) => {
       if (href === "/") return pathname === href;
-      return pathname.startsWith(href);
+      return pathname === href || pathname.startsWith(`${href}/`);
     },
     [pathname],
   );
@@ -88,7 +99,7 @@ export default function Nav() {
     (dropdownId: DropdownId) => {
       const dropdown = DROPDOWNS[dropdownId];
       return dropdown.activePrefixes.some((prefix) =>
-        pathname.startsWith(prefix),
+        pathname === prefix || pathname.startsWith(`${prefix}/`),
       );
     },
     [pathname],
@@ -184,7 +195,7 @@ export default function Nav() {
       <Link
         href={href}
         onClick={onClick || closeAll}
-        className={`block px-4 py-3 text-base font-medium transition-colors rounded-lg ${
+        className={`block px-4 py-3 md:py-2 text-base md:text-sm font-medium transition-colors rounded-lg md:rounded-md ${
           active
             ? "text-primary bg-primary/10"
             : "text-text hover:text-primary hover:bg-primary/5"
@@ -232,7 +243,7 @@ export default function Nav() {
         </button>
 
         {isOpen && (
-          <div className="absolute left-0 mt-1 w-48 bg-background border border-border rounded-md shadow-lg py-1 z-50">
+          <div className="absolute left-0 mt-1 w-52 bg-background border border-border rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
             {dropdown.items.map((item) => (
               <Link
                 key={item.href}
@@ -240,7 +251,7 @@ export default function Nav() {
                 onClick={closeAll}
                 className={`block px-4 py-2 text-sm transition-colors ${
                   isActive(item.href)
-                    ? "text-primary bg-primary/10"
+                    ? "text-primary bg-primary/10 font-semibold"
                     : "text-text hover:bg-primary/5 hover:text-primary"
                 }`}
               >
@@ -298,7 +309,7 @@ export default function Nav() {
                 onClick={closeAll}
                 className={`block px-4 py-2.5 text-sm transition-colors rounded-lg ${
                   isActive(item.href)
-                    ? "text-primary bg-primary/10"
+                    ? "text-primary bg-primary/10 font-semibold"
                     : "text-text/80 hover:text-primary hover:bg-primary/5"
                 }`}
               >
@@ -318,7 +329,7 @@ export default function Nav() {
   return (
     <nav
       ref={navRef}
-      className="sticky top-0 z-50 bg-background border-b border-border"
+      className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -326,7 +337,7 @@ export default function Nav() {
           <Link
             href="/"
             onClick={closeAll}
-            className="shrink-0 flex items-center"
+            className="shrink-0 flex items-center gap-2"
           >
             <Image
               src="/assets/logo.png"
@@ -347,7 +358,7 @@ export default function Nav() {
               </div>
             ))}
 
-            {/* Dropdowns */}
+            {/* Dropdowns (Academy, Vocabulary, Resources) */}
             {Object.keys(DROPDOWNS).map((id) => (
               <div key={id}>{renderDesktopDropdown(id as DropdownId)}</div>
             ))}
@@ -410,7 +421,7 @@ export default function Nav() {
           </div>
         </div>
 
-        {/* Mobile Menu - Improved Design */}
+        {/* Mobile Menu */}
         {isMobile && isMobileMenuOpen && (
           <div
             ref={mobileMenuRef}

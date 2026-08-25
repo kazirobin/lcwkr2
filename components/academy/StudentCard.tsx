@@ -43,38 +43,40 @@ export default function StudentCard({ student }: { student: IStudent }) {
       : "N/A";
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between space-y-4">
+    <div className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 hover:border-primary/40 transition-all flex flex-col justify-between space-y-4 group">
       <div className="space-y-3">
         {/* টপ প্রোফাইল অবতার ও নাম */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-600 flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-secondary to-primary flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
             {student.nameEnglish.charAt(0)}
           </div>
           <div className="min-w-0">
-            <h4 className="font-bold text-white text-sm truncate">{student.nameEnglish}</h4>
-            <p className="text-xs font-mono text-slate-400">{student.rollNumber}</p>
+            <h4 className="font-bold text-text text-sm truncate group-hover:text-primary transition-colors">
+              {student.nameEnglish}
+            </h4>
+            <p className="text-xs font-mono text-text/50">{student.rollNumber}</p>
           </div>
         </div>
 
         {/* লোকেশন */}
         {student.location && (
-          <div className="flex items-center gap-1 text-[11px] text-slate-400 truncate">
-            <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+          <div className="flex items-center gap-1 text-[11px] text-text/50 truncate">
+            <MapPin className="w-3 h-3 text-secondary shrink-0" />
             <span className="truncate">{student.location}</span>
           </div>
         )}
 
         {/* ডায়নামিক প্রগ্রেস ও স্কোর বক্স */}
-        <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+        <div className="p-3 bg-text/5 rounded-xl border border-text/10 space-y-2 text-xs">
           <div className="flex justify-between items-center">
-            <span className="text-slate-400">Attendance</span>
-            <span className="font-mono font-bold text-emerald-400">
-              {attendanceRate} <span className="text-[10px] text-slate-500 font-normal">({totalAttended}/{totalHeld})</span>
+            <span className="text-text/50">Attendance</span>
+            <span className="font-mono font-bold text-primary">
+              {attendanceRate} <span className="text-[10px] text-text/40 font-normal">({totalAttended}/{totalHeld})</span>
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-slate-400">Exam Avg</span>
-            <span className="font-mono font-bold text-amber-400">{examAvg}</span>
+            <span className="text-text/50">Exam Avg</span>
+            <span className="font-mono font-bold text-secondary">{examAvg}</span>
           </div>
         </div>
 
@@ -83,7 +85,7 @@ export default function StudentCard({ student }: { student: IStudent }) {
           {enrolledCourses.map((cId) => (
             <span
               key={cId}
-              className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60"
+              className="text-[10px] font-mono px-2 py-0.5 rounded bg-text/5 text-text/70 border border-text/10"
             >
               {cId}
             </span>
@@ -94,7 +96,7 @@ export default function StudentCard({ student }: { student: IStudent }) {
       {/* প্রোফাইল লিংক */}
       <Link
         href={`/academy/students/${student.rollNumber}`}
-        className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition-colors"
+        className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 bg-text/10 hover:bg-text/20 text-text/70 hover:text-text rounded-lg text-xs font-semibold transition-colors"
       >
         View Profile & Scores <ArrowUpRight className="w-3.5 h-3.5" />
       </Link>

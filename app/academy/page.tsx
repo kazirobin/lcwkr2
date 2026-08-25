@@ -8,34 +8,34 @@ export default function AcademyMainPage() {
   const totalClasses = courses.reduce((acc, c) => acc + c.completedClassesCount, 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background text-text py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-10">
         
         {/* Banner */}
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-rose-950/40 via-slate-900 to-amber-950/20 border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="p-6 rounded-2xl bg-gradient-to-r from-secondary/10 via-background/80 to-primary/10 border border-text/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs uppercase font-bold tracking-widest text-rose-400 font-mono">
+              <span className="text-xs uppercase font-bold tracking-widest text-secondary font-mono">
                 {institution}
               </span>
-              <span className="text-slate-600">•</span>
-              <span className="text-xs text-slate-400">Instructor: {instructor}</span>
+              <span className="text-text/30">•</span>
+              <span className="text-xs text-text/50">Instructor: {instructor}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5">
-              <LayoutDashboard className="w-7 h-7 text-rose-500" />
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-text flex items-center gap-2.5">
+              <LayoutDashboard className="w-7 h-7 text-secondary" />
               Academy Dashboard
             </h1>
           </div>
           <div className="flex gap-2">
             <Link
               href="/academy/courses"
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-xl text-slate-200 transition-colors"
+              className="px-4 py-2 bg-text/10 hover:bg-text/20 text-text/70 hover:text-text text-xs font-semibold rounded-xl transition-colors"
             >
               All Courses ({courses.length})
             </Link>
             <Link
               href="/academy/students"
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-xs font-semibold rounded-xl text-white transition-colors"
+              className="px-4 py-2 bg-secondary hover:bg-secondary/90 text-white text-xs font-semibold rounded-xl transition-colors shadow-lg shadow-secondary/25"
             >
               All Students ({students.length})
             </Link>
@@ -44,31 +44,31 @@ export default function AcademyMainPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-            <p className="text-xs text-slate-400 uppercase font-medium">Students</p>
-            <p className="text-2xl font-bold text-white mt-1">{students.length}</p>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10 transition-colors">
+            <p className="text-xs text-text/50 uppercase font-medium">Students</p>
+            <p className="text-2xl font-bold text-text mt-1">{students.length}</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-            <p className="text-xs text-slate-400 uppercase font-medium">Active Cohorts</p>
-            <p className="text-2xl font-bold text-amber-400 mt-1">{courses.length}</p>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10 transition-colors">
+            <p className="text-xs text-text/50 uppercase font-medium">Active Cohorts</p>
+            <p className="text-2xl font-bold text-primary mt-1">{courses.length}</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-            <p className="text-xs text-slate-400 uppercase font-medium">Completed Classes</p>
-            <p className="text-2xl font-bold text-emerald-400 mt-1">{totalClasses}</p>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10 transition-colors">
+            <p className="text-xs text-text/50 uppercase font-medium">Completed Classes</p>
+            <p className="text-2xl font-bold text-primary mt-1">{totalClasses}</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-            <p className="text-xs text-slate-400 uppercase font-medium">HSK Levels</p>
-            <p className="text-2xl font-bold text-sky-400 mt-1">HSK 1 - 2</p>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10 transition-colors">
+            <p className="text-xs text-text/50 uppercase font-medium">HSK Levels</p>
+            <p className="text-2xl font-bold text-secondary mt-1">HSK 1 - 2</p>
           </div>
         </div>
 
         {/* Courses Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-rose-400" /> Mandarin Cohorts
+            <h2 className="text-lg font-bold text-text flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-secondary" /> Mandarin Cohorts
             </h2>
-            <Link href="/academy/courses" className="text-xs text-rose-400 hover:underline">
+            <Link href="/academy/courses" className="text-xs text-secondary hover:text-secondary/80 transition-colors">
               View All Courses &rarr;
             </Link>
           </div>
@@ -77,27 +77,27 @@ export default function AcademyMainPage() {
               <Link
                 key={course.courseId}
                 href={`/academy/courses/${course.courseId}`}
-                className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-rose-500/40 transition-all flex flex-col justify-between group"
+                className="p-5 rounded-2xl bg-text/5 border border-text/10 hover:border-secondary/40 transition-all flex flex-col justify-between group"
               >
                 <div>
                   <div className="flex justify-between items-center">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20">
                       {course.courseId}
                     </span>
-                    <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                    <span className="text-xs bg-text/5 text-text/70 px-2 py-0.5 rounded border border-text/10">
                       {course.targetLevel}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mt-3 group-hover:text-rose-400 transition-colors">
+                  <h3 className="text-lg font-bold text-text mt-3 group-hover:text-secondary transition-colors">
                     {course.courseName}
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-text/50 mt-1">
                     {course.totalLessons} Lessons • {course.enrolledStudentRolls.length} Enrolled
                   </p>
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <div className="mt-4 pt-3 border-t border-text/10 flex justify-between items-center text-xs text-text/50">
                   <span>Classes: {course.completedClassesCount}/{course.totalClassesPlanned}</span>
-                  <span className="text-rose-400 font-semibold flex items-center gap-1">
+                  <span className="text-secondary font-semibold flex items-center gap-1">
                     Open Syllabus <ArrowUpRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -109,10 +109,10 @@ export default function AcademyMainPage() {
         {/* Students Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-emerald-400" /> Enrolled Scholars
+            <h2 className="text-lg font-bold text-text flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" /> Enrolled Scholars
             </h2>
-            <Link href="/academy/students" className="text-xs text-emerald-400 hover:underline">
+            <Link href="/academy/students" className="text-xs text-primary hover:text-primary/80 transition-colors">
               View All Students &rarr;
             </Link>
           </div>
@@ -121,15 +121,16 @@ export default function AcademyMainPage() {
               <Link
                 key={student.rollNumber}
                 href={`/academy/students/${student.rollNumber}`}
-                className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all flex items-center gap-3 group"
+                className="p-4 rounded-xl bg-text/5 border border-text/10 hover:border-primary/40 transition-all flex items-center gap-3 group"
               >
-             
-             
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center font-mono text-sm font-bold text-white shadow-md shrink-0">
+                  {student.nameEnglish.charAt(0)}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-white text-sm truncate group-hover:text-emerald-400 transition-colors">
+                  <h4 className="font-bold text-text text-sm truncate group-hover:text-primary transition-colors">
                     {student.nameEnglish}
                   </h4>
-                  <p className="text-xs font-mono text-slate-400">{student.rollNumber}</p>
+                  <p className="text-xs font-mono text-text/50">{student.rollNumber}</p>
                 </div>
               </Link>
             ))}

@@ -82,7 +82,7 @@ export default function StudentsListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-6 sm:py-8 lg:py-10 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background text-text py-6 sm:py-8 lg:py-10 px-3 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         
         {/* Top Header & Admin Toggle Bar */}
@@ -90,15 +90,15 @@ export default function StudentsListPage() {
           <div>
             <Link
               href="/academy"
-              className="text-xs sm:text-sm font-semibold text-slate-400 hover:text-white inline-flex items-center gap-1 mb-2 transition-colors"
+              className="text-xs sm:text-sm font-semibold text-text/60 hover:text-text inline-flex items-center gap-1 mb-2 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
             </Link>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
-              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400" />
+            <h1 className="text-xl sm:text-3xl font-extrabold text-text flex items-center gap-2">
+              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
               Enrolled Scholars Directory ({students.length})
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-text/50 mt-1">
               Real-time attendance, contact info, and cohort enrollment
             </p>
           </div>
@@ -108,9 +108,9 @@ export default function StudentsListPage() {
             {isAdminUnlocked ? (
               <button
                 onClick={handleLockAdmin}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700/60 text-emerald-300 text-xs font-semibold hover:bg-emerald-900/80 transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/30 transition-all shadow-sm"
               >
-                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+                <Unlock className="w-3.5 h-3.5 text-primary" />
                 <span>Admin Unlocked</span>
                 <EyeOff className="w-3 h-3 ml-1 opacity-70" />
               </button>
@@ -121,9 +121,9 @@ export default function StudentsListPage() {
                   setPinError(false);
                   setShowAdminModal(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold hover:border-slate-700 transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-text/5 border border-text/10 text-text/50 hover:text-text/70 text-xs font-semibold hover:border-text/20 transition-all"
               >
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <Lock className="w-3.5 h-3.5 text-primary" />
                 <span>Admin Unlock</span>
               </button>
             )}
@@ -141,23 +141,23 @@ export default function StudentsListPage() {
             return (
               <div
                 key={student.rollNumber}
-                className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all"
+                className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 flex flex-col justify-between space-y-4 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all"
               >
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-600 to-amber-600 flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
                       {student.nameEnglish.charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-bold text-white text-sm truncate">{student.nameEnglish}</h4>
-                      <p className="text-xs font-mono text-slate-400">{student.rollNumber}</p>
+                      <h4 className="font-bold text-text text-sm truncate">{student.nameEnglish}</h4>
+                      <p className="text-xs font-mono text-text/50">{student.rollNumber}</p>
                     </div>
                   </div>
 
                   {/* Location & Protected WhatsApp details */}
-                  <div className="space-y-1.5 text-xs text-slate-400">
+                  <div className="space-y-1.5 text-xs text-text/50">
                     <div className="flex items-center gap-1 text-[11px] truncate">
-                      <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                      <MapPin className="w-3 h-3 text-secondary shrink-0" />
                       <span className="truncate">{student.location}</span>
                     </div>
 
@@ -168,7 +168,7 @@ export default function StudentsListPage() {
                           href={`https://wa.me/${student.whatsapp.replace(/[^0-9]/g, "")}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors font-mono"
+                          className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors font-mono"
                         >
                           <MessageSquare className="w-3 h-3 shrink-0" />
                           <span>{student.whatsapp}</span>
@@ -180,9 +180,9 @@ export default function StudentsListPage() {
                             setPinError(false);
                             setShowAdminModal(true);
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-400 transition-colors font-mono"
+                          className="inline-flex items-center gap-1 text-[11px] text-text/30 hover:text-text/50 transition-colors font-mono"
                         >
-                          <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                          <Lock className="w-3 h-3 text-primary shrink-0" />
                           <span>{maskPhoneNumber(student.whatsapp)}</span>
                         </button>
                       )}
@@ -190,20 +190,20 @@ export default function StudentsListPage() {
                   </div>
 
                   {/* Real-time Attendance Box */}
-                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+                  <div className="p-3 bg-text/5 rounded-xl border border-text/10 space-y-2 text-xs">
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Attendance</span>
-                      <span className="font-mono font-bold text-emerald-400">{attendanceRate}</span>
+                      <span className="text-text/50">Attendance</span>
+                      <span className="font-mono font-bold text-primary">{attendanceRate}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Attended Sessions</span>
-                      <span className="font-mono font-semibold text-slate-200">
+                      <span className="text-text/50">Attended Sessions</span>
+                      <span className="font-mono font-semibold text-text">
                         {totalAttended} / {totalHeld}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center pt-1 border-t border-slate-900">
-                      <span className="text-slate-400">Enrolled In</span>
-                      <span className="font-mono text-[11px] text-rose-400 font-semibold">
+                    <div className="flex justify-between items-center pt-1 border-t border-text/10">
+                      <span className="text-text/50">Enrolled In</span>
+                      <span className="font-mono text-[11px] text-secondary font-semibold">
                         {student.enrolledCourseIds?.join(", ") || "None"}
                       </span>
                     </div>
@@ -212,7 +212,7 @@ export default function StudentsListPage() {
 
                 <Link
                   href={`/academy/students/${student.rollNumber}`}
-                  className="flex items-center justify-center gap-1 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition-colors"
+                  className="flex items-center justify-center gap-1 w-full py-2 bg-text/10 hover:bg-text/20 text-text/70 hover:text-text rounded-lg text-xs font-semibold transition-colors"
                 >
                   View Profile & Attendance <ArrowUpRight className="w-3.5 h-3.5" />
                 </Link>
@@ -224,23 +224,23 @@ export default function StudentsListPage() {
         {/* Admin Verification Passcode Modal */}
         {showAdminModal && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div className="w-full max-w-sm bg-background border border-text/10 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 transition-colors">
+              <div className="flex justify-between items-center border-b border-text/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
                     <KeyRound className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-white text-sm sm:text-base">Admin Verification</h3>
+                  <h3 className="font-bold text-text text-sm sm:text-base">Admin Verification</h3>
                 </div>
                 <button
                   onClick={() => setShowAdminModal(false)}
-                  className="p-1 text-slate-400 hover:text-white rounded-lg"
+                  className="p-1 text-text/40 hover:text-text rounded-lg transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-text/50">
                 Enter your instructor/admin passkey to reveal all scholar WhatsApp contact numbers.
               </p>
 
@@ -255,12 +255,12 @@ export default function StudentsListPage() {
                       setEnteredPin(e.target.value);
                       setPinError(false);
                     }}
-                    className={`w-full bg-slate-950 border ${
-                      pinError ? "border-rose-500 focus:border-rose-500" : "border-slate-800 focus:border-rose-500"
-                    } rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none font-mono text-center tracking-widest`}
+                    className={`w-full bg-text/5 border ${
+                      pinError ? "border-secondary focus:border-secondary" : "border-text/10 focus:border-primary"
+                    } rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-text focus:outline-none font-mono text-center tracking-widest transition-colors`}
                   />
                   {pinError && (
-                    <span className="text-[11px] text-rose-400 mt-1.5 block text-center">
+                    <span className="text-[11px] text-secondary mt-1.5 block text-center">
                       Incorrect passcode. Try again.
                     </span>
                   )}
@@ -270,13 +270,13 @@ export default function StudentsListPage() {
                   <button
                     type="button"
                     onClick={() => setShowAdminModal(false)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold text-slate-300"
+                    className="px-3.5 py-2 bg-text/5 hover:bg-text/10 rounded-xl text-xs font-semibold text-text/60 hover:text-text transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-xl text-xs font-semibold text-white transition-colors"
+                    className="px-4 py-2 bg-secondary hover:bg-secondary/90 rounded-xl text-xs font-semibold text-white transition-colors shadow-lg shadow-secondary/25"
                   >
                     Unlock All
                   </button>
