@@ -5,32 +5,40 @@ import {
   Users, 
   ArrowUpRight, 
   MapPin, 
-  CheckCircle2, 
-  Calendar,
-  GraduationCap
+  CheckCircle2
 } from "lucide-react";
 import { academyData } from "@/data/academyData";
 
 export default function AcademyMainPage() {
   const { courses, students, institution, instructor } = academyData;
 
-  const totalClasses = courses.reduce((acc, c) => acc + (c.completedClassesCount ?? 0), 0);
+  const totalClasses = courses.reduce((acc, c) => acc + (c.completedClassesCount ?? c.classes?.length ?? 0), 0);
 
-  // Dynamic Attendance Calculation Helper for Students Table
-  const getStudentStats = (rollNumber: string, enrolledCourseIds: string[]) => {
+  // Dynamic Attendance Calculation Helper (Safe String/Number Check)
+  const getStudentStats = (rollNumber: string | number, enrolledCourseIds: string[]) => {
     let totalHeld = 0;
     let totalAttended = 0;
+    const targetRoll = String(rollNumber).trim();
 
     courses.forEach((course) => {
       if (enrolledCourseIds.includes(course.courseId)) {
         const classes = course.classes ?? [];
         totalHeld += classes.length;
-        totalAttended += classes.filter((cls) => cls.presentStudents?.includes(rollNumber)).length;
+        totalAttended += classes.filter((cls) =>
+          cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
+        ).length;
       }
     });
 
     const attendanceRate = totalHeld > 0 ? `${((totalAttended / totalHeld) * 100).toFixed(0)}%` : "100%";
     return { totalHeld, totalAttended, attendanceRate };
+  };
+
+  // Real-time enrolled students count per course
+  const getEnrolledStudentCount = (courseId: string) => {
+    return students.filter((student) =>
+      student.enrolledCourseIds?.includes(courseId)
+    ).length;
   };
 
   return (
@@ -114,7 +122,9 @@ export default function AcademyMainPage() {
                 </thead>
                 <tbody className="divide-y divide-text/10">
                   {courses.map((course) => {
-                    const pct = Math.round(((course.completedClassesCount ?? 0) / course.totalClassesPlanned) * 100);
+                    const completedClasses = course.classes?.length ?? course.completedClassesCount ?? 0;
+                    const pct = Math.round((completedClasses / course.totalClassesPlanned) * 100);
+                    const enrolledCount = getEnrolledStudentCount(course.courseId);
 
                     return (
                       <tr key={course.courseId} className="hover:bg-text/[0.03] transition-colors group">
@@ -132,7 +142,7 @@ export default function AcademyMainPage() {
                         <td className="py-3 px-3.5">
                           <div className="space-y-1 w-32">
                             <div className="flex justify-between text-[11px] font-mono text-text/60">
-                              <span>{course.completedClassesCount}/{course.totalClassesPlanned}</span>
+                              <span>{completedClasses}/{course.totalClassesPlanned}</span>
                               <span>{pct}%</span>
                             </div>
                             <div className="w-full h-1 bg-text/10 rounded-full overflow-hidden">
@@ -141,7 +151,7 @@ export default function AcademyMainPage() {
                           </div>
                         </td>
                         <td className="py-3 px-3.5 font-mono">
-                          {course.enrolledStudentRolls?.length ?? 0} Students
+                          {enrolledCount} Students
                         </td>
                         <td className="py-3 px-3.5 text-right">
                           <Link
@@ -193,7 +203,7 @@ export default function AcademyMainPage() {
                     );
 
                     return (
-                      <tr key={student.rollNumber} className="hover:bg-text/[0.03] transition-colors group">
+                      <tr key={String(student.rollNumber)} className="hover:bg-text/[0.03] transition-colors group">
                         <td className="py-3 px-3.5 font-mono font-bold text-text">
                           {student.rollNumber}
                         </td>

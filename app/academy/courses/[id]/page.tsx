@@ -12,8 +12,11 @@ export default function CourseDetailPage() {
 
   const course = academyData.courses.find((c) => c.courseId === courseId);
 
-  const getStudent = (roll: string) => {
-    return academyData.students.find((s) => s.rollNumber === roll);
+  // String / Number উভয়ের জন্যই সেফ লুকআপ
+  const getStudent = (roll: string | number) => {
+    return academyData.students.find(
+      (s) => String(s.rollNumber).trim() === String(roll).trim()
+    );
   };
 
   if (!course) {
@@ -114,12 +117,12 @@ export default function CourseDetailPage() {
                               const student = getStudent(roll);
                               return (
                                 <Link
-                                  key={roll}
+                                  key={String(roll)}
                                   href={`/academy/students/${roll}`}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 text-text hover:text-text transition-all text-xs group"
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                  <span className="font-semibold">{student?.nameEnglish || roll}</span>
+                                  <span className="font-semibold">{student?.nameEnglish || `Roll: ${roll}`}</span>
                                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
                                 </Link>
                               );
@@ -138,12 +141,12 @@ export default function CourseDetailPage() {
                               const student = getStudent(roll);
                               return (
                                 <Link
-                                  key={roll}
+                                  key={String(roll)}
                                   href={`/academy/students/${roll}`}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/10 hover:bg-secondary/20 border border-secondary/20 text-text hover:text-text transition-all text-xs group"
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
-                                  <span className="font-semibold">{student?.nameEnglish || roll}</span>
+                                  <span className="font-semibold">{student?.nameEnglish || `Roll: ${roll}`}</span>
                                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" />
                                 </Link>
                               );
@@ -176,14 +179,14 @@ export default function CourseDetailPage() {
                     const student = getStudent(r.rollNumber);
                     return (
                       <Link
-                        key={r.rollNumber}
+                        key={String(r.rollNumber)}
                         href={`/academy/students/${r.rollNumber}`}
                         className="p-3 bg-text/5 hover:bg-text/10 border border-text/10 hover:border-primary/40 rounded-xl text-xs transition-all space-y-1.5 group"
                       >
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-semibold text-text group-hover:text-primary transition-colors">
-                              {student?.nameEnglish || r.rollNumber}
+                              {student?.nameEnglish || `Roll: ${r.rollNumber}`}
                             </p>
                           </div>
                           <span
