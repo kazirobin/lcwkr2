@@ -14,14 +14,13 @@ import {
   MessageSquare, 
   Lock, 
   Unlock, 
-  Eye, 
   EyeOff, 
   X, 
   KeyRound 
 } from "lucide-react";
 import { academyData } from "@/data/academyData";
 
-// আপনার অ্যাডমিন সিক্রেট পিন/পাসকোড সেট করুন
+// অ্যাডমিন সিক্রেট পিন/পাসকোড
 const ADMIN_SECRET_PIN = "8131";
 
 export default function StudentDetailPage() {
@@ -29,7 +28,10 @@ export default function StudentDetailPage() {
   const rawRoll = params?.roll;
   const rollNumber = Array.isArray(rawRoll) ? rawRoll[0] : (rawRoll as string);
 
-  const student = academyData.students.find((s) => s.rollNumber === rollNumber);
+  // সেফ স্ট্রিং ম্যাচিং
+  const student = academyData.students.find(
+    (s) => String(s.rollNumber).trim() === String(rollNumber).trim()
+  );
 
   // Admin visibility states
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -82,14 +84,20 @@ export default function StudentDetailPage() {
     );
   }
 
+  const targetRoll = String(student.rollNumber).trim();
+
   // Calculate dynamic attendance from course classes
   const getCourseAttendanceStats = (courseId: string) => {
     const course = academyData.courses.find((c) => c.courseId === courseId);
     const classes = course?.classes ?? [];
     const totalHeld = classes.length;
 
-    const attendedClasses = classes.filter((cls) => cls.presentStudents?.includes(student.rollNumber));
-    const absentClasses = classes.filter((cls) => cls.absentStudents?.includes(student.rollNumber));
+    const attendedClasses = classes.filter((cls) => 
+      cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
+    );
+    const absentClasses = classes.filter((cls) => 
+      cls.absentStudents?.some((r) => String(r).trim() === targetRoll)
+    );
 
     const attendedCount = attendedClasses.length;
     const absentCount = absentClasses.length;
@@ -105,7 +113,7 @@ export default function StudentDetailPage() {
 
     const scores: number[] = [];
     exams.forEach((exam) => {
-      const res = exam.results?.find((r) => r.rollNumber === student.rollNumber && r.attended);
+      const res = exam.results?.find((r) => String(r.rollNumber).trim() === targetRoll && r.attended);
       if (res && typeof res.score === "number") {
         scores.push(res.score);
       }
@@ -119,7 +127,7 @@ export default function StudentDetailPage() {
   // Collect all exams attended by the student
   const studentExams = academyData.courses.flatMap((c) =>
     (c.weekendExams ?? []).flatMap((e) => {
-      const res = (e.results ?? []).find((r) => r.rollNumber === student.rollNumber);
+      const res = (e.results ?? []).find((r) => String(r.rollNumber).trim() === targetRoll);
       if (!res) return [];
       return [
         {
@@ -181,7 +189,7 @@ export default function StudentDetailPage() {
             </div>
             <div className="min-w-0">
               <span className="font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 inline-block">
-                {student.rollNumber}
+                Roll: {student.rollNumber}
               </span>
               <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-text mt-1 break-words">
                 {student.nameEnglish}
@@ -288,7 +296,7 @@ export default function StudentDetailPage() {
                       ) : (
                         <div className="space-y-1.5">
                           {classes.map((cls) => {
-                            const isPresent = cls.presentStudents?.includes(student.rollNumber);
+                            const isPresent = cls.presentStudents?.some((r) => String(r).trim() === targetRoll);
                             return (
                               <div
                                 key={cls.classId}
@@ -406,7 +414,7 @@ export default function StudentDetailPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Admin Passcode (e.g. 2026)"
+                    placeholder="Enter Admin Passcode (e.g. 8131)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);
