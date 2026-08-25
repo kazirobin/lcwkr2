@@ -167,7 +167,7 @@ export const academyData: IAcademyData = {
       rollNumber: "STU006",
       nameEnglish: "Sabbir Hossain",
       whatsapp: "+8801630218829",
-      location: "Kgajura, Bagherpara, Jashore",
+      location: "Balu ghat, Dhaka cant; Dhaka-1206",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
@@ -176,6 +176,62 @@ export const academyData: IAcademyData = {
       nameEnglish: "Mahdi Islam",
       whatsapp: "+8801805205369",
       location: "Modonhat, Hathazari, Chattogram",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU008",
+      nameEnglish: "Mahdi Islam Hadhin",
+      whatsapp: "+8801805205369",
+      location: "Hathazari, Chattogram",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU009",
+      nameEnglish: "Sohag Sharma",
+      whatsapp: "+8801761636297***",
+      location: "Sitakundo",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU010",
+      nameEnglish: "Asif Mahamud",
+      whatsapp: "+8801318723849",
+      location: "Savar, Bagherpara, Jashore ",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU011",
+      nameEnglish: "Tanvir",
+      whatsapp: "+8801850118511",
+      location: "Uttara, Dhaka",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU012",
+      nameEnglish: "Shariar Roucafi",
+      whatsapp: "+86156 7910 1763",
+      location: "Nanchang, Jiangxi,china",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU013",
+      nameEnglish: "M.M.B Tushar",
+      whatsapp: "+8801873962540",
+      location: "Comilla ",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+    {
+      rollNumber: "STU014",
+      nameEnglish: "Maruf Hossain",
+      whatsapp: "+8801998744436",
+      location: "Comilla ",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
