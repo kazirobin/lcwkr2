@@ -468,6 +468,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
-
+{
+      rollNumber: 37,
+      nameEnglish: "Md Arif",
+      whatsapp: "+8801345587537",
+      location: "Chattagram , Bangladesh ",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ] ,
 };
