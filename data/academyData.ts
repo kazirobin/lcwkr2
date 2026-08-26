@@ -508,5 +508,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
+{
+      rollNumber: 41,
+      nameEnglish: "Md. Jahid Hasan",
+      whatsapp: "+8801521751608",
+      location: "Chapainawabganj",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ] ,
 };
