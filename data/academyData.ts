@@ -412,7 +412,7 @@ export const academyData: IAcademyData = {
     },
 {
       rollNumber: "31",
-      nameEnglish:"Juyel Rana"
+      nameEnglish:"Juyel Rana",
       whatsapp: "+8801602130075",
       location: "Gazipur, Bangladsh",
       avatarUrl: "https://ibb.co.com/F4jxskPN",
