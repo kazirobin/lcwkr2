@@ -500,5 +500,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
+{
+      rollNumber: 40,
+      nameEnglish: "MD Shazzad Hossain ",
+      whatsapp: "+8801312430659",
+      location: "Dhanmondi 32",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ] ,
 };
