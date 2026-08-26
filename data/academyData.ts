@@ -492,5 +492,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
+{
+      rollNumber: 39,
+      nameEnglish: "Tushar Ray",
+      whatsapp: "+880717296320",
+      location: "Dinajpur",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ] ,
 };
