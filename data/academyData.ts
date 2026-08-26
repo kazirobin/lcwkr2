@@ -484,5 +484,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
+{
+      rollNumber: 38,
+      nameEnglish: "Sumona Afroj Tammana",
+      whatsapp: "+8801518988948",
+      location: "Santinagar,Dhaka",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ] ,
 };
