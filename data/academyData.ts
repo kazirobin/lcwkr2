@@ -442,5 +442,13 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
+{
+      rollNumber: "35",
+      nameEnglish: "M.M.B Tushar",
+      whatsapp: "+8801873962540",
+      location: "Cumilla, Bangladesh ",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ],
 };
