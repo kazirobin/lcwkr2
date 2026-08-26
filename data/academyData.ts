@@ -392,23 +392,55 @@ export const academyData: IAcademyData = {
       whatsapp: "+8801982934976",
       location: "gazipur, Bangladesh",
       avatarUrl: "https://example.com/avatars/stu020.png",
-      enrolledCourseIds: ["HSK-101"],
+      enrolledCourseIds: ["HSK-101"]
     },
-    {
+{
       rollNumber: 29,
       nameEnglish: "Mr Hamim",
-      whatsapp: "01410792134",
+      whatsapp: "+8801410792134",
       location: "Gazipur, konabari,  Bangladesh",
       avatarUrl: "https://example.com/avatars/stu020.png",
-      enrolledCourseIds: ["HSK-101"],
+      enrolledCourseIds: ["HSK-101"]
     },
-    {
+{
       rollNumber: 30,
       nameEnglish: "MD ARIF HOSEN ",
       whatsapp: "+8801826579642 ",
       location: "Gazipur, konabari,  Bangladesh",
       avatarUrl: "https://example.com/avatars/stu020.png",
-      enrolledCourseIds: ["HSK-101"],
+      enrolledCourseIds: ["HSK-101"]
+    },
+{
+      rollNumber: "31",
+      nameEnglish:"Juyel Rana"
+      whatsapp: "+8801602130075",
+      location: "Gazipur, Bangladsh",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
+{
+      rollNumber: "32",
+      nameEnglish: "Md Amir Hamza",
+      whatsapp: "+8801626658883",
+      location: "Gazipur, Bangladesh ",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
+{
+      rollNumber: "33",
+      nameEnglish: "Sadat",
+      whatsapp: "+8801831832491",
+      location: "Noakhali, Bangladesh ",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
+    },
+{
+      rollNumber: "34",
+      nameEnglish: "Arif",
+      whatsapp: "+8801345587536",
+      location: "Chattagram, Bangladesh ",
+      avatarUrl: "https://ibb.co.com/F4jxskPN",
+      enrolledCourseIds: ["HSK-101"]
     },
   ],
 };
