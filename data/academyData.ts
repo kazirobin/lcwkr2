@@ -250,16 +250,9 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
+   
     {
       rollNumber: 10,
-      nameEnglish: "Asif Mahamud",
-      whatsapp: "+8801318723849",
-      location: "Savar, Bagherpara, Jashore",
-      avatarUrl: "https://example.com/avatars/stu006.png",
-      enrolledCourseIds: ["HSK-101"]
-    },
-    {
-      rollNumber: 11,
       nameEnglish: "Tanvir",
       whatsapp: "+8801850118511",
       location: "Uttara, Dhaka",
@@ -267,7 +260,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 12,
+      rollNumber: 11,
       nameEnglish: "Shariar Roucafi",
       whatsapp: "+8615679101763",
       location: "Nanchang, Jiangxi, China",
@@ -275,7 +268,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 13,
+      rollNumber: 12,
       nameEnglish: "M.M.B Tushar",
       whatsapp: "+8801873962540",
       location: "Comilla",
@@ -283,7 +276,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 14,
+      rollNumber: 13,
       nameEnglish: "Maruf Hossain",
       whatsapp: "+8801998744436",
       location: "Hijlgari, Chuadanga",
@@ -291,7 +284,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 15,
+      rollNumber: 14,
       nameEnglish: "Thakurdash Chandra Ray",
       whatsapp: "+8801780588812",
       location: "Khansama, Dinajpur",
@@ -299,7 +292,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 16,
+      rollNumber: 15,
       nameEnglish: "Aiful islam",
       whatsapp: "+8801816147180",
       location: "Mognama pekua, Cox's Bazar",
@@ -307,7 +300,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 17,
+      rollNumber: 16,
       nameEnglish: "Jobayer Ahmed",
       whatsapp: "+8801706898268",
       location: "Motijheel, Dhaka",
@@ -315,7 +308,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 18,
+      rollNumber: 17,
       nameEnglish: "Sumaia Islam",
       whatsapp: "+8801608266181",
       location: "Mitford, Dhaka",
@@ -323,7 +316,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 19,
+      rollNumber: 18,
       nameEnglish: "Fuad",
       whatsapp: "+8801922153836",
       location: "Dhanmondi, Dhaka",
@@ -331,7 +324,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
     {
-      rollNumber: 20,
+      rollNumber: 19,
       nameEnglish: "Ishrat Tushu ",
       whatsapp: " 01978859009",
       location: "Gazipur, Bangladesh",
@@ -339,7 +332,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 21,
+      rollNumber: 20,
       nameEnglish: "Farid Howlader",
       whatsapp: "+8801937273952",
       location: "Mongla, Bangladesh",
@@ -347,7 +340,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 23,
+      rollNumber: 21,
       nameEnglish: "shwee shwee wai",
       whatsapp: "01616955228",
       location: "wuzhou university, guwanxi",
@@ -355,7 +348,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 24,
+      rollNumber: 22,
       nameEnglish: "Monita Akter",
       whatsapp: "13006940516",
       location: "wuzhou university, guwanxi",
@@ -363,7 +356,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 25,
+      rollNumber: 23,
       nameEnglish: "Tirtho Tomas Mankhin",
       whatsapp: "+8801848016256",
       location: ", durgabari, mymeshaing,Bangladesh",
@@ -371,7 +364,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 26,
+      rollNumber: 24,
       nameEnglish: "Mashud Ahmed",
       whatsapp: "+8801751430463",
       location: " Nilphamari,Bangladesh",
@@ -379,7 +372,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 27,
+      rollNumber: 25,
       nameEnglish: "Md Habib Hossen",
       whatsapp: "+8801674615124",
       location: "Mirpur-12, Dhaka, Bangladesh",
@@ -387,7 +380,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     } ,
  {
-      rollNumber: 28,
+      rollNumber: 26,
       nameEnglish: "md foyshal ahamed",
       whatsapp: "+8801982934976",
       location: "gazipur, Bangladesh",
@@ -395,7 +388,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 29,
+      rollNumber: 27,
       nameEnglish: "Mr Hamim",
       whatsapp: "+8801410792134",
       location: "Gazipur, konabari,  Bangladesh",
@@ -403,7 +396,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: 30,
+      rollNumber: 28,
       nameEnglish: "MD ARIF HOSEN ",
       whatsapp: "+8801826579642 ",
       location: "Gazipur, konabari,  Bangladesh",
@@ -411,7 +404,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "31",
+      rollNumber: 29,
       nameEnglish:"Juyel Rana",
       whatsapp: "+8801602130075",
       location: "Gazipur, Bangladsh",
@@ -419,7 +412,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "32",
+      rollNumber: 30,
       nameEnglish: "Md Amir Hamza",
       whatsapp: "+8801626658883",
       location: "Gazipur, Bangladesh ",
@@ -427,7 +420,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "33",
+      rollNumber: 31,
       nameEnglish: "Sadat",
       whatsapp: "+8801831832491",
       location: "/Noakhali, Bangladesh ",
@@ -435,23 +428,16 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "34",
+      rollNumber: 32,
       nameEnglish: "Arif",
       whatsapp: "+8801345587536",
       location: "Chattagram, Bangladesh ",
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
+
 {
-      rollNumber: "35",
-      nameEnglish: "M.M.B Tushar",
-      whatsapp: "+8801873962540",
-      location: "Cumilla, Bangladesh ",
-      avatarUrl: "https://ibb.co.com/F4jxskPN",
-      enrolledCourseIds: ["HSK-101"]
-    },
-{
-      rollNumber: "36",
+      rollNumber: 33,
       nameEnglish: "Miraz Khan",
       whatsapp: "+8801568418144",
       location: "Uttara , Dhaka",
@@ -459,7 +445,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "37",
+      rollNumber: 34,
       nameEnglish: "Sabekun Nahar Jerin",
       whatsapp: "+8801863336556",
       location: "Feni, Bangladesh ",
@@ -467,7 +453,7 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "38",
+      rollNumber: 35,
       nameEnglish: "Md. Salman Rumi Kabbo",
       whatsapp: "+8801836460879",
       location: "Badda , Notun Bazar , Dhaka",
@@ -475,13 +461,13 @@ export const academyData: IAcademyData = {
       enrolledCourseIds: ["HSK-101"]
     },
 {
-      rollNumber: "39",
+      rollNumber: 36,
       nameEnglish: "MD Asadul hoq (Asad)",
       whatsapp: "+8801973681199",
       location: "Rampura , Dhaka, Bangladesh ",
       avatarUrl: "https://ibb.co.com/F4jxskPN",
       enrolledCourseIds: ["HSK-101"]
     },
-    
+
   ] ,
 };
