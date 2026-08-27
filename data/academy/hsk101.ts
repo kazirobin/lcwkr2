@@ -1,9 +1,12 @@
 import { ICourse } from "@/types/academy";
 
-export const hsk101Course: ICourse = {
+export const hsk101: ICourse = {
   courseId: "HSK-101",
+  status: "Running",
   courseName: "Beginner Chinese (HSK 1)",
   targetLevel: "HSK 1",
+  startDate: "2026-08-01",
+  nextBatchRegistrationDate: "September 15, 2026",
   totalLessons: 15,
   totalClassesPlanned: 24,
   completedClassesCount: 3,

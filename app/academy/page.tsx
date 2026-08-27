@@ -1,182 +1,181 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Users, 
-  ArrowUpRight, 
-  MapPin, 
+import { useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  BookOpen,
+  Users,
+  ArrowUpRight,
+  MapPin,
   CheckCircle2,
   UserPlus,
-  PlusCircle
+  PlusCircle,
+  AlertCircle,
+  Calendar,
+  Clock,
+  ArrowRight,
+  X,
 } from "lucide-react";
-import { academyData } from "@/data/academyData";
+import { academyData } from "@/data/academy";
 
 export default function AcademyMainPage() {
+  const router = useRouter();
   const { courses, students, institution, instructor } = academyData;
 
-  const totalClasses = courses.reduce((acc, c) => acc + (c.completedClassesCount ?? c.classes?.length ?? 0), 0);
+  const [showModal, setShowModal] = useState(false);
+  const [countdown, setCountdown] = useState(20);
 
-  // Dynamic Attendance Calculation Helper (Safe String/Number Check)
-  const getStudentStats = (rollNumber: string | number, enrolledCourseIds: string[]) => {
-    let totalHeld = 0;
-    let totalAttended = 0;
-    const targetRoll = String(rollNumber).trim();
+  // চেক: কোনো Coming Soon কোর্স আছে কিনা
+  const hasComingSoon = courses.some((c) => c.status === "Coming Soon");
 
-    courses.forEach((course) => {
-      if (enrolledCourseIds.includes(course.courseId)) {
-        const classes = course.classes ?? [];
-        totalHeld += classes.length;
-        totalAttended += classes.filter((cls) =>
-          cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
+  // রেজিস্ট্রেশন বাটন অ্যাকশন
+  const handleRegister = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (hasComingSoon) {
+      router.push("/academy/register");
+    } else {
+      setShowModal(true);
+      setCountdown(20);
+    }
+  };
+
+  // ২০ সেকেন্ডের কাউন্টডাউন ও রিডাইরেক্ট
+  useEffect(() => {
+    if (!showModal) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          router.push("/");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [showModal, router]);
+
+  // অ্যাটেনডেন্স ক্যালকুলেটর
+  const getAttendanceRate = (roll: string | number, enrolledIds: string[] = []) => {
+    let held = 0;
+    let attended = 0;
+    const target = String(roll).trim();
+
+    courses.forEach((c) => {
+      if (enrolledIds.includes(c.courseId)) {
+        const list = c.classes ?? [];
+        held += list.length;
+        attended += list.filter((cls) =>
+          cls.presentStudents?.some((r) => String(r).trim() === target)
         ).length;
       }
     });
 
-    const attendanceRate = totalHeld > 0 ? `${((totalAttended / totalHeld) * 100).toFixed(0)}%` : "100%";
-    return { totalHeld, totalAttended, attendanceRate };
+    return held > 0 ? `${Math.round((attended / held) * 100)}% (${attended}/${held})` : "100%";
   };
 
-  // Real-time enrolled students count per course
-  const getEnrolledStudentCount = (courseId: string) => {
-    return students.filter((student) =>
-      student.enrolledCourseIds?.includes(courseId)
-    ).length;
-  };
+  const nextBatchDate = courses[0]?.nextBatchRegistrationDate || "September 15, 2026";
+  const totalClasses = courses.reduce((acc, c) => acc + (c.completedClassesCount ?? c.classes?.length ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-background text-text py-6 sm:py-10 px-3 sm:px-6 lg:px-8 transition-colors duration-300">
+    <div className="min-h-screen bg-background text-text py-8 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Minimal Header Strip with Action Buttons */}
+        {/* Header Strip */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-5">
           <div>
-            <div className="flex items-center gap-2 mb-1 text-xs font-mono">
-              <span className="font-bold text-secondary uppercase tracking-widest">{institution}</span>
-              <span className="text-text/30">•</span>
-              <span className="text-text/50">Instructor: {instructor}</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-text flex items-center gap-2">
-              <LayoutDashboard className="w-5 h-5 text-secondary shrink-0" />
-              Academy Dashboard
+            <span className="text-xs font-mono text-secondary font-bold uppercase tracking-wider">
+              {institution} • Instructor: {instructor}
+            </span>
+            <h1 className="text-2xl font-bold text-text flex items-center gap-2 mt-1">
+              <LayoutDashboard className="w-5 h-5 text-secondary" /> Academy Dashboard
             </h1>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <Link
-              href="/academy/class"
-              className="px-3.5 py-1.5 bg-secondary hover:bg-secondary/90 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-secondary/20"
+              href="/academy/classes/create"
+              className="px-3.5 py-1.5 bg-secondary text-white font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90"
             >
               <PlusCircle className="w-3.5 h-3.5" /> Log Class
             </Link>
-            <Link
-              href="/academy/register"
-              className="px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-background font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20"
+            <button
+              onClick={handleRegister}
+              className="px-3.5 py-1.5 bg-primary text-background font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90 cursor-pointer"
             >
               <UserPlus className="w-3.5 h-3.5" /> Register
-            </Link>
-            <Link
-              href="/academy/courses"
-              className="px-3.5 py-1.5 bg-text/5 hover:bg-text/10 border border-text/10 rounded-lg text-xs font-medium transition-colors"
-            >
+            </button>
+            <Link href="/academy/courses" className="px-3.5 py-1.5 bg-text/5 border border-text/10 rounded-lg text-xs">
               Courses ({courses.length})
             </Link>
-            <Link
-              href="/academy/students"
-              className="px-3.5 py-1.5 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/30 rounded-lg text-xs font-semibold transition-colors"
-            >
+            <Link href="/academy/students" className="px-3.5 py-1.5 bg-text/5 border border-text/10 rounded-lg text-xs">
               Students ({students.length})
             </Link>
           </div>
         </div>
 
-        {/* Flat Stat Ribbon Table */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-text/10 border border-text/10 rounded-xl bg-text/[0.02] overflow-hidden text-center">
-          <div className="p-3.5 sm:p-4">
-            <span className="text-[11px] font-mono uppercase text-text/50 block">Students</span>
-            <span className="text-lg sm:text-xl font-bold text-text mt-0.5 block">{students.length}</span>
+        {/* Stats Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+            <span className="text-[10px] text-text/50 uppercase font-mono">Students</span>
+            <p className="text-xl font-bold text-text mt-1">{students.length}</p>
           </div>
-          <div className="p-3.5 sm:p-4">
-            <span className="text-[11px] font-mono uppercase text-text/50 block">Active Cohorts</span>
-            <span className="text-lg sm:text-xl font-bold text-primary mt-0.5 block">{courses.length}</span>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+            <span className="text-[10px] text-text/50 uppercase font-mono">Active Cohorts</span>
+            <p className="text-xl font-bold text-primary mt-1">{courses.length}</p>
           </div>
-          <div className="p-3.5 sm:p-4">
-            <span className="text-[11px] font-mono uppercase text-text/50 block">Total Classes</span>
-            <span className="text-lg sm:text-xl font-bold text-secondary mt-0.5 block">{totalClasses}</span>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+            <span className="text-[10px] text-text/50 uppercase font-mono">Total Classes</span>
+            <p className="text-xl font-bold text-secondary mt-1">{totalClasses}</p>
           </div>
-          <div className="p-3.5 sm:p-4">
-            <span className="text-[11px] font-mono uppercase text-text/50 block">HSK Tracks</span>
-            <span className="text-lg sm:text-xl font-bold text-text mt-0.5 block">HSK 1 - 2</span>
+          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+            <span className="text-[10px] text-text/50 uppercase font-mono">Tracks</span>
+            <p className="text-xl font-bold text-text mt-1">HSK 1 - 2</p>
           </div>
         </div>
 
-        {/* 1. Courses Table View */}
+        {/* Courses Table */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm sm:text-base font-bold text-text flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-secondary" />
-              Active Mandarin Cohorts
+          <div className="flex justify-between items-center">
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-secondary" /> Active Mandarin Cohorts
             </h2>
-            <div className="flex items-center gap-3">
-              <Link href="/academy/classes/create" className="text-xs text-secondary font-semibold hover:underline flex items-center gap-1">
-                <PlusCircle className="w-3.5 h-3.5" /> Log Session
-              </Link>
-              <Link href="/academy/courses" className="text-xs text-text/60 hover:text-text hover:underline">
-                View All Courses &rarr;
-              </Link>
-            </div>
+            <Link href="/academy/courses" className="text-xs text-text/60 hover:underline">
+              View All &rarr;
+            </Link>
           </div>
 
           <div className="border border-text/10 rounded-xl overflow-hidden bg-text/[0.01]">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-text/80 min-w-[580px]">
-                <thead className="bg-text/5 border-b border-text/10 font-semibold text-text/60">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-text/5 border-b border-text/10 text-text/60">
                   <tr>
-                    <th className="py-2.5 px-3.5">Course Code</th>
-                    <th className="py-2.5 px-3.5">Title</th>
-                    <th className="py-2.5 px-3.5">Level</th>
-                    <th className="py-2.5 px-3.5">Syllabus Progress</th>
-                    <th className="py-2.5 px-3.5">Enrolled</th>
-                    <th className="py-2.5 px-3.5 text-right">Action</th>
+                    <th className="p-3">Course</th>
+                    <th className="p-3">Level</th>
+                    <th className="p-3">Progress</th>
+                    <th className="p-3">Enrolled</th>
+                    <th className="p-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-text/10">
-                  {courses.map((course) => {
-                    const completedClasses = course.classes?.length ?? course.completedClassesCount ?? 0;
-                    const pct = Math.round((completedClasses / course.totalClassesPlanned) * 100);
-                    const enrolledCount = getEnrolledStudentCount(course.courseId);
+                  {courses.map((c) => {
+                    const done = c.classes?.length ?? c.completedClassesCount ?? 0;
+                    const pct = Math.round((done / c.totalClassesPlanned) * 100);
+                    const enrolled = students.filter((s) => s.enrolledCourseIds?.includes(c.courseId)).length;
 
                     return (
-                      <tr key={course.courseId} className="hover:bg-text/[0.03] transition-colors group">
-                        <td className="py-3 px-3.5 font-mono font-bold text-secondary">
-                          {course.courseId}
+                      <tr key={c.courseId} className="hover:bg-text/5">
+                        <td className="p-3 font-semibold">
+                          <span className="font-mono text-secondary mr-2">{c.courseId}</span>
+                          {c.courseName}
                         </td>
-                        <td className="py-3 px-3.5 font-semibold text-text">
-                          {course.courseName}
-                        </td>
-                        <td className="py-3 px-3.5">
-                          <span className="px-2 py-0.5 bg-text/5 border border-text/10 rounded text-[11px]">
-                            {course.targetLevel}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3.5">
-                          <div className="space-y-1 w-32">
-                            <div className="flex justify-between text-[11px] font-mono text-text/60">
-                              <span>{completedClasses}/{course.totalClassesPlanned}</span>
-                              <span>{pct}%</span>
-                            </div>
-                            <div className="w-full h-1 bg-text/10 rounded-full overflow-hidden">
-                              <div className="h-full bg-secondary rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3.5 font-mono">
-                          {enrolledCount} Students
-                        </td>
-                        <td className="py-3 px-3.5 text-right">
-                          <Link
-                            href={`/academy/courses/${course.courseId}`}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
-                          >
+                        <td className="p-3">{c.targetLevel}</td>
+                        <td className="p-3 font-mono">{done}/{c.totalClassesPlanned} ({pct}%)</td>
+                        <td className="p-3 font-mono">{enrolled} Students</td>
+                        <td className="p-3 text-right">
+                          <Link href={`/academy/courses/${c.courseId}`} className="text-secondary font-semibold hover:underline inline-flex items-center gap-0.5">
                             Details <ArrowUpRight className="w-3.5 h-3.5" />
                           </Link>
                         </td>
@@ -189,86 +188,52 @@ export default function AcademyMainPage() {
           </div>
         </div>
 
-        {/* 2. Students Table View */}
+        {/* Students Table */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm sm:text-base font-bold text-text flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-primary" />
-              Enrolled Students Directory
+          <div className="flex justify-between items-center">
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" /> Students Directory
             </h2>
-            <div className="flex items-center gap-3">
-              <Link href="/academy/register" className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
-                <UserPlus className="w-3.5 h-3.5" /> New Registration
-              </Link>
-              <Link href="/academy/students" className="text-xs text-secondary hover:underline">
-                View All Students &rarr;
-              </Link>
-            </div>
+            <Link href="/academy/students" className="text-xs text-text/60 hover:underline">
+              View All &rarr;
+            </Link>
           </div>
 
           <div className="border border-text/10 rounded-xl overflow-hidden bg-text/[0.01]">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-text/80 min-w-[580px]">
-                <thead className="bg-text/5 border-b border-text/10 font-semibold text-text/60">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-text/5 border-b border-text/10 text-text/60">
                   <tr>
-                    <th className="py-2.5 px-3.5">Roll No</th>
-                    <th className="py-2.5 px-3.5">Student Name</th>
-                    <th className="py-2.5 px-3.5">Location</th>
-                    <th className="py-2.5 px-3.5">Enrolled Tracks</th>
-                    <th className="py-2.5 px-3.5">Attendance</th>
-                    <th className="py-2.5 px-3.5 text-right">Profile</th>
+                    <th className="p-3">Roll</th>
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Location</th>
+                    <th className="p-3">Attendance</th>
+                    <th className="p-3 text-right">Profile</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-text/10">
-                  {students.map((student) => {
-                    const { totalHeld, totalAttended, attendanceRate } = getStudentStats(
-                      student.rollNumber,
-                      student.enrolledCourseIds ?? []
-                    );
-
-                    return (
-                      <tr key={String(student.rollNumber)} className="hover:bg-text/[0.03] transition-colors group">
-                        <td className="py-3 px-3.5 font-mono font-bold text-text">
-                          {student.rollNumber}
-                        </td>
-                        <td className="py-3 px-3.5 font-semibold text-text flex items-center gap-2">
-                          <div className="w-6 h-6 rounded bg-secondary/10 text-secondary border border-secondary/20 flex items-center justify-center font-mono text-xs font-bold shrink-0">
-                            {student.nameEnglish.charAt(0)}
-                          </div>
-                          <span className="truncate">{student.nameEnglish}</span>
-                        </td>
-                        <td className="py-3 px-3.5 text-text/60">
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-secondary/60 shrink-0" />
-                            {student.location || "N/A"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3.5">
-                          <div className="flex gap-1 flex-wrap font-mono text-[10px]">
-                            {student.enrolledCourseIds?.map((cId) => (
-                              <span key={cId} className="px-1.5 py-0.5 bg-text/5 border border-text/10 rounded">
-                                {cId}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3.5">
-                          <span className="inline-flex items-center gap-1 font-mono font-bold text-primary">
-                            <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
-                            {attendanceRate} <span className="text-[10px] text-text/40 font-normal">({totalAttended}/{totalHeld})</span>
-                          </span>
-                        </td>
-                        <td className="py-3 px-3.5 text-right">
-                          <Link
-                            href={`/academy/students/${student.rollNumber}`}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                          >
-                            View <ArrowUpRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {students.map((s) => (
+                    <tr key={String(s.rollNumber)} className="hover:bg-text/5">
+                      <td className="p-3 font-mono font-bold">{s.rollNumber}</td>
+                      <td className="p-3 font-semibold">{s.nameEnglish}</td>
+                      <td className="p-3 text-text/60">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-secondary" /> {s.location || "N/A"}
+                        </span>
+                      </td>
+                      <td className="p-3 font-mono text-primary font-bold">
+                        <span className="inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {getAttendanceRate(s.rollNumber, s.enrolledCourseIds)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <Link href={`/academy/students/${s.rollNumber}`} className="text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
+                          View <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -276,6 +241,46 @@ export default function AcademyMainPage() {
         </div>
 
       </div>
+
+      {/* Closed Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-background border border-text/10 rounded-2xl p-6 text-center space-y-4 relative">
+            <button onClick={() => setShowModal(false)} className="absolute top-3 right-3 text-text/40 hover:text-text p-1">
+              <X className="w-4 h-4" />
+            </button>
+
+            <AlertCircle className="w-10 h-10 text-secondary mx-auto" />
+            
+            <div>
+              <h3 className="text-lg font-bold text-text">Admission Closed!</h3>
+              <p className="text-xs text-text/60 mt-1">
+                চলমান ব্যাচের ক্লাস শুরু হয়ে গেছে। অনুগ্রহ করে পরবর্তী ব্যাচের জন্য অপেক্ষা করুন।
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-text/5 border border-text/10 text-left text-xs">
+              <span className="text-primary font-semibold flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" /> Next Batch Starts:
+              </span>
+              <p className="font-mono font-bold text-text mt-1 pl-4.5">{nextBatchDate}</p>
+            </div>
+
+            <div className="space-y-2 pt-1 text-xs">
+              <p className="text-text/40 flex items-center justify-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> Redirecting home in <b className="text-secondary">{countdown}s</b>
+              </p>
+              <button
+                onClick={() => router.push("/")}
+                className="w-full py-2 bg-secondary text-white rounded-lg font-bold flex items-center justify-center gap-1 hover:opacity-90"
+              >
+                Go Home <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

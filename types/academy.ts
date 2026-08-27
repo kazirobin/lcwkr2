@@ -37,6 +37,9 @@ export interface ICourse {
   courseId: string;
   courseName: string;
   targetLevel: string;
+  status: "Running" | "Coming Soon" | "Completed"; // 👈 নতুন ফিল্ড
+  startDate?: string;
+  nextBatchRegistrationDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
   completedClassesCount: number;

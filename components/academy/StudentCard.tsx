@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, MapPin } from "lucide-react";
 import { IStudent } from "@/types/academy";
-import { academyData } from "@/data/academyData";
+import { academyData } from "@/data/academy";
 
 export default function StudentCard({ student }: { student: IStudent }) {
   const enrolledCourses = student.enrolledCourseIds ?? [];
@@ -17,13 +17,13 @@ export default function StudentCard({ student }: { student: IStudent }) {
       const classes = course.classes ?? [];
       totalHeld += classes.length;
       totalAttended += classes.filter((cls) =>
-        cls.presentStudents?.includes(student.rollNumber)
+        cls.presentStudents?.includes(student.rollNumber),
       ).length;
 
       // এক্সাম স্কোর হিসাব
       (course.weekendExams ?? []).forEach((exam) => {
         const result = exam.results?.find(
-          (r) => r.rollNumber === student.rollNumber && r.attended
+          (r) => r.rollNumber === student.rollNumber && r.attended,
         );
         if (result && typeof result.score === "number") {
           examScores.push(result.score);
@@ -34,7 +34,9 @@ export default function StudentCard({ student }: { student: IStudent }) {
 
   // উপস্থিতি হার (%)
   const attendanceRate =
-    totalHeld > 0 ? `${((totalAttended / totalHeld) * 100).toFixed(0)}%` : "100%";
+    totalHeld > 0
+      ? `${((totalAttended / totalHeld) * 100).toFixed(0)}%`
+      : "100%";
 
   // এক্সাম এভারেজ
   const examAvg =
@@ -54,7 +56,9 @@ export default function StudentCard({ student }: { student: IStudent }) {
             <h4 className="font-bold text-text text-sm truncate group-hover:text-primary transition-colors">
               {student.nameEnglish}
             </h4>
-            <p className="text-xs font-mono text-text/50">{student.rollNumber}</p>
+            <p className="text-xs font-mono text-text/50">
+              {student.rollNumber}
+            </p>
           </div>
         </div>
 
@@ -71,12 +75,17 @@ export default function StudentCard({ student }: { student: IStudent }) {
           <div className="flex justify-between items-center">
             <span className="text-text/50">Attendance</span>
             <span className="font-mono font-bold text-primary">
-              {attendanceRate} <span className="text-[10px] text-text/40 font-normal">({totalAttended}/{totalHeld})</span>
+              {attendanceRate}{" "}
+              <span className="text-[10px] text-text/40 font-normal">
+                ({totalAttended}/{totalHeld})
+              </span>
             </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-text/50">Exam Avg</span>
-            <span className="font-mono font-bold text-secondary">{examAvg}</span>
+            <span className="font-mono font-bold text-secondary">
+              {examAvg}
+            </span>
           </div>
         </div>
 

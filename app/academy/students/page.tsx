@@ -3,23 +3,23 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  ArrowLeft, 
-  Users, 
-  ArrowUpRight, 
-  MapPin, 
-  MessageSquare, 
-  Lock, 
-  Unlock, 
-  EyeOff, 
-  KeyRound, 
+import {
+  ArrowLeft,
+  Users,
+  ArrowUpRight,
+  MapPin,
+  MessageSquare,
+  Lock,
+  Unlock,
+  EyeOff,
+  KeyRound,
   X,
   Search,
   AlertTriangle,
   ArrowUpDown,
-  Filter
+  Filter,
 } from "lucide-react";
-import { academyData } from "@/data/academyData";
+import { academyData } from "@/data/academy";
 
 const ADMIN_SECRET_PIN = "8131";
 
@@ -35,7 +35,9 @@ export default function StudentsListPage() {
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("all");
-  const [sortBy, setSortBy] = useState<"roll" | "attendance-desc" | "attendance-asc" | "location">("roll");
+  const [sortBy, setSortBy] = useState<
+    "roll" | "attendance-desc" | "attendance-asc" | "location"
+  >("roll");
 
   useEffect(() => {
     const savedAdminStatus = sessionStorage.getItem("academy_admin_unlocked");
@@ -70,7 +72,8 @@ export default function StudentsListPage() {
   };
 
   // Clean phone number for exact comparison and search
-  const cleanPhone = (phone: string) => phone ? phone.replace(/[^0-9]/g, "") : "";
+  const cleanPhone = (phone: string) =>
+    phone ? phone.replace(/[^0-9]/g, "") : "";
 
   // 1. Detect duplicate phone numbers across the student list
   const duplicatePhoneNumbers = useMemo(() => {
@@ -94,7 +97,10 @@ export default function StudentsListPage() {
   }, [students]);
 
   // 3. Dynamic Attendance Calculation Helper
-  const getStudentStats = (rollNumber: string | number, enrolledCourseIds: string[]) => {
+  const getStudentStats = (
+    rollNumber: string | number,
+    enrolledCourseIds: string[],
+  ) => {
     let totalHeld = 0;
     let totalAttended = 0;
     const targetRoll = String(rollNumber).trim();
@@ -103,8 +109,8 @@ export default function StudentsListPage() {
       if (enrolledCourseIds.includes(course.courseId)) {
         const classes = course.classes ?? [];
         totalHeld += classes.length;
-        totalAttended += classes.filter((cls) => 
-          cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
+        totalAttended += classes.filter((cls) =>
+          cls.presentStudents?.some((r) => String(r).trim() === targetRoll),
         ).length;
       }
     });
@@ -123,15 +129,23 @@ export default function StudentsListPage() {
     return students
       .filter((student) => {
         const nameMatch = student.nameEnglish.toLowerCase().includes(query);
-        const rollMatch = String(student.rollNumber).toLowerCase().includes(query);
-        const phoneMatch = cleanPhone(student.whatsapp).includes(queryDigits) || student.whatsapp.toLowerCase().includes(query);
-        const locationTextMatch = student.location?.toLowerCase().includes(query);
+        const rollMatch = String(student.rollNumber)
+          .toLowerCase()
+          .includes(query);
+        const phoneMatch =
+          cleanPhone(student.whatsapp).includes(queryDigits) ||
+          student.whatsapp.toLowerCase().includes(query);
+        const locationTextMatch = student.location
+          ?.toLowerCase()
+          .includes(query);
 
-        const matchesSearch = nameMatch || rollMatch || phoneMatch || locationTextMatch;
+        const matchesSearch =
+          nameMatch || rollMatch || phoneMatch || locationTextMatch;
 
         const matchesLocation =
           selectedLocation === "all" ||
-          student.location?.trim().toLowerCase() === selectedLocation.toLowerCase();
+          student.location?.trim().toLowerCase() ===
+            selectedLocation.toLowerCase();
 
         return matchesSearch && matchesLocation;
       })
@@ -160,7 +174,6 @@ export default function StudentsListPage() {
   return (
     <div className="min-h-screen bg-background text-text py-6 sm:py-8 lg:py-10 px-3 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-        
         {/* Top Header & Admin Toggle Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -175,7 +188,8 @@ export default function StudentsListPage() {
               Enrolled Scholars Directory ({students.length})
             </h1>
             <p className="text-xs sm:text-sm text-text/50 mt-1">
-              Search by name/phone, filter duplicate numbers, location, and attendance rates
+              Search by name/phone, filter duplicate numbers, location, and
+              attendance rates
             </p>
           </div>
 
@@ -261,7 +275,9 @@ export default function StudentsListPage() {
 
         {/* Results Counter & Active Filter Strip */}
         <div className="flex justify-between items-center text-xs text-text/50 px-1">
-          <span>Showing {filteredStudents.length} of {students.length} students</span>
+          <span>
+            Showing {filteredStudents.length} of {students.length} students
+          </span>
           {(searchQuery || selectedLocation !== "all" || sortBy !== "roll") && (
             <button
               onClick={() => {
@@ -279,21 +295,31 @@ export default function StudentsListPage() {
         {/* Student Cards Grid */}
         {filteredStudents.length === 0 ? (
           <div className="p-12 text-center rounded-2xl bg-text/5 border border-text/10 space-y-2">
-            <p className="text-sm font-semibold text-text">No students found matching your criteria</p>
-            <p className="text-xs text-text/50">Try searching with a different name, phone number, or reset filters.</p>
+            <p className="text-sm font-semibold text-text">
+              No students found matching your criteria
+            </p>
+            <p className="text-xs text-text/50">
+              Try searching with a different name, phone number, or reset
+              filters.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredStudents.map((student) => {
-              const { totalHeld, totalAttended, attendanceRate } = getStudentStats(
-                student.rollNumber,
-                student.enrolledCourseIds ?? []
+              const { totalHeld, totalAttended, attendanceRate } =
+                getStudentStats(
+                  student.rollNumber,
+                  student.enrolledCourseIds ?? [],
+                );
+
+              const isDuplicateNumber = duplicatePhoneNumbers.has(
+                cleanPhone(student.whatsapp),
               );
 
-              const isDuplicateNumber = duplicatePhoneNumbers.has(cleanPhone(student.whatsapp));
-              
               // Avatar Fallback URL
-              const avatarSrc = student.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
+              const avatarSrc =
+                student.avatarUrl ||
+                `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
 
               return (
                 <div
@@ -302,8 +328,8 @@ export default function StudentsListPage() {
                 >
                   {/* Duplicate Phone Warning Badge */}
                   {isDuplicateNumber && (
-                    <div 
-                      title="Duplicate WhatsApp phone number shared with another student" 
+                    <div
+                      title="Duplicate WhatsApp phone number shared with another student"
                       className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex items-center gap-1 shadow-sm z-10"
                     >
                       <AlertTriangle className="w-3 h-3 shrink-0" />
@@ -326,8 +352,12 @@ export default function StudentsListPage() {
                       </div>
 
                       <div className="min-w-0 pr-14">
-                        <h4 className="font-bold text-text text-sm truncate">{student.nameEnglish}</h4>
-                        <p className="text-xs font-mono text-text/50">Roll: {student.rollNumber}</p>
+                        <h4 className="font-bold text-text text-sm truncate">
+                          {student.nameEnglish}
+                        </h4>
+                        <p className="text-xs font-mono text-text/50">
+                          Roll: {student.rollNumber}
+                        </p>
                       </div>
                     </div>
 
@@ -335,7 +365,9 @@ export default function StudentsListPage() {
                     <div className="space-y-1.5 text-xs text-text/50">
                       <div className="flex items-center gap-1 text-[11px] truncate">
                         <MapPin className="w-3 h-3 text-secondary shrink-0" />
-                        <span className="truncate">{student.location || "Location not set"}</span>
+                        <span className="truncate">
+                          {student.location || "Location not set"}
+                        </span>
                       </div>
 
                       {/* Conditional WhatsApp Row */}
@@ -370,7 +402,9 @@ export default function StudentsListPage() {
                     <div className="p-3 bg-text/5 rounded-xl border border-text/10 space-y-2 text-xs">
                       <div className="flex justify-between items-center">
                         <span className="text-text/50">Attendance</span>
-                        <span className="font-mono font-bold text-primary">{attendanceRate}</span>
+                        <span className="font-mono font-bold text-primary">
+                          {attendanceRate}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-text/50">Attended Sessions</span>
@@ -391,7 +425,8 @@ export default function StudentsListPage() {
                     href={`/academy/students/${student.rollNumber}`}
                     className="flex items-center justify-center gap-1 w-full py-2 bg-text/10 hover:bg-text/20 text-text/70 hover:text-text rounded-lg text-xs font-semibold transition-colors"
                   >
-                    View Profile & Attendance <ArrowUpRight className="w-3.5 h-3.5" />
+                    View Profile & Attendance{" "}
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               );
@@ -408,7 +443,9 @@ export default function StudentsListPage() {
                   <div className="p-2 bg-primary/10 text-primary rounded-lg">
                     <KeyRound className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-text text-sm sm:text-base">Admin Verification</h3>
+                  <h3 className="font-bold text-text text-sm sm:text-base">
+                    Admin Verification
+                  </h3>
                 </div>
                 <button
                   onClick={() => setShowAdminModal(false)}
@@ -419,7 +456,8 @@ export default function StudentsListPage() {
               </div>
 
               <p className="text-xs text-text/50">
-                Enter your instructor/admin passkey to reveal all scholar WhatsApp contact numbers.
+                Enter your instructor/admin passkey to reveal all scholar
+                WhatsApp contact numbers.
               </p>
 
               <form onSubmit={handleUnlockAdmin} className="space-y-3">
@@ -434,7 +472,9 @@ export default function StudentsListPage() {
                       setPinError(false);
                     }}
                     className={`w-full bg-text/5 border ${
-                      pinError ? "border-secondary focus:border-secondary" : "border-text/10 focus:border-primary"
+                      pinError
+                        ? "border-secondary focus:border-secondary"
+                        : "border-text/10 focus:border-primary"
                     } rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-text focus:outline-none font-mono text-center tracking-widest transition-colors`}
                   />
                   {pinError && (
@@ -463,7 +503,6 @@ export default function StudentsListPage() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

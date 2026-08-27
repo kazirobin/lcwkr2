@@ -14,7 +14,7 @@ import {
   Sparkles,
   ArrowRight
 } from "lucide-react";
-import { academyData } from "@/data/academyData";
+import { academyData } from "@/data/academy";
 
 const TARGET_WHATSAPP_NUMBER = "8801787881334";
 
@@ -36,16 +36,19 @@ export default function CreateClassSessionPage() {
   // Attendance State
   const [presentRolls, setPresentRolls] = useState<(string | number)[]>([]);
 
+  // ১. সিলেক্টেড কোর্সের এনরোল্ড স্টুডেন্ট লিস্ট
   const enrolledStudents = useMemo(() => {
     return students.filter((s) => s.enrolledCourseIds?.includes(selectedCourseId));
   }, [students, selectedCourseId]);
 
+  // কোর্স পরিবর্তনের সাথে সাথে ডিফল্টভাবে সবাইকে উপস্থিত রাখা
   const handleCourseChange = (cId: string) => {
     setSelectedCourseId(cId);
     const enrolled = students.filter((s) => s.enrolledCourseIds?.includes(cId));
     setPresentRolls(enrolled.map((s) => s.rollNumber));
   };
 
+  // স্টুডেন্ট উপস্থিতি টগল
   const toggleAttendance = (roll: string | number) => {
     setPresentRolls((prev) =>
       prev.some((r) => String(r) === String(roll))
@@ -65,6 +68,7 @@ export default function CreateClassSessionPage() {
     const paddedIndex = nextClassIndex < 10 ? `0${nextClassIndex}` : nextClassIndex;
     const generatedClassId = `CLS-${selectedCourseId.replace("-", "")}-${paddedIndex}`;
 
+    // অনুপস্থিত স্টুডেন্টদের তালিকা নির্ণয়
     const absentRolls = enrolledStudents
       .map((s) => s.rollNumber)
       .filter((roll) => !presentRolls.some((r) => String(r) === String(roll)));
@@ -72,7 +76,7 @@ export default function CreateClassSessionPage() {
     // রেঞ্জ সামারি স্ট্রিং তৈরি
     const summaryText = `Lesson ${fromLesson} Text ${fromText} to Lesson ${toLesson} Text ${toText}`;
 
-    // ১. সংশোধিত ক্লিন ক্লাস অবজেক্ট
+    // ১. কমপ্লিট ক্লাস অবজেক্ট তৈরি
     const classSessionObject = {
       classId: generatedClassId,
       date,
@@ -89,7 +93,7 @@ export default function CreateClassSessionPage() {
       absentStudents: absentRolls,
     };
 
-    // ২. WhatsApp মেসেজ ফরম্যাট
+    // ২. WhatsApp মেসেজ পেলোড
     const message = `*📚 New Class Session Logged*\n\n` +
       `*Course:* ${selectedCourseId} (${selectedCourse?.courseName || ""})\n` +
       `*Class ID:* ${classSessionObject.classId}\n` +
@@ -189,13 +193,12 @@ export default function CreateClassSessionPage() {
             </div>
           </div>
 
-          {/* 2. Dynamic Curriculum Progression (From -> To Range) */}
+          {/* 2. Dynamic Content Covered Range */}
           <div className="space-y-4 pt-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-text/70 flex items-center gap-1.5 border-b border-text/10 pb-2">
               <Layers className="w-4 h-4 text-primary" /> 2. Content Covered Range
             </h3>
 
-            {/* Range Selectors Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
               {/* Start Point */}
@@ -266,7 +269,7 @@ export default function CreateClassSessionPage() {
             </div>
           </div>
 
-          {/* 3. Attendance Section */}
+          {/* 3. Student Attendance Section */}
           <div className="space-y-3 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-text/10 pb-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-text/70 flex items-center gap-1.5">
@@ -276,7 +279,7 @@ export default function CreateClassSessionPage() {
                 <button
                   type="button"
                   onClick={markAllPresent}
-                  className="text-[11px] font-semibold text-primary hover:underline"
+                  className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
                 >
                   Mark All Present
                 </button>
@@ -284,7 +287,7 @@ export default function CreateClassSessionPage() {
                 <button
                   type="button"
                   onClick={markAllAbsent}
-                  className="text-[11px] font-semibold text-secondary hover:underline"
+                  className="text-[11px] font-semibold text-secondary hover:underline cursor-pointer"
                 >
                   Clear All
                 </button>
@@ -303,7 +306,7 @@ export default function CreateClassSessionPage() {
                       key={String(s.rollNumber)}
                       type="button"
                       onClick={() => toggleAttendance(s.rollNumber)}
-                      className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all ${
+                      className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
                         isPresent
                           ? "bg-primary/10 border-primary/40 text-text shadow-sm"
                           : "bg-background/60 border-text/10 text-text/40 hover:border-text/20"
@@ -330,7 +333,7 @@ export default function CreateClassSessionPage() {
           {/* Submit Action */}
           <button
             type="submit"
-            className="w-full py-3.5 px-6 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-bold text-sm shadow-lg shadow-secondary/25 transition-all flex items-center justify-center gap-2 active:scale-[0.99] mt-6"
+            className="w-full py-3.5 px-6 rounded-2xl bg-secondary hover:bg-secondary/90 text-white font-bold text-sm shadow-lg shadow-secondary/25 transition-all flex items-center justify-center gap-2 active:scale-[0.99] mt-6 cursor-pointer"
           >
             <Send className="w-4 h-4" /> Send Class Session to WhatsApp
           </button>
