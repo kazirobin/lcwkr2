@@ -524,5 +524,21 @@ export const academyData: IAcademyData = {
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
     },
+{
+      rollNumber: "43",
+      nameEnglish: "Md Shazzad Hossain",
+      whatsapp: "+8801312430659",
+      location: "Dhanmondi , Dhaka",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
+{
+      rollNumber: "44",
+      nameEnglish: "Tahmid Shahriyar Manik",
+      whatsapp: "+88016739998132",
+      location: "Lalbagh, Dhaka",
+      avatarUrl: "https://example.com/avatars/stu006.png",
+      enrolledCourseIds: ["HSK-101"]
+    },
   ] ,
 };
