@@ -361,4 +361,14 @@ export const studentsData: IStudent[] = [
     avatarUrl: "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
     enrolledCourseIds: ["HSK-101"],
   },
+  {
+  "rollNumber": "46",
+  "nameEnglish": "小平 Nayem",
+  "whatsapp": "+8801861532280",
+  "location": "Cumilla",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-201"
+  ]
+}
 ];
