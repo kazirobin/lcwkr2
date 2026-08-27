@@ -151,7 +151,7 @@ export const studentsData: IStudent[] = [
     whatsapp: "+8801978859009",
     location: "Gazipur, Bangladesh",
     avatarUrl: "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
-    enrolledCourseIds: ["HSK-101"],
+    enrolledCourseIds: ["HSK-201"],
   },
   {
     rollNumber: 20,
@@ -335,7 +335,7 @@ export const studentsData: IStudent[] = [
     whatsapp: "+8801521751608",
     location: "Chapainawabganj",
     avatarUrl: "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
-    enrolledCourseIds: ["HSK-101"],
+    enrolledCourseIds: ["HSK-201"],
   },
   {
     rollNumber: 43,
