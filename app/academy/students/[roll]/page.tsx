@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   ArrowLeft, 
   BookOpen, 
@@ -85,6 +86,7 @@ export default function StudentDetailPage() {
   }
 
   const targetRoll = String(student.rollNumber).trim();
+  const avatarSrc = student.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
 
   // Calculate dynamic attendance from course classes
   const getCourseAttendanceStats = (courseId: string) => {
@@ -181,12 +183,21 @@ export default function StudentDetailPage() {
           )}
         </div>
 
-        {/* Identity Hero */}
+        {/* Identity Hero with Student Avatar */}
         <div className="p-4 sm:p-6 lg:p-7 rounded-2xl bg-gradient-to-r from-secondary/10 via-background/80 to-primary/10 border border-text/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-3.5 sm:gap-5">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center font-mono text-xl sm:text-2xl font-bold text-white shadow-xl shrink-0">
-              {student.nameEnglish.charAt(0)}
+            {/* Student Avatar Image */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-secondary/20 via-background to-primary/20 p-0.5 border border-text/10 shadow-xl shrink-0 overflow-hidden flex items-center justify-center">
+              <Image
+                src={avatarSrc}
+                alt={student.nameEnglish}
+                width={80}
+                height={80}
+                className="w-full h-full object-cover rounded-2xl"
+                unoptimized
+              />
             </div>
+
             <div className="min-w-0">
               <span className="font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 inline-block">
                 Roll: {student.rollNumber}
@@ -198,7 +209,7 @@ export default function StudentDetailPage() {
               {/* Location & Protected WhatsApp Row */}
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-text/70">
                 <span className="inline-flex items-center gap-1 bg-text/5 px-2 py-0.5 rounded border border-text/10">
-                  <MapPin className="w-3 h-3 text-secondary shrink-0" /> {student.location}
+                  <MapPin className="w-3 h-3 text-secondary shrink-0" /> {student.location || "Location not set"}
                 </span>
 
                 {/* Conditional WhatsApp Display */}
@@ -305,7 +316,7 @@ export default function StudentDetailPage() {
                                 <div className="space-y-0.5 min-w-0">
                                   <span className="font-mono text-text/40 text-[10px] sm:text-[11px] block truncate">{cls.classId} • {cls.date}</span>
                                   <span className="text-text/70 font-medium text-xs sm:text-sm line-clamp-1">
-                                    {cls.contentCovered?.[0]?.lessonTitle || "Class Session"}
+                                    {cls.contentCovered?.summary || "Class Session"}
                                   </span>
                                 </div>
                                 <div className="self-start xs:self-auto shrink-0">
@@ -414,7 +425,7 @@ export default function StudentDetailPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Admin Passcode (e.g. 1234)"
+                    placeholder="Enter Admin Passcode (e.g. 8131)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);

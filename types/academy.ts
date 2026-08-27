@@ -1,15 +1,9 @@
-export interface ICoveredText {
-  textNumber: number;
-  title: string;
-  type: "Dialogue" | "Reading" | "Grammar" | "Vocabulary";
-}
-
 export interface IContentCovered {
-  lessonNumber: number;
-  lessonTitle: string;
-  totalTextsInLesson: number;
-  coveredTexts: ICoveredText[];
-  lessonProgress: string;
+  summary: string;
+  fromLesson: number;
+  fromText: number;
+  toLesson: number;
+  toText: number;
 }
 
 export interface IClassSession {
@@ -17,7 +11,7 @@ export interface IClassSession {
   date: string;
   time: string;
   status: "Scheduled" | "Completed" | "Cancelled";
-  contentCovered: IContentCovered[];
+  contentCovered: IContentCovered;
   presentStudents: (string | number)[];
   absentStudents: (string | number)[];
 }

@@ -5,7 +5,9 @@ import {
   Users, 
   ArrowUpRight, 
   MapPin, 
-  CheckCircle2
+  CheckCircle2,
+  UserPlus,
+  PlusCircle
 } from "lucide-react";
 import { academyData } from "@/data/academyData";
 
@@ -45,7 +47,7 @@ export default function AcademyMainPage() {
     <div className="min-h-screen bg-background text-text py-6 sm:py-10 px-3 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Minimal Header Strip */}
+        {/* Minimal Header Strip with Action Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-5">
           <div>
             <div className="flex items-center gap-2 mb-1 text-xs font-mono">
@@ -59,7 +61,19 @@ export default function AcademyMainPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/academy/class"
+              className="px-3.5 py-1.5 bg-secondary hover:bg-secondary/90 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-secondary/20"
+            >
+              <PlusCircle className="w-3.5 h-3.5" /> Log Class
+            </Link>
+            <Link
+              href="/academy/register"
+              className="px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-background font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-primary/20"
+            >
+              <UserPlus className="w-3.5 h-3.5" /> Register
+            </Link>
             <Link
               href="/academy/courses"
               className="px-3.5 py-1.5 bg-text/5 hover:bg-text/10 border border-text/10 rounded-lg text-xs font-medium transition-colors"
@@ -102,9 +116,14 @@ export default function AcademyMainPage() {
               <BookOpen className="w-4 h-4 text-secondary" />
               Active Mandarin Cohorts
             </h2>
-            <Link href="/academy/courses" className="text-xs text-secondary hover:underline">
-              View All Courses &rarr;
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/academy/classes/create" className="text-xs text-secondary font-semibold hover:underline flex items-center gap-1">
+                <PlusCircle className="w-3.5 h-3.5" /> Log Session
+              </Link>
+              <Link href="/academy/courses" className="text-xs text-text/60 hover:text-text hover:underline">
+                View All Courses &rarr;
+              </Link>
+            </div>
           </div>
 
           <div className="border border-text/10 rounded-xl overflow-hidden bg-text/[0.01]">
@@ -177,9 +196,14 @@ export default function AcademyMainPage() {
               <Users className="w-4 h-4 text-primary" />
               Enrolled Students Directory
             </h2>
-            <Link href="/academy/students" className="text-xs text-primary hover:underline">
-              View All Students &rarr;
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/academy/register" className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+                <UserPlus className="w-3.5 h-3.5" /> New Registration
+              </Link>
+              <Link href="/academy/students" className="text-xs text-secondary hover:underline">
+                View All Students &rarr;
+              </Link>
+            </div>
           </div>
 
           <div className="border border-text/10 rounded-xl overflow-hidden bg-text/[0.01]">

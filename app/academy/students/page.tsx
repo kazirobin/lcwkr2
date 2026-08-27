@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   ArrowLeft, 
   Users, 
@@ -121,18 +122,13 @@ export default function StudentsListPage() {
 
     return students
       .filter((student) => {
-        // Name Search
         const nameMatch = student.nameEnglish.toLowerCase().includes(query);
-        // Roll Search
         const rollMatch = String(student.rollNumber).toLowerCase().includes(query);
-        // Phone Search (by raw text or digit matching)
         const phoneMatch = cleanPhone(student.whatsapp).includes(queryDigits) || student.whatsapp.toLowerCase().includes(query);
-        // Location text search
         const locationTextMatch = student.location?.toLowerCase().includes(query);
 
         const matchesSearch = nameMatch || rollMatch || phoneMatch || locationTextMatch;
 
-        // Location dropdown filter
         const matchesLocation =
           selectedLocation === "all" ||
           student.location?.trim().toLowerCase() === selectedLocation.toLowerCase();
@@ -152,7 +148,6 @@ export default function StudentsListPage() {
         if (sortBy === "location") {
           return (a.location || "").localeCompare(b.location || "");
         }
-        // Default: Sort by Roll Number numerically if possible
         const numA = parseInt(String(a.rollNumber).replace(/\D/g, ""), 10);
         const numB = parseInt(String(b.rollNumber).replace(/\D/g, ""), 10);
         if (!isNaN(numA) && !isNaN(numB)) {
@@ -212,7 +207,6 @@ export default function StudentsListPage() {
 
         {/* Search, Filter & Sort Control Bar */}
         <div className="p-4 rounded-2xl bg-text/5 border border-text/10 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3 transition-colors">
-          {/* Search Input (Name & Mobile) */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-text/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -232,7 +226,6 @@ export default function StudentsListPage() {
             )}
           </div>
 
-          {/* Location Filter Dropdown */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:w-48">
               <Filter className="w-3.5 h-3.5 text-text/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -250,7 +243,6 @@ export default function StudentsListPage() {
               </select>
             </div>
 
-            {/* Attendance & Location Sorter */}
             <div className="relative flex-1 sm:w-48">
               <ArrowUpDown className="w-3.5 h-3.5 text-text/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
@@ -299,6 +291,9 @@ export default function StudentsListPage() {
               );
 
               const isDuplicateNumber = duplicatePhoneNumbers.has(cleanPhone(student.whatsapp));
+              
+              // Avatar Fallback URL
+              const avatarSrc = student.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
 
               return (
                 <div
@@ -309,7 +304,7 @@ export default function StudentsListPage() {
                   {isDuplicateNumber && (
                     <div 
                       title="Duplicate WhatsApp phone number shared with another student" 
-                      className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex items-center gap-1 shadow-sm"
+                      className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex items-center gap-1 shadow-sm z-10"
                     >
                       <AlertTriangle className="w-3 h-3 shrink-0" />
                       <span>Same Mobile</span>
@@ -318,10 +313,19 @@ export default function StudentsListPage() {
 
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
-                        {student.nameEnglish.charAt(0)}
+                      {/* Avatar Display */}
+                      <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-secondary/20 via-background to-primary/20 p-0.5 border border-text/10 shadow-md shrink-0 overflow-hidden flex items-center justify-center">
+                        <Image
+                          src={avatarSrc}
+                          alt={student.nameEnglish}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-cover rounded-2xl"
+                          unoptimized
+                        />
                       </div>
-                      <div className="min-w-0 pr-16">
+
+                      <div className="min-w-0 pr-14">
                         <h4 className="font-bold text-text text-sm truncate">{student.nameEnglish}</h4>
                         <p className="text-xs font-mono text-text/50">Roll: {student.rollNumber}</p>
                       </div>
@@ -423,7 +427,7 @@ export default function StudentsListPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Passcode (e.g. 1234)"
+                    placeholder="Enter Passcode (e.g. 8131)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);
