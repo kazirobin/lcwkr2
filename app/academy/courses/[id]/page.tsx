@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   Clock,
@@ -11,6 +12,7 @@ import {
   CheckCircle2,
   XCircle,
   Users,
+  MapPin,
 } from "lucide-react";
 import { academyData } from "@/data/academy";
 
@@ -21,10 +23,15 @@ export default function CourseDetailPage() {
 
   const course = academyData.courses.find((c) => c.courseId === courseId);
 
-  // String / Number উভয়ের জন্যই সেফ স্টুডেন্ট লুকআপ
+  // ১. সরাসরি students ডাটা থেকে এই কোর্সে এনরোল্ড শিক্ষার্থীদের ফিল্টার করা
+  const enrolledStudents = academyData.students.filter((s) =>
+    s.enrolledCourseIds?.includes(courseId)
+  );
+
+  // সেফ স্টুডেন্ট লুকআপ হেল্পার
   const getStudent = (roll: string | number) => {
     return academyData.students.find(
-      (s) => String(s.rollNumber).trim() === String(roll).trim(),
+      (s) => String(s.rollNumber).trim() === String(roll).trim()
     );
   };
 
@@ -83,7 +90,7 @@ export default function CourseDetailPage() {
                 Enrolled
               </span>
               <span className="text-sm font-bold font-mono text-text">
-                {course.enrolledStudentRolls?.length ?? 0}
+                {enrolledStudents.length}
               </span>
             </div>
             <div className="border-l border-text/10 pl-4">
@@ -92,7 +99,7 @@ export default function CourseDetailPage() {
               </span>
               <span className="text-sm font-bold font-mono text-secondary">
                 {Math.round(
-                  (completedClasses.length / course.totalClassesPlanned) * 100,
+                  (completedClasses.length / course.totalClassesPlanned) * 100
                 )}
                 %
               </span>
@@ -100,11 +107,74 @@ export default function CourseDetailPage() {
           </div>
         </div>
 
-        {/* Class Logs */}
+        {/* 🎓 Enrolled Scholars Section (Directly from students data) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-text flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" /> Enrolled Scholars (
+              {enrolledStudents.length})
+            </h2>
+            <Link
+              href="/academy/students"
+              className="text-xs text-secondary hover:underline"
+            >
+              All Students Directory &rarr;
+            </Link>
+          </div>
+
+          {enrolledStudents.length === 0 ? (
+            <p className="text-xs text-text/40 p-4 rounded-xl border border-text/10 bg-text/5">
+              No scholars enrolled in this cohort yet.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {enrolledStudents.map((student) => {
+                const avatarSrc =
+                  student.avatarUrl ||
+                  `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(
+                    student.nameEnglish
+                  )}`;
+
+                return (
+                  <Link
+                    key={String(student.rollNumber)}
+                    href={`/academy/students/${student.rollNumber}`}
+                    className="p-3 rounded-xl bg-text/5 hover:bg-text/10 border border-text/10 hover:border-primary/40 transition-all flex items-center justify-between gap-2.5 group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl overflow-hidden bg-background border border-text/10 shrink-0 flex items-center justify-center">
+                        <Image
+                          src={avatarSrc}
+                          alt={student.nameEnglish}
+                          width={36}
+                          height={36}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-text truncate group-hover:text-primary transition-colors">
+                          {student.nameEnglish}
+                        </p>
+                        <span className="text-[10px] font-mono text-text/40 block">
+                          Roll: {student.rollNumber}
+                        </span>
+                      </div>
+                    </div>
+
+                    <ArrowUpRight className="w-3.5 h-3.5 text-text/30 group-hover:text-primary transition-colors shrink-0" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 🕒 Class Logs */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-text flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" /> Completed Class Sessions
-            ({completedClasses.length})
+            <Clock className="w-5 h-5 text-primary" /> Completed Class Sessions (
+            {completedClasses.length})
           </h2>
 
           {completedClasses.length === 0 ? (
@@ -121,7 +191,7 @@ export default function CourseDetailPage() {
                 const attendancePct =
                   totalStudentsInClass > 0
                     ? Math.round(
-                        (presentList.length / totalStudentsInClass) * 100,
+                        (presentList.length / totalStudentsInClass) * 100
                       )
                     : 100;
 
@@ -177,7 +247,7 @@ export default function CourseDetailPage() {
                       )}
                     </div>
 
-                    {/* Attendance Summary Ribbon & Statistics */}
+                    {/* Attendance Statistics */}
                     <div className="grid grid-cols-3 gap-2 text-center py-1">
                       <div className="p-2.5 rounded-xl bg-background border border-text/10">
                         <span className="text-[10px] text-text/50 uppercase font-mono block">
@@ -193,8 +263,7 @@ export default function CourseDetailPage() {
                           Absent
                         </span>
                         <span className="text-sm sm:text-base font-bold font-mono text-secondary flex items-center justify-center gap-1 mt-0.5">
-                          <XCircle className="w-3.5 h-3.5" />{" "}
-                          {absentList.length}
+                          <XCircle className="w-3.5 h-3.5" /> {absentList.length}
                         </span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-background border border-text/10">
@@ -207,9 +276,9 @@ export default function CourseDetailPage() {
                       </div>
                     </div>
 
-                    {/* Detailed Scholar Breakdown Lists */}
+                    {/* Scholar Attendance Badges */}
                     <div className="space-y-3 pt-2 border-t border-text/10">
-                      {/* Present Students List */}
+                      {/* Present Scholars */}
                       <div>
                         <span className="text-xs font-semibold text-text/60 flex items-center gap-1 mb-2">
                           <CheckCircle2 className="w-3.5 h-3.5 text-primary" />{" "}
@@ -244,7 +313,7 @@ export default function CourseDetailPage() {
                         </div>
                       </div>
 
-                      {/* Absent Students List */}
+                      {/* Absent Scholars */}
                       {absentList.length > 0 && (
                         <div>
                           <span className="text-xs font-semibold text-text/60 flex items-center gap-1 mb-2">
@@ -282,7 +351,7 @@ export default function CourseDetailPage() {
           )}
         </div>
 
-        {/* Weekend Exams */}
+        {/* 🏆 Weekend Exams */}
         {weekendExams.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-text flex items-center gap-2">
