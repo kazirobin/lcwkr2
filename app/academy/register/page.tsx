@@ -16,7 +16,8 @@ import {
   AlertCircle, 
   Clock, 
   Calendar, 
-  ArrowRight 
+  ArrowRight,
+  Globe
 } from "lucide-react";
 import { academyData } from "@/data/academy";
 
@@ -27,11 +28,22 @@ const AVATARS = {
   woman: "https://api.dicebear.com/10.x/adventurer/svg?seed=Aneka",
 };
 
+// আন্তর্জাতিক ডায়ালিং কান্ট্রি কোড লিস্ট
+const COUNTRY_CODES = [
+  { code: "+880", country: "Bangladesh", flag: "🇧🇩", minDigits: 10 },
+  { code: "+86", country: "China", flag: "🇨🇳", minDigits: 11 },
+  { code: "+91", country: "India", flag: "🇮🇳", minDigits: 10 },
+  { code: "+1", country: "USA / Canada", flag: "🇺🇸", minDigits: 10 },
+  { code: "+44", country: "UK", flag: "🇬🇧", minDigits: 10 },
+  { code: "+971", country: "UAE", flag: "🇦🇪", minDigits: 9 },
+  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦", minDigits: 9 },
+  { code: "+60", country: "Malaysia", flag: "🇲🇾", minDigits: 9 },
+];
+
 export default function StudentRegistrationPage() {
   const router = useRouter();
   const { courses, students } = academyData;
 
-  // শুধুমাত্র "Coming Soon" স্ট্যাটাসযুক্ত কোর্স ফিল্টার
   const comingSoonCourses = useMemo(() => {
     return courses.filter((c) => c.status === "Coming Soon");
   }, [courses]);
@@ -40,6 +52,7 @@ export default function StudentRegistrationPage() {
 
   // Form States
   const [name, setName] = useState("");
+  const [countryCode, setCountryCode] = useState("+880"); // ডিফল্ট বাংলাদেশ
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [gender, setGender] = useState<"man" | "woman">("man");
@@ -47,14 +60,12 @@ export default function StudentRegistrationPage() {
   const [phoneError, setPhoneError] = useState("");
   const [countdown, setCountdown] = useState(20);
 
-  // প্রথম কামিং সুন কোর্সটিকে ডিফল্ট সিলেক্ট করা
   useEffect(() => {
     if (comingSoonCourses.length > 0 && !selectedCourseId) {
       setSelectedCourseId(comingSoonCourses[0].courseId);
     }
   }, [comingSoonCourses, selectedCourseId]);
 
-  // কামিং সুন কোর্স না থাকলে ২০ সেকেন্ড পর হোমপেজে রিডাইরেক্ট
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (!isRegistrationAvailable) {
@@ -74,14 +85,17 @@ export default function StudentRegistrationPage() {
 
   const nextRollNumber = students.length + 1;
 
+  // ফোন ইনপুট হ্যান্ডলার
   const handlePhoneChange = (val: string) => {
-    const digitsOnly = val.replace(/\D/g, "").slice(0, 11);
+    // শুধু ডিজিট রাখা
+    const digitsOnly = val.replace(/\D/g, "");
     setPhone(digitsOnly);
 
-    if (digitsOnly.length > 0 && !digitsOnly.startsWith("01")) {
-      setPhoneError("Phone number must start with 01 (e.g. 017...)");
-    } else if (digitsOnly.length > 0 && digitsOnly.length < 11) {
-      setPhoneError(`Enter full 11 digits (${digitsOnly.length}/11)`);
+    const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode);
+    const minDigits = selectedCountry?.minDigits || 8;
+
+    if (digitsOnly.length > 0 && digitsOnly.length < minDigits) {
+      setPhoneError(`Number should be at least ${minDigits} digits`);
     } else {
       setPhoneError("");
     }
@@ -90,8 +104,17 @@ export default function StudentRegistrationPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (phone.length !== 11 || !phone.startsWith("01")) {
-      setPhoneError("Please enter a valid 11-digit number starting with 01");
+    const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode);
+    const minDigits = selectedCountry?.minDigits || 8;
+
+    // বাংলাদেশের জন্য শুরুর ০ বাদ দেওয়া (যেমন 017... হলে +88017...)
+    let cleanedLocalNumber = phone.replace(/\D/g, "");
+    if (countryCode === "+880" && cleanedLocalNumber.startsWith("0")) {
+      cleanedLocalNumber = cleanedLocalNumber.slice(1);
+    }
+
+    if (cleanedLocalNumber.length < minDigits - (countryCode === "+880" ? 1 : 0)) {
+      setPhoneError("Please enter a valid complete phone number");
       return;
     }
 
@@ -100,12 +123,12 @@ export default function StudentRegistrationPage() {
       return;
     }
 
-    const formattedPhone = `+88${phone}`;
+    const fullInternationalPhone = `${countryCode}${cleanedLocalNumber}`;
 
     const studentObject = {
       rollNumber: nextRollNumber,
       nameEnglish: name.trim(),
-      whatsapp: formattedPhone,
+      whatsapp: fullInternationalPhone,
       location: location.trim(),
       avatarUrl: AVATARS[gender],
       enrolledCourseIds: [selectedCourseId],
@@ -141,11 +164,11 @@ export default function StudentRegistrationPage() {
             Scholar Registration
           </h1>
           <p className="text-xs sm:text-sm text-text/50 mt-1">
-            Enroll for upcoming batches. Running courses are currently closed for admission.
+            Enroll for upcoming cohorts. Running tracks are currently closed for admission.
           </p>
         </div>
 
-        {/* 1. Registration Form (Visible when Coming Soon courses exist) */}
+        {/* 1. Registration Form */}
         {isRegistrationAvailable ? (
           <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-3xl bg-text/5 border border-text/10 space-y-6 shadow-xl backdrop-blur-sm">
             
@@ -164,26 +187,45 @@ export default function StudentRegistrationPage() {
               />
             </div>
 
-            {/* WhatsApp Number */}
+            {/* International WhatsApp Number */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-text/70 flex items-center gap-1.5">
-                <Phone className="w-4 h-4 text-primary" /> WhatsApp Number (11 Digits)
+                <Phone className="w-4 h-4 text-primary" /> WhatsApp Number
               </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-mono text-text/40 font-semibold">
-                  +88
-                </span>
+              
+              <div className="flex gap-2">
+                {/* Country Code Dropdown */}
+                <div className="relative shrink-0">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => {
+                      setCountryCode(e.target.value);
+                      setPhoneError("");
+                    }}
+                    className="h-full bg-background border border-text/10 rounded-2xl pl-3 pr-7 py-3 text-xs sm:text-sm text-text font-mono font-bold focus:outline-none focus:border-primary appearance-none cursor-pointer"
+                  >
+                    {COUNTRY_CODES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.code}
+                      </option>
+                    ))}
+                  </select>
+                  <Globe className="w-3.5 h-3.5 text-text/40 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* Local Phone Input */}
                 <input
                   type="tel"
                   required
-                  placeholder="01XXXXXXXXX"
+                  placeholder="WhatsApp number"
                   value={phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
                   className={`w-full bg-background border ${
                     phoneError ? "border-secondary focus:border-secondary" : "border-text/10 focus:border-primary"
-                  } rounded-2xl pl-14 pr-4 py-3 text-sm text-text font-mono placeholder:text-text/30 focus:outline-none transition-colors`}
+                  } rounded-2xl px-4 py-3 text-sm text-text font-mono placeholder:text-text/30 focus:outline-none transition-colors`}
                 />
               </div>
+
               {phoneError && (
                 <span className="text-xs text-secondary font-medium block">
                   {phoneError}
@@ -199,7 +241,7 @@ export default function StudentRegistrationPage() {
               <input
                 type="text"
                 required
-                placeholder="e.g. Dhanmondi, Dhaka"
+                placeholder="e.g. Dhaka, Bangladesh / Nanchang, China"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full bg-background border border-text/10 rounded-2xl px-4 py-3 text-sm text-text placeholder:text-text/30 focus:outline-none focus:border-primary transition-colors"
@@ -260,7 +302,7 @@ export default function StudentRegistrationPage() {
               </div>
             </div>
 
-            {/* Single Course Selection (Coming Soon Only) */}
+            {/* Single Course Selection */}
             <div className="space-y-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-text/70 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-primary" /> Select Available Course (Single Select)
@@ -307,7 +349,7 @@ export default function StudentRegistrationPage() {
           </form>
         ) : null}
 
-        {/* 2. Fullscreen Popup Modal (When No Coming Soon Course Exists) */}
+        {/* 2. Fullscreen Popup Modal When No "Coming Soon" Course Exists */}
         {!isRegistrationAvailable && (
           <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-background border border-text/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
