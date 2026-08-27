@@ -535,7 +535,7 @@ export const academyData: IAcademyData = {
 {
       rollNumber: "44",
       nameEnglish: "Tahmid Shahriyar Manik",
-      whatsapp: "+88016739998132",
+      whatsapp: "+8801673999812",
       location: "Lalbagh, Dhaka",
       avatarUrl: "https://example.com/avatars/stu006.png",
       enrolledCourseIds: ["HSK-101"]
