@@ -1,0 +1,101 @@
+import { ICourse } from "@/types/academy";
+
+export const hsk101Course: ICourse = {
+  courseId: "HSK-101",
+  courseName: "Beginner Chinese (HSK 1)",
+  targetLevel: "HSK 1",
+  totalLessons: 15,
+  totalClassesPlanned: 24,
+  completedClassesCount: 3,
+  enrolledStudentRolls: [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+    39, 40, 41, 42, 43, 44, 45,
+  ],
+  classes: [
+    {
+      classId: "CLS-HSK101-01",
+      date: "2026-08-01",
+      time: "09:00 PM - 10:10 PM",
+      status: "Completed",
+      contentCovered: {
+        summary: "Lesson 1 Text 1 to Lesson 1 Text 2",
+        fromLesson: 1,
+        fromText: 1,
+        toLesson: 1,
+        toText: 2,
+      },
+      presentStudents: [1, 2, 3, 4],
+      absentStudents: [5, 6],
+    },
+    {
+      classId: "CLS-HSK101-02",
+      date: "2026-08-03",
+      time: "05:00 PM - 06:30 PM",
+      status: "Completed",
+      contentCovered: {
+        summary: "Lesson 1 Text 3 to Lesson 1 Text 4",
+        fromLesson: 1,
+        fromText: 3,
+        toLesson: 1,
+        toText: 4,
+      },
+      presentStudents: [1, 2, 4, 8],
+      absentStudents: [3],
+    },
+    {
+      classId: "CLS-HSK101-03",
+      date: "2026-08-05",
+      time: "05:00 PM - 06:30 PM",
+      status: "Completed",
+      contentCovered: {
+        summary: "Lesson 1 Text 4 to Lesson 2 Text 1",
+        fromLesson: 1,
+        fromText: 4,
+        toLesson: 2,
+        toText: 1,
+      },
+      presentStudents: [1, 2, 4],
+      absentStudents: [3],
+    },
+  ],
+  weekendExams: [
+    {
+      examId: "EXAM-HSK101-W1",
+      examTitle: "Weekend Assessment 1 (Lesson 1-2)",
+      date: "2026-08-07",
+      totalMarks: 100,
+      passMarks: 60,
+      results: [
+        {
+          rollNumber: 1,
+          attended: true,
+          score: 96,
+          grade: "A+",
+          remarks: "Excellent character strokes",
+        },
+        {
+          rollNumber: 2,
+          attended: true,
+          score: 84,
+          grade: "B+",
+          remarks: "Good vocabulary recall",
+        },
+        {
+          rollNumber: 3,
+          attended: false,
+          score: 0,
+          grade: "F",
+          remarks: "Absent",
+        },
+        {
+          rollNumber: 4,
+          attended: true,
+          score: 78,
+          grade: "B",
+          remarks: "Need more tone practice",
+        },
+      ],
+    },
+  ],
+};
