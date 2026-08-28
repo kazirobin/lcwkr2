@@ -19,6 +19,8 @@ import {
   ArrowUpDown,
   Filter,
   XCircle,
+  Copy,
+  Check,
 } from "lucide-react";
 import { academyData } from "@/data/academy";
 
@@ -32,6 +34,9 @@ export default function StudentsListPage() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [enteredPin, setEnteredPin] = useState("");
   const [pinError, setPinError] = useState(false);
+
+  // Copy state for feedback
+  const [copiedRoll, setCopiedRoll] = useState<string | number | null>(null);
 
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,6 +80,15 @@ export default function StudentsListPage() {
 
   const cleanPhone = (phone: string) =>
     phone ? phone.replace(/[^0-9]/g, "") : "";
+
+  // ক্লিপবোর্ডে কপি করার ফাংশন
+  const handleCopyNumber = (phone: string, roll: string | number) => {
+    navigator.clipboard.writeText(phone);
+    setCopiedRoll(roll);
+    setTimeout(() => {
+      setCopiedRoll(null);
+    }, 2000);
+  };
 
   // 1. Detect duplicate phone numbers across the student list
   const duplicatePhoneNumbers = useMemo(() => {
@@ -340,6 +354,8 @@ export default function StudentsListPage() {
                 student.avatarUrl ||
                 `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
 
+              const isCopied = copiedRoll === student.rollNumber;
+
               return (
                 <div
                   key={String(student.rollNumber)}
@@ -358,7 +374,7 @@ export default function StudentsListPage() {
                       </span>
                     )}
 
-                    {/* ডুপ্লিকেট ফোন নম্বর ওয়ার্নিং ব্যাজ */}
+                    {/* ডুপ্লিকেট ফোন নম্বর ওয়ার্নিং ব্যাজ */}
                     {isDuplicateNumber && (
                       <span
                         title="Duplicate WhatsApp phone number shared with another student"
@@ -403,18 +419,40 @@ export default function StudentsListPage() {
                         </span>
                       </div>
 
-                      {/* Conditional WhatsApp Row */}
-                      <div>
+                      {/* WhatsApp Row with Click to Chat & Copy Action */}
+                      <div className="flex items-center justify-between gap-2">
                         {isAdminUnlocked ? (
-                          <a
-                            href={`https://wa.me/${cleanPhone(student.whatsapp)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors font-mono"
-                          >
-                            <MessageSquare className="w-3 h-3 shrink-0" />
-                            <span>{student.whatsapp}</span>
-                          </a>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {/* ১. নাম্বারে ক্লিক করলে সরাসরি হোয়াটসঅ্যাপ চ্যাটে যাবে */}
+                            <a
+                              href={`https://wa.me/${cleanPhone(student.whatsapp)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors font-mono truncate"
+                              title="Click to Chat on WhatsApp"
+                            >
+                              <MessageSquare className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{student.whatsapp}</span>
+                            </a>
+
+                            {/* ২. পাশে কপি বাটন */}
+                            <button
+                              type="button"
+                              onClick={() => handleCopyNumber(student.whatsapp, student.rollNumber)}
+                              className={`p-1 rounded-md transition-colors cursor-pointer shrink-0 ${
+                                isCopied
+                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  : "text-text/40 hover:text-text hover:bg-text/5"
+                              }`}
+                              title={isCopied ? "Copied!" : "Copy Phone Number"}
+                            >
+                              {isCopied ? (
+                                <Check className="w-3 h-3 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
                         ) : (
                           <button
                             onClick={() => {
@@ -498,7 +536,7 @@ export default function StudentsListPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Passcode (e.g. 8131)"
+                    placeholder="Enter Passcode (e.g. 1234)"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);
