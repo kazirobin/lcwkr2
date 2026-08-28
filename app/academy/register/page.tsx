@@ -28,7 +28,7 @@ const AVATARS = {
   woman: "https://api.dicebear.com/10.x/adventurer/svg?seed=Aneka",
 };
 
-// আন্তর্জাতিক ডায়ালিং কান্ট্রি কোড লিস্ট
+// আন্তর্জাতিক ডায়ালিং কান্ট্রি কোড লিস্ট
 const COUNTRY_CODES = [
   { code: "+880", country: "Bangladesh", flag: "🇧🇩", minDigits: 10 },
   { code: "+86", country: "China", flag: "🇨🇳", minDigits: 11 },
@@ -87,7 +87,6 @@ export default function StudentRegistrationPage() {
 
   // ফোন ইনপুট হ্যান্ডলার
   const handlePhoneChange = (val: string) => {
-    // শুধু ডিজিট রাখা
     const digitsOnly = val.replace(/\D/g, "");
     setPhone(digitsOnly);
 
@@ -107,7 +106,7 @@ export default function StudentRegistrationPage() {
     const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode);
     const minDigits = selectedCountry?.minDigits || 8;
 
-    // বাংলাদেশের জন্য শুরুর ০ বাদ দেওয়া (যেমন 017... হলে +88017...)
+    // বাংলাদেশের জন্য শুরুর ০ বাদ দেওয়া
     let cleanedLocalNumber = phone.replace(/\D/g, "");
     if (countryCode === "+880" && cleanedLocalNumber.startsWith("0")) {
       cleanedLocalNumber = cleanedLocalNumber.slice(1);
@@ -125,10 +124,12 @@ export default function StudentRegistrationPage() {
 
     const fullInternationalPhone = `${countryCode}${cleanedLocalNumber}`;
 
+    // স্টুডেন্ট অবজেক্ট (isWhatsAppGroupJoined ডিফল্ট false)
     const studentObject = {
       rollNumber: nextRollNumber,
       nameEnglish: name.trim(),
       whatsapp: fullInternationalPhone,
+      isWhatsAppGroupJoined: false,
       location: location.trim(),
       avatarUrl: AVATARS[gender],
       enrolledCourseIds: [selectedCourseId],
@@ -137,6 +138,7 @@ export default function StudentRegistrationPage() {
     const whatsappMessage = `*🎓 New Scholar Registration*\n\n` +
       `*Name:* ${studentObject.nameEnglish}\n` +
       `*WhatsApp:* ${studentObject.whatsapp}\n` +
+      `*Group Joined:* No (false)\n` +
       `*Location:* ${studentObject.location}\n` +
       `*Enrolled Course:* ${selectedCourseId}\n\n` +
       `*Student Data JSON:*\n\`\`\`json\n${JSON.stringify(studentObject, null, 2)}\n\`\`\``;

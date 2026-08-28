@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight, MapPin, XCircle } from "lucide-react";
 import { IStudent } from "@/types/academy";
 import { academyData } from "@/data/academy";
 
 export default function StudentCard({ student }: { student: IStudent }) {
   const enrolledCourses = student.enrolledCourseIds ?? [];
+  const targetRoll = String(student.rollNumber).trim();
 
   // ১. ডায়নামিকালি কোর্সের ক্লাস থেকে মোট উপস্থিতি গণনা
   let totalHeld = 0;
@@ -17,13 +19,13 @@ export default function StudentCard({ student }: { student: IStudent }) {
       const classes = course.classes ?? [];
       totalHeld += classes.length;
       totalAttended += classes.filter((cls) =>
-        cls.presentStudents?.includes(student.rollNumber),
+        cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
       ).length;
 
       // এক্সাম স্কোর হিসাব
       (course.weekendExams ?? []).forEach((exam) => {
         const result = exam.results?.find(
-          (r) => r.rollNumber === student.rollNumber && r.attended,
+          (r) => String(r.rollNumber).trim() === targetRoll && r.attended
         );
         if (result && typeof result.score === "number") {
           examScores.push(result.score);
@@ -44,20 +46,44 @@ export default function StudentCard({ student }: { student: IStudent }) {
       ? `${(examScores.reduce((a, b) => a + b, 0) / examScores.length).toFixed(1)} pts`
       : "N/A";
 
+  const avatarSrc =
+    student.avatarUrl ||
+    `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
+
   return (
-    <div className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 hover:border-primary/40 transition-all flex flex-col justify-between space-y-4 group">
+    <div className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 hover:border-primary/40 transition-all flex flex-col justify-between space-y-4 group relative">
+      
+      {/* শুধু গ্রুপে যুক্ত না থাকলে (false হলে) ব্যাজ দেখাবে */}
+      {!student.isWhatsAppGroupJoined && (
+        <div className="absolute top-4 right-4">
+          <span
+            title="Not in WhatsApp Group"
+            className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"
+          >
+            <XCircle className="w-3 h-3" /> Not in Group
+          </span>
+        </div>
+      )}
+
       <div className="space-y-3">
         {/* টপ প্রোফাইল অবতার ও নাম */}
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-secondary to-primary flex items-center justify-center font-mono text-lg font-bold text-white shadow-md shrink-0">
-            {student.nameEnglish.charAt(0)}
+        <div className={`flex items-center gap-3 ${!student.isWhatsAppGroupJoined ? "pr-24" : ""}`}>
+          <div className="w-12 h-12 rounded-xl overflow-hidden bg-background border border-text/10 shadow-md shrink-0 flex items-center justify-center">
+            <Image
+              src={avatarSrc}
+              alt={student.nameEnglish}
+              width={48}
+              height={48}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
           </div>
           <div className="min-w-0">
             <h4 className="font-bold text-text text-sm truncate group-hover:text-primary transition-colors">
               {student.nameEnglish}
             </h4>
             <p className="text-xs font-mono text-text/50">
-              {student.rollNumber}
+              Roll: {student.rollNumber}
             </p>
           </div>
         </div>

@@ -52,6 +52,7 @@ export interface IStudent {
   rollNumber: string | number;
   nameEnglish: string;
   whatsapp: string;
+  isWhatsAppGroupJoined: boolean; // 👈 হোয়াটসঅ্যাপ গ্রুপে যুক্ত থাকলে true, না থাকলে false
   location: string;
   avatarUrl?: string;
   enrolledCourseIds: string[];
