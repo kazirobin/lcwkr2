@@ -87,7 +87,7 @@ export default function TeacherClassLogPage() {
         <form onSubmit={handleSubmit} className="p-6 bg-text/5 border border-text/10 rounded-2xl space-y-5">
           {/* Passcode Guard */}
           <div>
-            <label className="text-xs font-bold block mb-1">Teacher Passcode (e.g. 2026)</label>
+            <label className="text-xs font-bold block mb-1">Teacher Passcode (e.g. 1234)</label>
             <input
               type="password"
               required
