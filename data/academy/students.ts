@@ -421,7 +421,7 @@ export const studentsData: IStudent[] = [
   "rollNumber": 47,
   "nameEnglish": "Md.Rifat Hossen",
   "whatsapp": "+8801837495664",
-  isWhatsAppGroupJoined: true,
+  isWhatsAppGroupJoined: false,
   "location": "Dhaka, Bangladesh",
   "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
   "enrolledCourseIds": [
