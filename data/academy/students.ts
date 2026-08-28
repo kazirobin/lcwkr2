@@ -370,5 +370,65 @@ export const studentsData: IStudent[] = [
   "enrolledCourseIds": [
     "HSK-201"
   ]
+},
+{
+  "rollNumber": 47,
+  "nameEnglish": "Md.Rifat Hossen",
+  "whatsapp": "+8801837495664",
+  "location": "Dhaka, Bangladesh",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-201"
+  ]
+},
+{
+  "rollNumber": 48,
+  "nameEnglish": "MD Julhas Uddin",
+  "whatsapp": "+8801947363544",
+  "location": "Arichpur, Tongi, Gazipur",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-201"
+  ]
+},
+{
+  "rollNumber": 49,
+  "nameEnglish": "S.M. Shahoriar Alam",
+  "whatsapp": "+8801879766445",
+  "location": "Dhaka, Chockbazar",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-201"
+  ]
+},
+{
+  "rollNumber": 50,
+  "nameEnglish": "Morsalin",
+  "whatsapp": "+8617551353315",
+  "location": "China",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-201"
+  ]
+},
+{
+  "rollNumber": 51,
+  "nameEnglish": "Suvashis Chakraborty",
+  "whatsapp": "+8801773712481",
+  "location": "Baridhara Diplomatic Zone, Dhaka",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-101"
+  ]
+},
+{
+  "rollNumber": 52,
+  "nameEnglish": "Sajidul",
+  "whatsapp": "+8801302192700",
+  "location": "Chittagong",
+  "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
+  "enrolledCourseIds": [
+    "HSK-201"
+  ]
 }
 ];
