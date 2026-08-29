@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, notFound } from "next/navigation";
+import { useParams, useRouter, notFound } from "next/navigation";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -24,14 +24,13 @@ import { academyData } from "@/data/academy";
 // 👈 Environment Variable থেকে এডমিন পাসকোড লোড
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
-interface Props {
-  params: Promise<{ roll: string }>;
-}
-
-export default function StudentProfilePage({ params }: Props) {
+export default function StudentProfilePage() {
   const router = useRouter();
-  const resolvedParams = use(params);
-  const targetRoll = String(resolvedParams.roll).trim();
+  const params = useParams();
+  
+  // 👈 useParams() থেকে সেফলি rollNumber এক্সট্র্যাক্ট করা
+  const rawRoll = params?.roll ? (Array.isArray(params.roll) ? params.roll[0] : params.roll) : "";
+  const targetRoll = decodeURIComponent(String(rawRoll)).trim();
 
   // লোকাল ডাটা থেকে স্টুডেন্ট ও কোর্স লুকআপ
   const student = academyData.students.find(
@@ -62,7 +61,7 @@ export default function StudentProfilePage({ params }: Props) {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    // 👈 ENV ভেরিয়েবলের সাথে ভ্যালিডেশন
+    // 👈 ENV ভেরিয়েবলের সাথে ভ্যালিডেশন
     if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
       setIsAdminUnlocked(true);
       sessionStorage.setItem("academy_admin_unlocked", "true");

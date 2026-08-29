@@ -3,7 +3,13 @@ import { ArrowUpRight } from "lucide-react";
 import { ICourse } from "@/types/academy";
 
 export default function CourseCard({ course }: { course: ICourse }) {
-  const pct = Math.round((course.completedClassesCount / course.totalClassesPlanned) * 100);
+  // ১. ক্লাসের কাউন্ট এবং পার্সেন্টেজ হিসাব (ডিফল্ট ফলব্যাক সহ)
+  const completedCount = course.completedClassesCount ?? course.classes?.length ?? 0;
+  const totalPlanned = course.totalClassesPlanned || 24;
+  const pct = Math.min(100, Math.round((completedCount / totalPlanned) * 100) || 0);
+
+  // ২. অপশনাল enrolledStudentRolls থেকে নিরাপদে দৈর্ঘ্য বের করা
+  const enrolledCount = course.enrolledStudentRolls?.length ?? 0;
 
   return (
     <div className="p-5 rounded-2xl bg-text/5 border border-text/10 hover:border-secondary/40 transition-all flex flex-col justify-between group">
@@ -21,22 +27,23 @@ export default function CourseCard({ course }: { course: ICourse }) {
           {course.courseName}
         </h3>
         <p className="text-xs text-text/50 mt-1">
-          {course.totalLessons} Lessons • {course.enrolledStudentRolls.length} Enrolled Scholars
+          {course.totalLessons} Lessons
+          {enrolledCount > 0 ? ` • ${enrolledCount} Enrolled Scholars` : ""}
         </p>
 
         <div className="mt-4 p-3 bg-text/5 rounded-xl border border-text/10 flex justify-between text-xs">
           <span className="text-text/50">Class Progress</span>
           <span className="text-text font-mono font-bold">
-            {course.completedClassesCount}/{course.totalClassesPlanned} ({pct}%)
+            {completedCount}/{totalPlanned} ({pct}%)
           </span>
         </div>
       </div>
 
       <div className="mt-5 pt-3 border-t border-text/10">
         <div className="w-full bg-text/10 h-1.5 rounded-full overflow-hidden mb-3">
-          <div 
-            className="bg-gradient-to-r from-secondary to-primary h-full rounded-full transition-all duration-500" 
-            style={{ width: `${pct}%` }} 
+          <div
+            className="bg-gradient-to-r from-secondary to-primary h-full rounded-full transition-all duration-500"
+            style={{ width: `${pct}%` }}
           />
         </div>
         <Link
