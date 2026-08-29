@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import { academyData } from "@/data/academy";
 
-const ADMIN_SECRET_PIN = "8131";
+// 👈 Environment Variable থেকে পাসকোড লোড
+const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function StudentsListPage() {
   const { students, courses } = academyData;
@@ -55,7 +56,8 @@ export default function StudentsListPage() {
 
   const handleUnlockAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (enteredPin === ADMIN_SECRET_PIN) {
+    // 👈 ENV ভেরিয়েবলের সাথে চেক
+    if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
       setIsAdminUnlocked(true);
       sessionStorage.setItem("academy_admin_unlocked", "true");
       setShowAdminModal(false);
@@ -363,7 +365,6 @@ export default function StudentsListPage() {
                 >
                   {/* Badges Container */}
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                    {/* শুধু গ্রুপে যুক্ত না থাকলে (false) ব্যাজ দেখাবে */}
                     {!student.isWhatsAppGroupJoined && (
                       <span
                         title="Not in WhatsApp Group"
@@ -374,7 +375,6 @@ export default function StudentsListPage() {
                       </span>
                     )}
 
-                    {/* ডুপ্লিকেট ফোন নম্বর ওয়ার্নিং ব্যাজ */}
                     {isDuplicateNumber && (
                       <span
                         title="Duplicate WhatsApp phone number shared with another student"
@@ -423,7 +423,6 @@ export default function StudentsListPage() {
                       <div className="flex items-center justify-between gap-2">
                         {isAdminUnlocked ? (
                           <div className="flex items-center gap-1.5 min-w-0">
-                            {/* ১. নাম্বারে ক্লিক করলে সরাসরি হোয়াটসঅ্যাপ চ্যাটে যাবে */}
                             <a
                               href={`https://wa.me/${cleanPhone(student.whatsapp)}`}
                               target="_blank"
@@ -435,7 +434,6 @@ export default function StudentsListPage() {
                               <span className="truncate">{student.whatsapp}</span>
                             </a>
 
-                            {/* ২. পাশে কপি বাটন */}
                             <button
                               type="button"
                               onClick={() => handleCopyNumber(student.whatsapp, student.rollNumber)}
@@ -536,7 +534,7 @@ export default function StudentsListPage() {
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter Passcode (e.g. 1234)"
+                    placeholder="Enter Admin Passcode"
                     value={enteredPin}
                     onChange={(e) => {
                       setEnteredPin(e.target.value);

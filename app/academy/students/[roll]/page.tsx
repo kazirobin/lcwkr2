@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { academyData } from "@/data/academy";
 
-const ADMIN_SECRET_PIN = "8131";
+// 👈 Environment Variable থেকে এডমিন পাসকোড লোড
+const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 interface Props {
   params: Promise<{ roll: string }>;
@@ -61,7 +62,8 @@ export default function StudentProfilePage({ params }: Props) {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (enteredPin === ADMIN_SECRET_PIN) {
+    // 👈 ENV ভেরিয়েবলের সাথে ভ্যালিডেশন
+    if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
       setIsAdminUnlocked(true);
       sessionStorage.setItem("academy_admin_unlocked", "true");
       setShowPinModal(false);
@@ -95,7 +97,6 @@ export default function StudentProfilePage({ params }: Props) {
         
         {/* Navigation & Header */}
         <div className="flex justify-between items-center">
-          {/* 👈 Smart Back Button */}
           <button
             onClick={() => router.back()}
             className="text-xs text-text/60 hover:text-text bg-text/5 hover:bg-text/10 border border-text/10 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5 transition-all cursor-pointer font-medium"
@@ -237,7 +238,7 @@ export default function StudentProfilePage({ params }: Props) {
               <input
                 type="password"
                 autoFocus
-                placeholder="Enter PIN (1234)"
+                placeholder="Enter Admin PIN"
                 value={enteredPin}
                 onChange={(e) => {
                   setEnteredPin(e.target.value);

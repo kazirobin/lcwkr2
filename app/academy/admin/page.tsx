@@ -21,6 +21,9 @@ import {
   DownloadCloud
 } from "lucide-react";
 
+// 👈 Environment Variable থেকে পাসকোড লোড
+const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+
 export default function AdminControlPanel() {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
@@ -32,7 +35,7 @@ export default function AdminControlPanel() {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  // ডিফল্ট ফিল্টার: শুধু যাদের গ্রুপে অ্যাড করা বাকি (pending / false)
+  // ডিফল্ট ফিল্টার
   const [groupFilter, setGroupFilter] = useState<"pending" | "joined" | "all">("all");
 
   // Modal States for Course CRUD
@@ -78,7 +81,8 @@ export default function AdminControlPanel() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === "8131") {
+    // 👈 ENV ভেরিয়েবলের সাথে চেক
+    if (passcode.trim() === ADMIN_SECRET_PASSCODE.trim()) {
       setIsAuthenticated(true);
       fetchAdminData();
     } else {
@@ -282,7 +286,7 @@ export default function AdminControlPanel() {
           <p className="text-xs text-text/50">Direct MongoDB Real-time Control Center</p>
           <input
             type="password"
-            placeholder="Enter PIN (8131)"
+            placeholder="Enter Admin PIN"
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
             className="w-full bg-background border border-text/10 rounded-xl p-3 text-center text-sm font-mono tracking-widest focus:outline-none focus:border-primary"
@@ -476,7 +480,6 @@ export default function AdminControlPanel() {
                         </a>
                       </td>
                       <td className="p-3.5 text-center">
-                        {/* Toggle Group Status */}
                         <button
                           onClick={() => handleToggleGroupStatus(s.rollNumber, s.isWhatsAppGroupJoined)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
@@ -489,7 +492,6 @@ export default function AdminControlPanel() {
                         </button>
                       </td>
                       <td className="p-3.5 text-right">
-                        {/* 👈 Explicit Delete Student Button */}
                         <button
                           onClick={() => handleStudentAction(s.rollNumber, "DELETE", s.nameEnglish)}
                           className="px-3 py-1.5 bg-secondary/10 hover:bg-secondary hover:text-white text-secondary border border-secondary/20 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
