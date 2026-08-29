@@ -11,17 +11,35 @@ export async function POST(req: Request) {
     }
 
     await connectDB();
+    const targetRoll = Number(rollNumber);
 
     if (action === "APPROVE") {
       const student = await Student.findOneAndUpdate(
-        { rollNumber },
+        { rollNumber: targetRoll },
         { registrationStatus: "Approved" },
         { new: true }
       );
       return NextResponse.json({ success: true, student });
-    } else if (action === "REJECT" || action === "DELETE") {
-      await Student.findOneAndDelete({ rollNumber });
-      return NextResponse.json({ success: true, message: "Application removed" });
+    } 
+    
+    else if (action === "REJECT" || action === "DELETE") {
+      // ১. টার্গেট স্টুডেন্ট খুঁজে ডিলিট করা
+      const deletedStudent = await Student.findOneAndDelete({ rollNumber: targetRoll });
+
+      if (!deletedStudent) {
+        return NextResponse.json({ success: false, message: "Student not found" }, { status: 404 });
+      }
+
+      // ২. 👈 স্বয়ংক্রিয় সিরিয়াল রিক্যালকুলেশন: ডিলিট হওয়া রোলের চেয়ে বড় সব রোলের মান ১ কমে যাবে
+      await Student.updateMany(
+        { rollNumber: { $gt: targetRoll } },
+        { $inc: { rollNumber: -1 } }
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Roll ${targetRoll} deleted and subsequent rolls automatically re-indexed!`,
+      });
     }
 
     return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 });

@@ -7,6 +7,7 @@ export interface IContentCovered {
 }
 
 export interface IClassSession {
+  _id?: string;
   classId: string;
   date: string;
   time: string;
@@ -17,6 +18,7 @@ export interface IClassSession {
 }
 
 export interface IExamResult {
+  _id?: string;
   rollNumber: string | number;
   attended: boolean;
   score: number;
@@ -25,6 +27,7 @@ export interface IExamResult {
 }
 
 export interface IWeekendExam {
+  _id?: string;
   examId: string;
   examTitle: string;
   date: string;
@@ -34,25 +37,27 @@ export interface IWeekendExam {
 }
 
 export interface ICourse {
+  _id?: string;
   courseId: string;
   courseName: string;
   targetLevel: string;
-  status: "Running" | "Coming Soon" | "Completed"; // 👈 নতুন ফিল্ড
+  status: "Running" | "Coming Soon" | "Completed";
   startDate?: string;
   nextBatchRegistrationDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
   completedClassesCount: number;
-  enrolledStudentRolls: (string | number)[];
+  enrolledStudentRolls?: (string | number)[]; // 👈 অপশনাল (?) করা হয়েছে
   classes: IClassSession[];
   weekendExams: IWeekendExam[];
 }
 
 export interface IStudent {
+  _id?: string;
   rollNumber: string | number;
   nameEnglish: string;
   whatsapp: string;
-  isWhatsAppGroupJoined: boolean; // 👈 হোয়াটসঅ্যাপ গ্রুপে যুক্ত থাকলে true, না থাকলে false
+  isWhatsAppGroupJoined: boolean;
   location: string;
   avatarUrl?: string;
   enrolledCourseIds: string[];

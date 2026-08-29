@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
   Sparkles, 
   AlertCircle, 
   MessageSquare, 
-  CheckCircle2, 
-  ArrowRight,
-  Globe
+  User, 
+  Phone, 
+  MapPin, 
+  BookOpen 
 } from "lucide-react";
+import { academyData } from "@/data/academy";
 
 const COUNTRY_CODES = [
   { code: "+880", country: "Bangladesh", flag: "🇧🇩", minDigits: 10 },
@@ -25,32 +26,20 @@ const ADMIN_WHATSAPP = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "+8801787881334
 
 export default function StudentRegistrationPage() {
   const router = useRouter();
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // লোকাল ফাইল থেকে Coming Soon কোর্স ফিল্টার
+  const comingSoonCourses = academyData.courses.filter((c) => c.status === "Coming Soon");
 
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+880");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
-  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState(comingSoonCourses[0]?.courseId || "");
   const [submitting, setSubmitting] = useState(false);
 
-  // Success Post-Registration Modal State
+  // পোস্ট-রেজিস্ট্রেশন পপআপ স্টেট
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [registeredData, setRegisteredData] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/academy/courses")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          const comingSoon = data.courses.filter((c: any) => c.status === "Coming Soon");
-          setCourses(comingSoon);
-          if (comingSoon.length > 0) setSelectedCourseId(comingSoon[0].courseId);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,23 +56,29 @@ export default function StudentRegistrationPage() {
       enrolledCourseId: selectedCourseId,
     };
 
-    const res = await fetch("/api/academy/students/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await res.json();
-    setSubmitting(false);
-
-    if (result.success) {
-      setRegisteredData({
-        ...payload,
-        rollNumber: result.student?.rollNumber || "Pending",
+    try {
+      // সরাসরি MongoDB API-তে পাঠানো
+      const res = await fetch("/api/academy/students/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      setShowJoinModal(true);
-    } else {
-      alert(result.message || "Registration failed");
+
+      const result = await res.json();
+      setSubmitting(false);
+
+      if (result.success) {
+        setRegisteredData({
+          ...payload,
+          rollNumber: result.student?.rollNumber || "Pending",
+        });
+        setShowJoinModal(true);
+      } else {
+        alert(result.message || "Registration failed");
+      }
+    } catch (err) {
+      setSubmitting(false);
+      alert("Error submitting registration. Please try again.");
     }
   };
 
@@ -106,19 +101,18 @@ export default function StudentRegistrationPage() {
     router.push("/academy");
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-mono text-xs">Loading portal...</div>;
-
   return (
     <div className="min-h-screen bg-background text-text py-10 px-4 transition-colors">
       <div className="max-w-xl mx-auto space-y-6">
         <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
         </Link>
+        
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-primary" /> Scholar Admission
         </h1>
 
-        {courses.length === 0 ? (
+        {comingSoonCourses.length === 0 ? (
           <div className="p-8 border border-text/10 rounded-2xl text-center space-y-3 bg-text/5">
             <AlertCircle className="w-10 h-10 text-secondary mx-auto" />
             <h3 className="text-lg font-bold">All Batches Currently Running!</h3>
@@ -126,8 +120,11 @@ export default function StudentRegistrationPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-text/5 border border-text/10 space-y-4 shadow-xl">
+            {/* Name */}
             <div>
-              <label className="text-xs font-bold block mb-1">Full Name (English)</label>
+              <label className="text-xs font-bold flex items-center gap-1 mb-1">
+                <User className="w-3.5 h-3.5 text-primary" /> Full Name (English)
+              </label>
               <input
                 type="text"
                 required
@@ -138,8 +135,11 @@ export default function StudentRegistrationPage() {
               />
             </div>
 
+            {/* WhatsApp */}
             <div>
-              <label className="text-xs font-bold block mb-1">WhatsApp Number</label>
+              <label className="text-xs font-bold flex items-center gap-1 mb-1">
+                <Phone className="w-3.5 h-3.5 text-primary" /> WhatsApp Number
+              </label>
               <div className="flex gap-2">
                 <select
                   value={countryCode}
@@ -161,8 +161,11 @@ export default function StudentRegistrationPage() {
               </div>
             </div>
 
+            {/* Location */}
             <div>
-              <label className="text-xs font-bold block mb-1">Current Location</label>
+              <label className="text-xs font-bold flex items-center gap-1 mb-1">
+                <MapPin className="w-3.5 h-3.5 text-primary" /> Current Location
+              </label>
               <input
                 type="text"
                 required
@@ -173,14 +176,17 @@ export default function StudentRegistrationPage() {
               />
             </div>
 
+            {/* Course Select */}
             <div>
-              <label className="text-xs font-bold block mb-1">Select Track</label>
+              <label className="text-xs font-bold flex items-center gap-1 mb-1">
+                <BookOpen className="w-3.5 h-3.5 text-primary" /> Select Track
+              </label>
               <select
                 value={selectedCourseId}
                 onChange={(e) => setSelectedCourseId(e.target.value)}
                 className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm font-semibold cursor-pointer"
               >
-                {courses.map((c) => (
+                {comingSoonCourses.map((c) => (
                   <option key={c.courseId} value={c.courseId}>
                     {c.courseId} - {c.courseName} (Coming Soon)
                   </option>
@@ -193,13 +199,13 @@ export default function StudentRegistrationPage() {
               disabled={submitting}
               className="w-full py-3 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-sm shadow-md shadow-secondary/20 cursor-pointer transition-all"
             >
-              {submitting ? "Submitting Application..." : "Submit Registration"}
+              {submitting ? "Submitting to Database..." : "Submit Registration"}
             </button>
           </form>
         )}
       </div>
 
-      {/* Mandatory WhatsApp Group Join Warning Modal */}
+      {/* WhatsApp Verification Modal */}
       {showJoinModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-background border border-text/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative animate-in fade-in zoom-in-95">

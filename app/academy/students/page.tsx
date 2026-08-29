@@ -205,7 +205,7 @@ export default function StudentsListPage() {
             </Link>
             <h1 className="text-xl sm:text-3xl font-extrabold text-text flex items-center gap-2">
               <Users className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
-              Enrolled Scholars Directory ({students.length})
+              Enrolled Students Directory ({students.length})
             </h1>
             <p className="text-xs sm:text-sm text-text/50 mt-1">
               Search by name/phone, filter WhatsApp group status, location, and attendance
@@ -527,7 +527,7 @@ export default function StudentsListPage() {
               </div>
 
               <p className="text-xs text-text/50">
-                Enter your instructor/admin passkey to reveal all scholar
+                Enter your instructor/admin passkey to reveal all student
                 WhatsApp contact numbers.
               </p>
 
