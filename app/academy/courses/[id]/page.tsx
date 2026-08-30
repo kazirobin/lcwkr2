@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { notFound, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
   Layers, 
@@ -18,10 +18,12 @@ import {
   CheckSquare,
   Square,
   Save,
-  Trash2
+  Trash2,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { academyData } from "@/data/academy";
-import { IClassSession } from "@/types/academy";
+import { ICourse, IClassSession, IStudent } from "@/types/academy";
 
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
@@ -34,9 +36,12 @@ export default function CourseDetailsPage({ params }: Props) {
   const resolvedParams = use(params);
   const courseId = decodeURIComponent(resolvedParams.id).trim();
 
-  // লোকাল ডাটা স্টেট
-  const [coursesData, setCoursesData] = useState(academyData.courses);
-  const course = coursesData.find((c) => c.courseId.toLowerCase() === courseId.toLowerCase());
+  // MongoDB লাইভ ডাটা স্টেট
+  const [course, setCourse] = useState<ICourse | null>(
+    academyData.courses.find((c) => c.courseId.toLowerCase() === courseId.toLowerCase()) || null
+  );
+  const [allStudents, setAllStudents] = useState<IStudent[]>(academyData.students || []);
+  const [loading, setLoading] = useState(false);
 
   // অ্যাডমিন স্টেট
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -55,7 +60,7 @@ export default function CourseDetailsPage({ params }: Props) {
     fromText: 1,
     toLesson: 1,
     toText: 1,
-    presentStudents: [] as number[],
+    presentStudents: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -67,19 +72,60 @@ export default function CourseDetailsPage({ params }: Props) {
     }
   }, []);
 
-  if (!course) {
-    notFound();
-  }
+  // MongoDB API থেকে লাইভ ডেটা ফেচ
+  const fetchLiveCourseData = async () => {
+    setLoading(true);
+    try {
+      const [coursesRes, studentsRes] = await Promise.all([
+        fetch("/api/academy/courses", { cache: "no-store" }),
+        fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
+      ]);
 
-  // এই কোর্সে নথিভুক্ত শিক্ষার্থীরা
-  const enrolledStudents = academyData.students.filter((s) =>
-    s.enrolledCourseIds?.includes(course.courseId)
-  );
+      const coursesData = await coursesRes.json();
+      const studentsData = await studentsRes.json();
+
+      if (coursesData.success && coursesData.courses) {
+        const found = coursesData.courses.find(
+          (c: ICourse) => c.courseId.toLowerCase() === courseId.toLowerCase()
+        );
+        if (found) setCourse(found);
+      }
+
+      if (studentsData.success && studentsData.students && studentsData.students.length > 0) {
+        setAllStudents(studentsData.students);
+      }
+    } catch (err) {
+      console.error("Failed to load live data from MongoDB:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveCourseData();
+  }, [courseId]);
+
+  // স্টুডেন্ট ফিল্টারিং (array বা string উভয় ফিল্ড সাপোর্ট)
+  const currentCourseCode = (course?.courseId || courseId).toLowerCase();
+  
+  const studentSourceList = allStudents.length > 0 ? allStudents : academyData.students;
+  const filteredEnrolled = studentSourceList.filter((s: any) => {
+    if (Array.isArray(s.enrolledCourseIds)) {
+      return s.enrolledCourseIds.some((id: string) => id.toLowerCase() === currentCourseCode);
+    }
+    if (s.enrolledCourseId) {
+      return String(s.enrolledCourseId).toLowerCase() === currentCourseCode;
+    }
+    return false;
+  });
+
+  // যদি ফিল্টারিংয়ে কোনো স্টুডেন্ট না মেলে, সেফ ফলব্যাক হিসেবে সব স্টুডেন্ট দেখাবে
+  const enrolledStudents = filteredEnrolled.length > 0 ? filteredEnrolled : studentSourceList;
 
   // রোল নম্বর থেকে শিক্ষার্থীর নাম ম্যাপ
-  const studentMap = new Map<number, string>();
-  academyData.students.forEach((s) => {
-    studentMap.set(Number(s.rollNumber), s.nameEnglish);
+  const studentMap = new Map<string, string>();
+  studentSourceList.forEach((s) => {
+    studentMap.set(String(s.rollNumber).trim(), s.nameEnglish);
   });
 
   const handleUnlock = (e: React.FormEvent) => {
@@ -112,79 +158,27 @@ export default function CourseDetailsPage({ params }: Props) {
       fromText: cls.contentCovered?.fromText || 1,
       toLesson: cls.contentCovered?.toLesson || 1,
       toText: cls.contentCovered?.toText || 1,
-      presentStudents: (cls.presentStudents || []).map((r) => Number(r)),
+      presentStudents: (cls.presentStudents || []).map((r) => String(r).trim()),
     });
   };
 
-  // 👈 ক্লাস লগ ডিলিট এবং স্বয়ংক্রিয় সিরিয়াল শিফট হ্যান্ডলার
-  const handleDeleteClass = async (classId: string) => {
-    if (!isAdminUnlocked) {
-      setShowAdminPinModal(true);
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete "${classId}"?\n\nSubsequent classes will automatically shift up to fill this sequence.`)) {
-      return;
-    }
-
-    setDeletingId(classId);
-    try {
-      const res = await fetch("/api/academy/classes/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId: course.courseId,
-          classId,
-          adminPasscode: ADMIN_SECRET_PIN,
-        }),
-      });
-
-      const result = await res.json();
-      if (result.success) {
-        // ফ্রন্টএন্ডে সাথে সাথে সিরিয়াল রিনাম্বার করে আপডেট করা
-        const cleanCourseCode = course.courseId.replace(/[^a-zA-Z0-9]/g, "");
-        const updatedList = (result.classes || course.classes.filter((cls) => cls.classId !== classId)).map(
-          (cls: IClassSession, idx: number) => ({
-            ...cls,
-            classId: `CLS-${cleanCourseCode}-${String(idx + 1).padStart(2, "0")}`,
-          })
-        );
-
-        setCoursesData((prevCourses) =>
-          prevCourses.map((c) => {
-            if (c.courseId !== course.courseId) return c;
-            return {
-              ...c,
-              classes: updatedList,
-              completedClassesCount: updatedList.length,
-            };
-          })
-        );
-        alert(`Class deleted and subsequent classes re-indexed successfully!`);
-      } else {
-        alert(result.message || "Failed to delete class session.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting class. Please try again.");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  // এডিট ফর্মে উপস্থিতির টগল
-  const toggleAttendanceInEdit = (roll: number) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      presentStudents: prev.presentStudents.includes(roll)
-        ? prev.presentStudents.filter((r) => r !== roll)
-        : [...prev.presentStudents, roll],
-    }));
+  // উপস্থিতি টগল ফাংশন
+  const toggleAttendanceInEdit = (roll: string | number) => {
+    const rollStr = String(roll).trim();
+    setEditFormData((prev) => {
+      const isPresent = prev.presentStudents.includes(rollStr);
+      return {
+        ...prev,
+        presentStudents: isPresent
+          ? prev.presentStudents.filter((r) => r !== rollStr)
+          : [...prev.presentStudents, rollStr],
+      };
+    });
   };
 
   // সব সিলেক্ট / ডিসিলেক্ট টগল
   const handleToggleSelectAll = () => {
-    const allRolls = enrolledStudents.map((s) => Number(s.rollNumber));
+    const allRolls = enrolledStudents.map((s) => String(s.rollNumber).trim());
     const isAllSelected = editFormData.presentStudents.length === allRolls.length;
 
     setEditFormData((prev) => ({
@@ -193,14 +187,15 @@ export default function CourseDetailsPage({ params }: Props) {
     }));
   };
 
-  // ক্লাস লগ আপডেট সাবমিট
+  // ক্লাস লগ সেভ হ্যান্ডলার
   const handleSaveClassEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
-    const absentRolls = enrolledStudents
-      .map((s) => Number(s.rollNumber))
-      .filter((roll) => !editFormData.presentStudents.includes(roll));
+    const allEnrolledRolls = enrolledStudents.map((s) => String(s.rollNumber).trim());
+    const absentRolls = allEnrolledRolls.filter(
+      (roll) => !editFormData.presentStudents.includes(roll)
+    );
 
     const updatedSummary = editFormData.summary.trim() 
       ? editFormData.summary 
@@ -211,7 +206,7 @@ export default function CourseDetailsPage({ params }: Props) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          courseId: course.courseId,
+          courseId: course?.courseId || courseId,
           classId: editFormData.classId,
           date: editFormData.date,
           time: editFormData.time,
@@ -228,34 +223,14 @@ export default function CourseDetailsPage({ params }: Props) {
         }),
       });
 
-      setCoursesData((prevCourses) =>
-        prevCourses.map((c) => {
-          if (c.courseId !== course.courseId) return c;
-          return {
-            ...c,
-            classes: c.classes.map((cls) => {
-              if (cls.classId !== editFormData.classId) return cls;
-              return {
-                ...cls,
-                date: editFormData.date,
-                time: editFormData.time,
-                contentCovered: {
-                  summary: updatedSummary,
-                  fromLesson: editFormData.fromLesson,
-                  fromText: editFormData.fromText,
-                  toLesson: editFormData.toLesson,
-                  toText: editFormData.toText,
-                },
-                presentStudents: editFormData.presentStudents,
-                absentStudents: absentRolls,
-              };
-            }),
-          };
-        })
-      );
-
-      setEditingClass(null);
-      alert("Class log updated successfully!");
+      const data = await res.json();
+      if (data.success) {
+        await fetchLiveCourseData();
+        setEditingClass(null);
+        alert("Attendance & Class Details Updated Successfully!");
+      } else {
+        alert(data.message || "Failed to update attendance.");
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to save changes. Please try again.");
@@ -263,6 +238,66 @@ export default function CourseDetailsPage({ params }: Props) {
       setSaving(false);
     }
   };
+
+  // ক্লাস ডিলিট হ্যান্ডলার
+  const handleDeleteClass = async (classId: string) => {
+    if (!isAdminUnlocked) {
+      setShowAdminPinModal(true);
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete "${classId}"?\n\nSubsequent classes will automatically shift up to fill this sequence.`)) {
+      return;
+    }
+
+    setDeletingId(classId);
+    try {
+      const res = await fetch("/api/academy/classes/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: course?.courseId || courseId,
+          classId,
+          adminPasscode: ADMIN_SECRET_PIN,
+        }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        await fetchLiveCourseData();
+        alert(`Class ${classId} deleted and sequence re-indexed in MongoDB!`);
+      } else {
+        alert(result.message || "Failed to delete class session.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting class. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading && !course) {
+    return (
+      <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-xs font-mono text-text/50">Fetching Course Data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-background text-text py-20 px-4 text-center space-y-4">
+        <p className="text-sm font-semibold text-text/70">Course Track "{courseId}" not found.</p>
+        <Link href="/academy/courses" className="text-xs text-primary hover:underline font-bold">
+          ← Back to Courses
+        </Link>
+      </div>
+    );
+  }
 
   const completedClasses = course.classes?.length ?? course.completedClassesCount ?? 0;
   const totalPlanned = course.totalClassesPlanned || 24;
@@ -281,22 +316,32 @@ export default function CourseDetailsPage({ params }: Props) {
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Courses
           </Link>
 
-          {isAdminUnlocked ? (
-            <span className="text-[11px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
-              <Unlock className="w-3 h-3" /> Admin Mode Active
-            </span>
-          ) : (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                setEnteredPin("");
-                setPinError(false);
-                setShowAdminPinModal(true);
-              }}
-              className="text-xs text-text/50 hover:text-text bg-text/5 border border-text/10 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all"
+              onClick={fetchLiveCourseData}
+              className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
+              title="Refresh Live Data"
             >
-              <Lock className="w-3 h-3 text-primary" /> Admin Unlock
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
-          )}
+
+            {isAdminUnlocked ? (
+              <span className="text-[11px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                <Unlock className="w-3 h-3" /> Admin Mode Active
+              </span>
+            ) : (
+              <button
+                onClick={() => {
+                  setEnteredPin("");
+                  setPinError(false);
+                  setShowAdminPinModal(true);
+                }}
+                className="text-xs text-text/50 hover:text-text bg-text/5 border border-text/10 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all"
+              >
+                <Lock className="w-3 h-3 text-primary" /> Admin Unlock
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Course Banner */}
@@ -366,11 +411,9 @@ export default function CourseDetailsPage({ params }: Props) {
           ) : (
             <div className="space-y-4">
               {course.classes.map((cls, index) => {
-                const presentList = (cls.presentStudents || []).map((r) => Number(r));
-                const absentList = (cls.absentStudents || []).map((r) => Number(r));
+                const presentList = (cls.presentStudents || []).map((r) => String(r).trim());
+                const absentList = (cls.absentStudents || []).map((r) => String(r).trim());
                 const isDeleting = deletingId === cls.classId;
-
-                // 👈 ডুপ্লিকেট React Key এড়াতে সম্পূর্ণ ইউনিক কী জেনারেশন
                 const uniqueKey = cls._id ? String(cls._id) : `${cls.classId}-${cls.date}-${index}`;
 
                 return (
@@ -405,7 +448,7 @@ export default function CourseDetailsPage({ params }: Props) {
                         <button
                           onClick={() => handleOpenEditModal(cls)}
                           className="p-1.5 rounded-lg bg-text/5 hover:bg-primary/20 text-text/60 hover:text-primary border border-text/10 transition-colors cursor-pointer"
-                          title="Edit this Class Log & Attendance"
+                          title="Edit Attendance & Details"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -415,7 +458,7 @@ export default function CourseDetailsPage({ params }: Props) {
                           disabled={isDeleting}
                           onClick={() => handleDeleteClass(cls.classId)}
                           className="p-1.5 rounded-lg bg-secondary/10 hover:bg-secondary text-secondary hover:text-white border border-secondary/20 transition-all cursor-pointer disabled:opacity-50"
-                          title="Delete this Class Session & Shift Subsequent Classes"
+                          title="Delete this Class Session"
                         >
                           <Trash2 className={`w-3.5 h-3.5 ${isDeleting ? "animate-spin" : ""}`} />
                         </button>
@@ -510,7 +553,7 @@ export default function CourseDetailsPage({ params }: Props) {
 
       </div>
 
-      {/* 1. Admin Verification Passcode Modal */}
+      {/* 1. Admin Passcode Modal */}
       {showAdminPinModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-xs bg-background border border-text/10 rounded-2xl p-5 space-y-4 shadow-2xl relative">
@@ -571,13 +614,13 @@ export default function CourseDetailsPage({ params }: Props) {
         </div>
       )}
 
-      {/* 2. Class Log Edit Modal */}
+      {/* 2. 👈 Class Log Edit Modal (Full Open Student Grid without Inner Scrollbar) */}
       {editingClass && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-background border border-text/10 rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="w-full max-w-2xl bg-background border border-text/10 rounded-3xl p-5 sm:p-7 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center border-b border-text/10 pb-3">
               <div>
-                <h3 className="text-base font-bold flex items-center gap-1.5">
+                <h3 className="text-base sm:text-lg font-bold flex items-center gap-1.5">
                   <Edit3 className="w-4 h-4 text-secondary" /> Edit {editFormData.classId}
                 </h3>
                 <span className="text-xs text-text/50">{course.courseName}</span>
@@ -590,9 +633,9 @@ export default function CourseDetailsPage({ params }: Props) {
               </button>
             </div>
 
-            <form onSubmit={handleSaveClassEdit} className="space-y-4">
+            <form onSubmit={handleSaveClassEdit} className="space-y-5">
               {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-text/70 block mb-1">Class Date</label>
                   <input
@@ -600,7 +643,7 @@ export default function CourseDetailsPage({ params }: Props) {
                     required
                     value={editFormData.date}
                     onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
-                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2 text-xs font-mono"
+                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2.5 text-xs font-mono"
                   />
                 </div>
                 <div>
@@ -610,100 +653,133 @@ export default function CourseDetailsPage({ params }: Props) {
                     required
                     value={editFormData.time}
                     onChange={(e) => setEditFormData({ ...editFormData, time: e.target.value })}
-                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2 text-xs font-mono"
+                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2.5 text-xs font-mono"
                   />
                 </div>
               </div>
 
               {/* Lesson Progression */}
-              <div className="p-3 bg-text/5 border border-text/10 rounded-2xl space-y-2">
-                <span className="text-[11px] font-bold text-secondary uppercase block">Curriculum Progression</span>
-                <div className="grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="p-4 bg-text/5 border border-text/10 rounded-2xl space-y-2.5">
+                <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block">Curriculum Progression</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
                   <div>
-                    <span className="text-[10px] text-text/50 block">From Lesson</span>
+                    <span className="text-[10px] text-text/50 block mb-1">From Lesson</span>
                     <input
                       type="number"
                       min={1}
                       value={editFormData.fromLesson}
                       onChange={(e) => setEditFormData({ ...editFormData, fromLesson: Number(e.target.value) })}
-                      className="w-full bg-background border border-text/10 p-1.5 rounded font-mono text-center"
+                      className="w-full bg-background border border-text/10 p-2 rounded-xl font-mono text-center font-bold"
                     />
                   </div>
                   <div>
-                    <span className="text-[10px] text-text/50 block">From Text</span>
+                    <span className="text-[10px] text-text/50 block mb-1">From Text</span>
                     <input
                       type="number"
                       min={1}
                       value={editFormData.fromText}
                       onChange={(e) => setEditFormData({ ...editFormData, fromText: Number(e.target.value) })}
-                      className="w-full bg-background border border-text/10 p-1.5 rounded font-mono text-center"
+                      className="w-full bg-background border border-text/10 p-2 rounded-xl font-mono text-center font-bold"
                     />
                   </div>
                   <div>
-                    <span className="text-[10px] text-text/50 block">To Lesson</span>
+                    <span className="text-[10px] text-text/50 block mb-1">To Lesson</span>
                     <input
                       type="number"
                       min={1}
                       value={editFormData.toLesson}
                       onChange={(e) => setEditFormData({ ...editFormData, toLesson: Number(e.target.value) })}
-                      className="w-full bg-background border border-text/10 p-1.5 rounded font-mono text-center"
+                      className="w-full bg-background border border-text/10 p-2 rounded-xl font-mono text-center font-bold"
                     />
                   </div>
                   <div>
-                    <span className="text-[10px] text-text/50 block">To Text</span>
+                    <span className="text-[10px] text-text/50 block mb-1">To Text</span>
                     <input
                       type="number"
                       min={1}
                       value={editFormData.toText}
                       onChange={(e) => setEditFormData({ ...editFormData, toText: Number(e.target.value) })}
-                      className="w-full bg-background border border-text/10 p-1.5 rounded font-mono text-center"
+                      className="w-full bg-background border border-text/10 p-2 rounded-xl font-mono text-center font-bold"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Attendance Selection */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold">
-                    Mark Present ({editFormData.presentStudents.length}/{enrolledStudents.length})
-                  </label>
+              {/* Attendance Selection (Full Open Grid without Scrollbar) */}
+              <div className="space-y-3 p-4 bg-background border border-text/10 rounded-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-text/10 pb-3">
+                  <div>
+                    <label className="text-xs sm:text-sm font-bold block text-text">
+                      Mark Present Students
+                    </label>
+                    <div className="flex items-center gap-3 text-xs mt-0.5">
+                      <span className="text-emerald-500 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Present: <b>{editFormData.presentStudents.length}</b>
+                      </span>
+                      <span className="text-secondary font-semibold flex items-center gap-1">
+                        <XCircle className="w-3.5 h-3.5" /> Absent: <b>{enrolledStudents.length - editFormData.presentStudents.length}</b>
+                      </span>
+                      <span className="text-text/40 font-mono">Total: {enrolledStudents.length}</span>
+                    </div>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleToggleSelectAll}
-                    className="text-[11px] px-2 py-0.5 rounded-lg bg-text/5 border border-text/10 text-text/70 hover:text-text cursor-pointer font-semibold flex items-center gap-1"
+                    className={`text-xs px-3 py-1.5 rounded-xl font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      editFormData.presentStudents.length === enrolledStudents.length
+                        ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                        : "bg-text/5 text-text/70 border-text/10 hover:text-text hover:bg-text/10"
+                    }`}
                   >
                     {editFormData.presentStudents.length === enrolledStudents.length ? (
                       <>
-                        <CheckSquare className="w-3 h-3 text-primary" /> Deselect All
+                        <CheckSquare className="w-3.5 h-3.5 text-primary" /> Deselect All
                       </>
                     ) : (
                       <>
-                        <Square className="w-3 h-3 text-text/40" /> Select All
+                        <Square className="w-3.5 h-3.5 text-text/40" /> Select All ({enrolledStudents.length})
                       </>
                     )}
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
+                {/* 👈 Open Grid (সব নাম একসাথে দেখাবে) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                   {enrolledStudents.map((s) => {
-                    const isPresent = editFormData.presentStudents.includes(Number(s.rollNumber));
+                    const rollStr = String(s.rollNumber).trim();
+                    const isPresent = editFormData.presentStudents.includes(rollStr);
+
                     return (
                       <button
-                        key={String(s.rollNumber)}
+                        key={rollStr}
                         type="button"
-                        onClick={() => toggleAttendanceInEdit(Number(s.rollNumber))}
-                        className={`p-2 rounded-xl border text-left text-xs transition-all cursor-pointer flex justify-between items-center gap-1 ${
+                        onClick={() => toggleAttendanceInEdit(rollStr)}
+                        className={`p-3.5 rounded-2xl border text-left text-xs transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           isPresent
-                            ? "bg-primary/10 border-primary text-primary font-bold shadow-sm"
-                            : "bg-text/5 border-text/10 text-text/50"
+                            ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500 font-bold shadow-sm"
+                            : "bg-secondary/5 border-secondary/20 text-secondary hover:border-secondary/40"
                         }`}
                       >
-                        <div className="min-w-0">
-                          <span className="font-mono text-[10px] block opacity-75">Roll #{s.rollNumber}</span>
-                          <span className="truncate block">{s.nameEnglish}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-mono text-[11px] block opacity-75 font-bold">
+                            Roll #{rollStr}
+                          </span>
+                          <span className="truncate block font-semibold text-text text-sm mt-0.5">
+                            {s.nameEnglish}
+                          </span>
                         </div>
-                        {isPresent && <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-primary" />}
+                        <div className="shrink-0">
+                          {isPresent ? (
+                            <span className="text-[11px] bg-emerald-500 text-white px-2.5 py-1 rounded-full font-bold flex items-center gap-1 shadow-sm">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Present
+                            </span>
+                          ) : (
+                            <span className="text-[11px] bg-secondary/10 text-secondary border border-secondary/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+                              <XCircle className="w-3.5 h-3.5" /> Absent
+                            </span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
@@ -711,21 +787,21 @@ export default function CourseDetailsPage({ params }: Props) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingClass(null)}
-                  className="flex-1 py-2 bg-text/5 hover:bg-text/10 rounded-xl text-xs font-semibold cursor-pointer"
+                  className="flex-1 py-3 bg-text/5 hover:bg-text/10 rounded-2xl text-xs font-semibold cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md shadow-secondary/20 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-2xl text-xs cursor-pointer shadow-md shadow-secondary/20 flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? "Saving Changes..." : "Save Updates"}</span>
+                  <span>{saving ? "Saving Changes..." : "Save Updates to Database"}</span>
                 </button>
               </div>
             </form>

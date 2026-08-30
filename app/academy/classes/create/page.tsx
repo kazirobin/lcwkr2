@@ -10,6 +10,7 @@ import {
   Square,
   Users,
   CheckCircle2,
+  XCircle,
   Calendar,
   Clock
 } from "lucide-react";
@@ -30,16 +31,27 @@ export default function TeacherClassLogPage() {
   const [toLesson, setToLesson] = useState(1);
   const [toText, setToText] = useState(2);
 
-  const [presentRolls, setPresentRolls] = useState<number[]>([]);
+  // স্ট্রিং ফরম্যাটে রোল সংরক্ষণ (টাইপ মিসম্যাচ রোধ করতে)
+  const [presentRolls, setPresentRolls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // যে কোর্সটি সিলেক্ট করা আছে তার স্টুডেন্ট ফিল্টার
-  const enrolled = students.filter((s) => s.enrolledCourseIds.includes(selectedCourseId));
+  // 👈 স্টুডেন্ট ফিল্টারিং (array বা string উভয় ফিল্ড সাপোর্ট সহ)
+  const currentCourseCode = selectedCourseId.toLowerCase();
+  const enrolled = students.filter((s: any) => {
+    if (Array.isArray(s.enrolledCourseIds)) {
+      return s.enrolledCourseIds.some((id: string) => id.toLowerCase() === currentCourseCode);
+    }
+    if (s.enrolledCourseId) {
+      return String(s.enrolledCourseId).toLowerCase() === currentCourseCode;
+    }
+    return true;
+  });
 
-  // একক স্টুডেন্ট টগল
-  const toggleAttendance = (roll: number) => {
+  // একক স্টুডেন্ট টগল (Present <-> Absent)
+  const toggleAttendance = (roll: string | number) => {
+    const rollStr = String(roll).trim();
     setPresentRolls((prev) =>
-      prev.includes(roll) ? prev.filter((r) => r !== roll) : [...prev, roll]
+      prev.includes(rollStr) ? prev.filter((r) => r !== rollStr) : [...prev, rollStr]
     );
   };
 
@@ -50,7 +62,7 @@ export default function TeacherClassLogPage() {
     if (isAllSelected) {
       setPresentRolls([]);
     } else {
-      const allRolls = enrolled.map((s) => Number(s.rollNumber));
+      const allRolls = enrolled.map((s) => String(s.rollNumber).trim());
       setPresentRolls(allRolls);
     }
   };
@@ -59,9 +71,8 @@ export default function TeacherClassLogPage() {
     e.preventDefault();
     setSubmitting(true);
 
-    const absentRolls = enrolled
-      .map((s) => Number(s.rollNumber))
-      .filter((roll) => !presentRolls.includes(roll));
+    const allRolls = enrolled.map((s) => String(s.rollNumber).trim());
+    const absentRolls = allRolls.filter((roll) => !presentRolls.includes(roll));
 
     const summary = `Lesson ${fromLesson} Text ${fromText} to Lesson ${toLesson} Text ${toText}`;
 
@@ -98,7 +109,7 @@ export default function TeacherClassLogPage() {
   return (
     <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-4xl mx-auto space-y-6">
-        <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1">
+        <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1 font-medium">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
         </Link>
         
@@ -178,7 +189,7 @@ export default function TeacherClassLogPage() {
             </div>
           </div>
 
-          {/* 👈 Open Full Grid Student Attendance Section (No Inner Scroll) */}
+          {/* 👈 CourseDetailsPage Style Attendance Selector */}
           <div className="space-y-4 p-4 sm:p-6 bg-background border border-text/10 rounded-3xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-text/10 pb-4">
               <div className="flex items-center gap-2">
@@ -187,9 +198,15 @@ export default function TeacherClassLogPage() {
                   <h3 className="text-sm sm:text-base font-bold text-text">
                     Mark Present Students
                   </h3>
-                  <span className="text-xs text-text/50">
-                    Present: <b className="text-primary">{presentRolls.length}</b> / Total: <b className="text-text">{enrolled.length}</b>
-                  </span>
+                  <div className="flex items-center gap-3 text-xs mt-0.5">
+                    <span className="text-emerald-500 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Present: <b>{presentRolls.length}</b>
+                    </span>
+                    <span className="text-secondary font-semibold flex items-center gap-1">
+                      <XCircle className="w-3.5 h-3.5" /> Absent: <b>{enrolled.length - presentRolls.length}</b>
+                    </span>
+                    <span className="text-text/40 font-mono">Total: {enrolled.length}</span>
+                  </div>
                 </div>
               </div>
               
@@ -198,7 +215,7 @@ export default function TeacherClassLogPage() {
                 <button
                   type="button"
                   onClick={handleToggleSelectAll}
-                  className={`text-xs px-3.5 py-2 rounded-xl font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`text-xs px-3 py-1.5 rounded-xl font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     isAllSelected
                       ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
                       : "bg-text/5 text-text/70 border-text/10 hover:text-text hover:bg-text/10"
@@ -219,39 +236,47 @@ export default function TeacherClassLogPage() {
               )}
             </div>
 
-            {/* 👈 Full Open Grid: No height restriction or scrollbar */}
+            {/* Interactive Present/Absent Tiles */}
             {enrolled.length === 0 ? (
               <p className="text-xs text-text/40 py-8 text-center italic">
                 No students enrolled in this course track yet.
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                 {enrolled.map((s) => {
-                  const isSelected = presentRolls.includes(Number(s.rollNumber));
+                  const rollStr = String(s.rollNumber).trim();
+                  const isPresent = presentRolls.includes(rollStr);
+
                   return (
                     <button
-                      key={String(s.rollNumber)}
+                      key={rollStr}
                       type="button"
-                      onClick={() => toggleAttendance(Number(s.rollNumber))}
-                      className={`p-3.5 border rounded-2xl text-left transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
-                        isSelected 
-                          ? "bg-primary/10 border-primary text-primary shadow-sm" 
-                          : "bg-text/[0.02] border-text/10 text-text/60 hover:border-text/30 hover:bg-text/[0.04]"
+                      onClick={() => toggleAttendance(rollStr)}
+                      className={`p-3.5 rounded-2xl border text-left text-xs transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        isPresent
+                          ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500 font-bold shadow-sm"
+                          : "bg-secondary/5 border-secondary/20 text-secondary hover:border-secondary/40"
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <span className="font-mono text-xs font-bold opacity-80 block">
-                          Roll #{s.rollNumber}
+                        <span className="font-mono text-[11px] block opacity-75 font-bold">
+                          Roll #{rollStr}
                         </span>
-                        <span className={`text-sm truncate block mt-0.5 ${isSelected ? "font-bold text-text" : "font-semibold text-text/80"}`}>
+                        <span className="truncate block font-semibold text-text text-sm mt-0.5">
                           {s.nameEnglish}
                         </span>
                       </div>
                       
-                      <div className={`w-6 h-6 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected ? "bg-primary border-primary text-white shadow-sm" : "border-text/20 bg-background"
-                      }`}>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                      <div className="shrink-0">
+                        {isPresent ? (
+                          <span className="text-[11px] bg-emerald-500 text-white px-2.5 py-1 rounded-full font-bold flex items-center gap-1 shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Present
+                          </span>
+                        ) : (
+                          <span className="text-[11px] bg-secondary/10 text-secondary border border-secondary/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
+                            <XCircle className="w-3.5 h-3.5" /> Absent
+                          </span>
+                        )}
                       </div>
                     </button>
                   );
