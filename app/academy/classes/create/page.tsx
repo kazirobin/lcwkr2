@@ -133,7 +133,7 @@ export default function TeacherClassLogPage() {
               required
               value={teacherPasscode}
               onChange={(e) => setTeacherPasscode(e.target.value)}
-              placeholder="Enter PIN (e.g. 8131)"
+              placeholder="Enter PIN"
               className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary font-mono tracking-widest"
             />
           </div>
