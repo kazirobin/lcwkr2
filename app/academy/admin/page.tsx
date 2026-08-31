@@ -1,66 +1,41 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ShieldCheck, 
   UserCheck, 
   BookOpenCheck, 
-  Trash2, 
-  Check, 
-  X, 
-  ArrowLeft, 
-  RefreshCw, 
-  PlusCircle, 
-  Edit3, 
   Layers, 
   MessageSquare, 
-  XCircle, 
-  CheckCircle2, 
+  ArrowLeft, 
+  RefreshCw, 
   DownloadCloud,
-  BookOpen,
-  ArrowRightLeft
+  ArrowRight,
+  LogOut,
+  Loader2
 } from "lucide-react";
 
-// Environment Variable থেকে পাসকোড লোড
 const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
-export default function AdminControlPanel() {
+export default function AdminDashboardPage() {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pendingStudents, setPendingStudents] = useState<any[]>([]);
-  const [approvedStudents, setApprovedStudents] = useState<any[]>([]);
-  const [pendingClasses, setPendingClasses] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  
+  const [stats, setStats] = useState({
+    pendingStudents: 0,
+    approvedStudents: 0,
+    pendingClasses: 0,
+    courses: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  // ডিফল্ট ফিল্টার
-  const [groupFilter, setGroupFilter] = useState<"pending" | "joined" | "all">("all");
-
-  // Modal States for Course CRUD
-  const [showCourseModal, setShowCourseModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [courseFormData, setCourseFormData] = useState({
-    courseId: "",
-    courseName: "",
-    targetLevel: "HSK 1",
-    status: "Coming Soon",
-    startDate: "",
-    nextBatchRegistrationDate: "",
-    totalLessons: 15,
-    totalClassesPlanned: 24,
-  });
-
-  // 👈 স্টুডেন্ট কোর্স পরিবর্তনের মোডাল স্টেট
-  const [changingCourseStudent, setChangingCourseStudent] = useState<any | null>(null);
-  const [selectedNewCourseId, setSelectedNewCourseId] = useState("");
-  const [updatingCourse, setUpdatingCourse] = useState(false);
-
-  // সরাসরি MongoDB API থেকে লাইভ ডাটা ফেচ
-  const fetchAdminData = async () => {
+  // MongoDB থেকে পরিসংখ্যান লোড
+  const fetchStats = async () => {
     setLoading(true);
     try {
       const [pendingStuRes, approvedStuRes, logRes, crsRes] = await Promise.all([
@@ -70,288 +45,120 @@ export default function AdminControlPanel() {
         fetch("/api/academy/courses", { cache: "no-store" }),
       ]);
 
-      const pendingStuData = await pendingStuRes.json();
-      const approvedStuData = await approvedStuRes.json();
-      const logData = await logRes.json();
-      const crsData = await crsRes.json();
-      
-      if (pendingStuData.success) setPendingStudents(pendingStuData.students || []);
-      if (approvedStuData.success) setApprovedStudents(approvedStuData.students || []);
-      if (logData.success) setPendingClasses(logData.pendingClasses || []);
-      if (crsData.success) setCourses(crsData.courses || []);
+      const [pStu, aStu, logs, crs] = await Promise.all([
+        pendingStuRes.json(),
+        approvedStuRes.json(),
+        logRes.json(),
+        crsRes.json(),
+      ]);
+
+      setStats({
+        pendingStudents: pStu.students?.length || 0,
+        approvedStudents: aStu.students?.length || 0,
+        pendingClasses: logs.pendingClasses?.length || 0,
+        courses: crs.courses?.length || 0,
+      });
     } catch (err) {
-      console.error("Error loading admin data from MongoDB:", err);
+      console.error("Failed to load admin stats:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // 👈 ১. পেজ লোড হলেই localStorage থেকে পাসকোড রিড করে Auto Login করা
+  useEffect(() => {
+    const savedPin = localStorage.getItem("academy_admin_pin");
+    if (savedPin && savedPin.trim() === ADMIN_SECRET_PASSCODE.trim()) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("academy_admin_unlocked", "true");
+      fetchStats();
+    }
+    setCheckingAuth(false);
+  }, []);
+
+  // 👈 ২. ম্যানুয়াল লগইন এবং localStorage-এ সংরক্ষণ
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passcode.trim() === ADMIN_SECRET_PASSCODE.trim()) {
+      localStorage.setItem("academy_admin_pin", passcode.trim());
+      sessionStorage.setItem("academy_admin_unlocked", "true");
       setIsAuthenticated(true);
-      fetchAdminData();
+      fetchStats();
     } else {
       alert("Invalid Admin Passcode!");
     }
   };
 
-  // MongoDB থেকে লোকাল .ts ফাইলে ডেটা সিঙ্ক
-  const handleSyncToFile = async () => {
-    if (!confirm("Are you sure you want to download and overwrite local .ts files with MongoDB live data?")) {
-      return;
+  // 👈 ৩. লগআউট হ্যান্ডলার (localStorage ক্লিয়ার করা)
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to log out from Admin Console?")) {
+      localStorage.removeItem("academy_admin_pin");
+      sessionStorage.removeItem("academy_admin_unlocked");
+      setIsAuthenticated(false);
+      setPasscode("");
     }
+  };
+
+  const handleSyncToFile = async () => {
+    const savedPin = localStorage.getItem("academy_admin_pin") || passcode;
+    if (!confirm("Overwrite local .ts files with MongoDB live data?")) return;
     setSyncing(true);
     try {
-      const res = await fetch(`/api/academy/sync-to-file?pin=${passcode}`);
+      const res = await fetch(`/api/academy/sync-to-file?pin=${savedPin}`);
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Synced Successfully!\nCourses: ${data.counts?.courses || 0}\nStudents: ${data.counts?.students || 0}`);
+        alert("✅ Synced Successfully!");
       } else {
         alert(data.message || "Sync failed");
       }
     } catch (err) {
-      console.error("Error syncing to file:", err);
-      alert("Failed to sync database to local files.");
+      alert("Failed to sync database.");
     } finally {
       setSyncing(false);
     }
   };
 
-  // স্টুডেন্ট অনুমোদন / রিজেক্ট / ডিলিট
-  const handleStudentAction = async (rollNumber: number, action: "APPROVE" | "REJECT" | "DELETE", studentName?: string) => {
-    const confirmMsg = action === "DELETE" 
-      ? `Are you sure you want to permanently delete Roll #${rollNumber} (${studentName || 'Student'}) from MongoDB?\n\nSubsequent rolls will automatically shift down by 1.` 
-      : action === "REJECT" ? `Reject application for Roll #${rollNumber}?` : null;
+  // অথেন্টিকেশন চেক চলাকালীন লোডার
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-xs font-mono text-text/50">Verifying Admin Access...</p>
+        </div>
+      </div>
+    );
+  }
 
-    if (confirmMsg && !confirm(confirmMsg)) return;
-
-    try {
-      const res = await fetch("/api/academy/students/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber, action, adminPasscode: passcode }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchAdminData();
-      } else {
-        alert(data.message || "Failed to update student");
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // হোয়াটসঅ্যাপ গ্রুপ স্ট্যাটাস টগল
-  const handleToggleGroupStatus = async (rollNumber: number, currentStatus: boolean) => {
-    try {
-      const res = await fetch("/api/academy/students/toggle-group", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rollNumber,
-          isWhatsAppGroupJoined: !currentStatus,
-          adminPasscode: passcode,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchAdminData();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // 👈 স্টুডেন্ট কোর্স পরিবর্তনের সাবমিট হ্যান্ডলার
-// 👈 স্টুডেন্ট কোর্স পরিবর্তনের হ্যান্ডলার (Crash Proof)
-  const handleSaveCourseChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!changingCourseStudent || !selectedNewCourseId) return;
-
-    setUpdatingCourse(true);
-    try {
-      const res = await fetch("/api/academy/students/change-course", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rollNumber: Number(changingCourseStudent.rollNumber),
-          newCourseId: selectedNewCourseId,
-          adminPasscode: passcode.trim(),
-        }),
-      });
-
-      // খালি রেসপন্স হ্যান্ডেল করা
-      const text = await res.text();
-      let data;
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch (err) {
-        throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText})`);
-      }
-
-      if (res.ok && data.success) {
-        alert(data.message || "Course changed successfully!");
-        setChangingCourseStudent(null);
-        await fetchAdminData();
-      } else {
-        alert(data.message || `Failed to change course. (Status: ${res.status})`);
-      }
-    } catch (err: any) {
-      console.error("Error changing course:", err);
-      alert(err.message || "Network error. Please make sure the API route exists.");
-    } finally {
-      setUpdatingCourse(false);
-    }
-  };
-  // পেন্ডিং ক্লাস লগ অনুমোদন / রিজেক্ট
-  const handleClassAction = async (logId: string, action: "APPROVE" | "REJECT") => {
-    try {
-      const res = await fetch("/api/academy/classes/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logId, action, adminPasscode: passcode }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchAdminData();
-      } else {
-        alert(data.message || "Failed to update class log");
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // লাইভ কোর্সের ক্লাস লগ ডিলিট
-  const handleDeleteClassFromCourse = async (courseId: string, classId: string) => {
-    if (!confirm(`Are you sure you want to delete class ${classId} from ${courseId}?`)) {
-      return;
-    }
-    try {
-      const res = await fetch("/api/academy/classes/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, classId, adminPasscode: passcode }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchAdminData();
-      } else {
-        alert(data.message || "Failed to delete class");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // কোর্স সেভ
-  const handleCourseSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const url = isEditing 
-        ? `/api/academy/courses/${courseFormData.courseId}` 
-        : "/api/academy/courses";
-      const method = isEditing ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(courseFormData),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setShowCourseModal(false);
-        fetchAdminData();
-      } else {
-        alert(data.message || "Failed to save course");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // কোর্স ডিলিট
-  const handleDeleteCourse = async (courseId: string) => {
-    if (!confirm(`Delete course ${courseId} from MongoDB?`)) return;
-    try {
-      const res = await fetch(`/api/academy/courses/${courseId}`, { method: "DELETE" });
-      if (res.ok) fetchAdminData();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const openEditModal = (course: any) => {
-    setIsEditing(true);
-    setCourseFormData({
-      courseId: course.courseId,
-      courseName: course.courseName,
-      targetLevel: course.targetLevel || "HSK 1",
-      status: course.status || "Coming Soon",
-      startDate: course.startDate || "",
-      nextBatchRegistrationDate: course.nextBatchRegistrationDate || "",
-      totalLessons: course.totalLessons || 15,
-      totalClassesPlanned: course.totalClassesPlanned || 24,
-    });
-    setShowCourseModal(true);
-  };
-
-  const openCreateModal = () => {
-    setIsEditing(false);
-    setCourseFormData({
-      courseId: "",
-      courseName: "",
-      targetLevel: "HSK 1",
-      status: "Coming Soon",
-      startDate: "",
-      nextBatchRegistrationDate: "",
-      totalLessons: 15,
-      totalClassesPlanned: 24,
-    });
-    setShowCourseModal(true);
-  };
-
-  const filteredApprovedStudents = useMemo(() => {
-    return approvedStudents.filter((s) => {
-      if (groupFilter === "pending") return !s.isWhatsAppGroupJoined;
-      if (groupFilter === "joined") return s.isWhatsAppGroupJoined;
-      return true;
-    });
-  }, [approvedStudents, groupFilter]);
-
-  const pendingGroupCount = approvedStudents.filter((s) => !s.isWhatsAppGroupJoined).length;
-
+  // পাসকোড ফর্ম
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
         <form onSubmit={handleLogin} className="w-full max-w-sm p-6 bg-text/5 border border-text/10 rounded-3xl space-y-4 text-center shadow-xl">
           <ShieldCheck className="w-12 h-12 text-secondary mx-auto" />
           <h2 className="text-xl font-bold">Admin Portal Login</h2>
-          <p className="text-xs text-text/50">Direct MongoDB Real-time Control Center</p>
+          <p className="text-xs text-text/50">PIN will be saved locally for auto-login.</p>
           <input
             type="password"
+            autoFocus
             placeholder="Enter Admin PIN"
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
             className="w-full bg-background border border-text/10 rounded-xl p-3 text-center text-sm font-mono tracking-widest focus:outline-none focus:border-primary"
           />
-          
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => router.push("/academy")}
-              className="flex-1 py-2.5 bg-text/5 hover:bg-text/10 text-text/70 border border-text/10 font-bold rounded-xl text-sm cursor-pointer transition-all"
+              className="flex-1 py-2.5 bg-text/5 border border-text/10 rounded-xl text-sm font-bold cursor-pointer hover:bg-text/10 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-sm cursor-pointer shadow-md shadow-secondary/20 transition-all"
+              className="flex-1 py-2.5 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-sm shadow-md cursor-pointer transition-all"
             >
-              Unlock Console
+              Unlock
             </button>
           </div>
         </form>
@@ -359,521 +166,125 @@ export default function AdminControlPanel() {
     );
   }
 
+  const adminModules = [
+    {
+      title: "Pending Admissions",
+      desc: "Review, approve or reject student registration requests",
+      count: stats.pendingStudents,
+      icon: UserCheck,
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
+      link: "/academy/admin/admissions",
+    },
+    {
+      title: "WhatsApp & Course Track",
+      desc: "Verify group join status, transfer courses, or remove students",
+      count: stats.approvedStudents,
+      icon: MessageSquare,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+      link: "/academy/admin/students",
+    },
+    {
+      title: "Class Logs Approval",
+      desc: "Review and approve daily attendance sessions submitted by teachers",
+      count: stats.pendingClasses,
+      icon: BookOpenCheck,
+      color: "text-secondary",
+      bg: "bg-secondary/10",
+      link: "/academy/admin/class-logs",
+    },
+    {
+      title: "Manage Course Tracks",
+      desc: "Create new courses, edit batch schedules, and delete class history",
+      count: stats.courses,
+      icon: Layers,
+      color: "text-primary",
+      bg: "bg-primary/10",
+      link: "/academy/admin/courses",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-text py-8 px-4 sm:px-8 space-y-8 transition-colors">
+    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 space-y-8 transition-colors">
       <div className="max-w-5xl mx-auto space-y-8">
         
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-5">
           <div>
-            <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1 mb-1">
+            <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1 mb-1 font-medium">
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
             </Link>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-secondary" /> Academy Admin Console
             </h1>
-            <span className="text-[11px] font-mono text-emerald-500 font-semibold">● Connected to MongoDB Live</span>
+            <span className="text-[11px] font-mono text-emerald-500 font-semibold">● Auto-Logged In (MongoDB Live)</span>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Sync DB to Local .ts Button */}
             <button
               onClick={handleSyncToFile}
               disabled={syncing}
-              className="px-3.5 py-1.5 bg-secondary hover:bg-secondary/90 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm shadow-secondary/20 transition-all disabled:opacity-50"
-              title="Fetch approved records from MongoDB and write directly into local .ts files"
+              className="px-3.5 py-2 bg-secondary hover:bg-secondary/90 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50 transition-all"
             >
               <DownloadCloud className={`w-3.5 h-3.5 ${syncing ? "animate-bounce" : ""}`} />
               <span>{syncing ? "Syncing..." : "Sync DB to Local .ts"}</span>
             </button>
 
-            <button onClick={openCreateModal} className="px-3.5 py-1.5 bg-primary text-background font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm shadow-primary/20">
-              <PlusCircle className="w-3.5 h-3.5" /> Add Course
+            <button
+              onClick={fetchStats}
+              className="p-2 bg-text/5 hover:bg-text/10 border border-text/10 rounded-xl text-xs cursor-pointer transition-colors"
+              title="Refresh Live Metrics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
 
-            <button onClick={fetchAdminData} className="px-3.5 py-1.5 bg-text/5 border border-text/10 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer hover:bg-text/10">
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+            <button
+              onClick={handleLogout}
+              className="p-2 bg-secondary/10 hover:bg-secondary text-secondary hover:text-white border border-secondary/20 rounded-xl text-xs cursor-pointer transition-all"
+              title="Log Out & Clear Saved PIN"
+            >
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* 1. Pending Admission List */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-primary" /> Pending Student Admissions ({pendingStudents.length})
-          </h2>
-
-          {pendingStudents.length === 0 ? (
-            <p className="text-xs text-text/40 p-4 border border-text/10 rounded-2xl bg-text/[0.02]">
-              No pending admissions in database.
-            </p>
-          ) : (
-            <div className="border border-text/10 rounded-2xl overflow-hidden bg-text/[0.01]">
-              <table className="w-full text-left text-xs min-w-[500px]">
-                <thead className="bg-text/5 border-b border-text/10 text-text/60 font-semibold">
-                  <tr>
-                    <th className="p-3">Candidate Name</th>
-                    <th className="p-3">WhatsApp Number</th>
-                    <th className="p-3">Target Track</th>
-                    <th className="p-3 text-right">Approve / Reject</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-text/10">
-                  {pendingStudents.map((s) => (
-                    <tr key={s.rollNumber} className="hover:bg-text/5">
-                      <td className="p-3 font-semibold text-text">{s.nameEnglish}</td>
-                      <td className="p-3 font-mono text-primary font-bold">{s.whatsapp}</td>
-                      <td className="p-3 font-mono text-secondary font-bold">
-                        {s.enrolledCourseId || s.enrolledCourseIds?.[0]}
-                      </td>
-                      <td className="p-3 text-right space-x-2">
-                        <button
-                          onClick={() => handleStudentAction(s.rollNumber, "APPROVE")}
-                          className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 cursor-pointer font-bold"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleStudentAction(s.rollNumber, "REJECT")}
-                          className="px-3 py-1 bg-secondary/10 text-secondary border border-secondary/20 rounded-lg hover:bg-secondary/20 cursor-pointer font-bold"
-                        >
-                          Reject
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* 2. Approved Students & WhatsApp Group Status + Course Transfer Option */}
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-emerald-500" /> WhatsApp Group Verification & Students ({approvedStudents.length})
-            </h2>
-
-            {/* Quick Filter Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-text/5 border border-text/10 rounded-xl text-xs">
-              <button
-                onClick={() => setGroupFilter("all")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  groupFilter === "all"
-                    ? "bg-background text-text shadow-sm"
-                    : "text-text/60 hover:text-text"
-                }`}
+        {/* Modular Navigation Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {adminModules.map((m) => {
+            const Icon = m.icon;
+            return (
+              <Link
+                key={m.link}
+                href={m.link}
+                className="p-6 rounded-3xl bg-text/5 border border-text/10 hover:border-text/20 hover:bg-text/[0.07] transition-all flex flex-col justify-between space-y-4 group shadow-sm"
               >
-                All ({approvedStudents.length})
-              </button>
-              <button
-                onClick={() => setGroupFilter("pending")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                  groupFilter === "pending"
-                    ? "bg-amber-500 text-white shadow-sm"
-                    : "text-text/60 hover:text-text"
-                }`}
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                Not in Group ({pendingGroupCount})
-              </button>
-              <button
-                onClick={() => setGroupFilter("joined")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                  groupFilter === "joined"
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-text/60 hover:text-text"
-                }`}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Joined
-              </button>
-            </div>
-          </div>
-
-          <div className="border border-text/10 rounded-2xl overflow-hidden bg-text/[0.01]">
-            {filteredApprovedStudents.length === 0 ? (
-              <p className="text-xs text-text/40 p-6 text-center italic">
-                No students found for this filter.
-              </p>
-            ) : (
-              <table className="w-full text-left text-xs min-w-[620px]">
-                <thead className="bg-text/5 border-b border-text/10 text-text/60 font-semibold">
-                  <tr>
-                    <th className="p-3.5 w-16">Roll</th>
-                    <th className="p-3.5">Student Name</th>
-                    <th className="p-3.5">Course Track</th>
-                    <th className="p-3.5">WhatsApp Number</th>
-                    <th className="p-3.5 text-center">Group Status</th>
-                    <th className="p-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-text/10">
-                  {filteredApprovedStudents.map((s) => {
-                    const studentCourse = s.enrolledCourseId || s.enrolledCourseIds?.[0] || "HSK-101";
-
-                    return (
-                      <tr key={s.rollNumber} className="hover:bg-text/5 transition-colors">
-                        <td className="p-3.5 font-mono font-bold text-secondary text-xs">
-                          #{s.rollNumber}
-                        </td>
-                        <td className="p-3.5 font-bold text-text text-sm">
-                          {s.nameEnglish}
-                        </td>
-                        <td className="p-3.5">
-                          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-secondary/10 text-secondary border border-secondary/20">
-                            {studentCourse}
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <a
-                            href={`https://wa.me/${s.whatsapp.replace(/[^0-9]/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-mono text-xs font-bold text-primary hover:underline inline-flex items-center gap-1.5"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            {s.whatsapp}
-                          </a>
-                        </td>
-                        <td className="p-3.5 text-center">
-                          <button
-                            onClick={() => handleToggleGroupStatus(s.rollNumber, s.isWhatsAppGroupJoined)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                              s.isWhatsAppGroupJoined 
-                                ? "bg-text/10 text-text/60 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/20" 
-                                : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                            }`}
-                          >
-                            {s.isWhatsAppGroupJoined ? "Set as Not in Group" : "Mark as Group Joined"}
-                          </button>
-                        </td>
-                        <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                          {/* 👈 Change Course Button */}
-                          <button
-                            onClick={() => {
-                              setChangingCourseStudent(s);
-                              setSelectedNewCourseId(studentCourse);
-                            }}
-                            className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                            title="Change Enrolled Course Track"
-                          >
-                            <ArrowRightLeft className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Track</span>
-                          </button>
-
-                          {/* Delete Student Button */}
-                          <button
-                            onClick={() => handleStudentAction(s.rollNumber, "DELETE", s.nameEnglish)}
-                            className="p-1.5 bg-secondary/10 hover:bg-secondary hover:text-white text-secondary border border-secondary/20 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                            title="Permanently remove student & shift down rolls"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-
-        {/* 3. Pending Class Logs */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <BookOpenCheck className="w-5 h-5 text-secondary" /> Pending Teacher Class Logs ({pendingClasses.length})
-          </h2>
-
-          {pendingClasses.length === 0 ? (
-            <p className="text-xs text-text/40 p-4 border border-text/10 rounded-2xl bg-text/[0.02]">
-              No pending class logs in database.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {pendingClasses.map((log) => (
-                <div key={log._id} className="p-4 rounded-2xl bg-text/5 border border-text/10 flex justify-between items-center">
-                  <div className="space-y-1">
-                    <span className="font-mono text-xs font-bold text-secondary">{log.courseId} • {log.classId}</span>
-                    <p className="text-xs font-semibold">{log.contentCovered?.summary}</p>
-                    <span className="text-[11px] text-text/50">{log.date} • {log.time}</span>
+                <div className="flex justify-between items-start">
+                  <div className={`p-3 rounded-2xl ${m.bg} ${m.color}`}>
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleClassAction(log._id, "APPROVE")} className="px-3 py-1.5 bg-emerald-500 text-white font-bold text-xs rounded-xl cursor-pointer">
-                      Approve
-                    </button>
-                    <button onClick={() => handleClassAction(log._id, "REJECT")} className="px-3 py-1.5 bg-secondary/10 text-secondary font-bold text-xs rounded-xl cursor-pointer">
-                      Reject
-                    </button>
-                  </div>
+                  <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-background border border-text/10">
+                    {m.count} Records
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* 4. Course Management */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Layers className="w-5 h-5 text-primary" /> Manage Courses & Logged Classes ({courses.length})
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {courses.map((course) => {
-              const classesList = course.classes ?? [];
-
-              return (
-                <div key={course.courseId} className="p-5 rounded-2xl bg-text/5 border border-text/10 space-y-4 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="font-mono text-xs font-bold text-secondary mr-2">{course.courseId}</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-text/5 border border-text/10">{course.status}</span>
-                        <h3 className="font-bold text-base mt-1">{course.courseName}</h3>
-                      </div>
-                      <div className="flex gap-1">
-                        <button onClick={() => openEditModal(course)} className="p-1.5 text-text/60 hover:text-text cursor-pointer">
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteCourse(course.courseId)} className="p-1.5 text-secondary hover:text-secondary/80 cursor-pointer">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono p-2.5 bg-background rounded-xl border border-text/10">
-                      <div>
-                        <span className="text-text/40 block">Start Date:</span>
-                        <span className="font-semibold">{course.startDate || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-text/40 block">Next Batch:</span>
-                        <span className="font-semibold text-primary">{course.nextBatchRegistrationDate || "TBA"}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Approved Classes List */}
-                  <div className="space-y-1.5 pt-2 border-t border-text/10">
-                    <span className="text-[10px] font-mono text-text/50 uppercase block">Approved Classes ({classesList.length}):</span>
-                    {classesList.length === 0 ? (
-                      <p className="text-xs text-text/40 italic">No class sessions logged yet.</p>
-                    ) : (
-                      <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                        {classesList.map((cls: any) => (
-                          <div key={cls.classId} className="p-2 rounded-xl bg-background border border-text/10 flex justify-between items-center text-[11px]">
-                            <div className="min-w-0 pr-2">
-                              <span className="font-mono font-bold text-secondary mr-1.5">{cls.classId}</span>
-                              <span className="text-text/70 truncate block">{cls.contentCovered?.summary}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] text-text/40 font-mono">{cls.date}</span>
-                              <button
-                                onClick={() => handleDeleteClassFromCourse(course.courseId, cls.classId)}
-                                className="p-1 text-secondary/60 hover:text-secondary hover:bg-secondary/10 rounded transition-colors cursor-pointer"
-                                title="Delete this class session from MongoDB"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div>
+                  <h3 className="text-lg font-bold text-text group-hover:text-primary transition-colors">
+                    {m.title}
+                  </h3>
+                  <p className="text-xs text-text/50 mt-1">{m.desc}</p>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="flex items-center gap-1 text-xs font-bold text-primary pt-2 border-t border-text/10">
+                  <span>Open Control Panel</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
       </div>
-
-      {/* 👈 Student Course Transfer Modal */}
-      {changingCourseStudent && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-background border border-text/10 rounded-3xl p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-text/10 pb-3">
-              <div>
-                <h3 className="text-base font-bold flex items-center gap-1.5">
-                  <ArrowRightLeft className="w-4 h-4 text-primary" /> Transfer Course Track
-                </h3>
-                <span className="text-xs text-text/50">Roll #{changingCourseStudent.rollNumber} - {changingCourseStudent.nameEnglish}</span>
-              </div>
-              <button onClick={() => setChangingCourseStudent(null)} className="p-1 text-text/40 hover:text-text cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveCourseChange} className="space-y-4">
-              <div>
-                <label className="text-[11px] font-bold text-text/70 uppercase block mb-1.5">
-                  Select New Enrolled Track
-                </label>
-                <select
-                  value={selectedNewCourseId}
-                  onChange={(e) => setSelectedNewCourseId(e.target.value)}
-                  className="w-full bg-text/5 border border-text/10 rounded-xl p-3 text-xs font-semibold cursor-pointer"
-                >
-                  {courses.map((c) => (
-                    <option key={c.courseId} value={c.courseId}>
-                      {c.courseId} - {c.courseName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setChangingCourseStudent(null)}
-                  className="flex-1 py-2.5 bg-text/5 hover:bg-text/10 rounded-xl text-xs font-semibold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updatingCourse}
-                  className="flex-1 py-2.5 bg-primary text-background font-bold rounded-xl text-xs cursor-pointer shadow-md shadow-primary/20 disabled:opacity-50"
-                >
-                  {updatingCourse ? "Updating..." : "Update Course Track"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Course Create/Edit Modal */}
-      {showCourseModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-background border border-text/10 rounded-3xl p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-text/10 pb-3">
-              <h3 className="text-lg font-bold">{isEditing ? "Edit Course Track" : "Create New Course Track"}</h3>
-              <button onClick={() => setShowCourseModal(false)} className="p-1 text-text/40 hover:text-text cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCourseSubmit} className="space-y-3.5">
-              <div>
-                <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                  Course ID
-                </label>
-                <input
-                  type="text"
-                  disabled={isEditing}
-                  placeholder="e.g. HSK-101"
-                  value={courseFormData.courseId}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, courseId: e.target.value })}
-                  className="w-full bg-text/5 border border-text/10 rounded-xl p-2.5 text-xs font-mono disabled:opacity-50"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                  Course Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Beginner Chinese (HSK 1)"
-                  value={courseFormData.courseName}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, courseName: e.target.value })}
-                  className="w-full bg-text/5 border border-text/10 rounded-xl p-2.5 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                  Admission / Batch Status
-                </label>
-                <select
-                  value={courseFormData.status}
-                  onChange={(e) => setCourseFormData({ ...courseFormData, status: e.target.value as any })}
-                  className="w-full bg-background border border-text/10 rounded-xl p-2.5 text-xs font-bold cursor-pointer"
-                >
-                  <option value="Coming Soon">Coming Soon (Open for Admission)</option>
-                  <option value="Running">Running (Admission Closed)</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                    Batch Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={courseFormData.startDate}
-                    onChange={(e) => setCourseFormData({ ...courseFormData, startDate: e.target.value })}
-                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2 text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                    Next Batch Date
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. October 15, 2026"
-                    value={courseFormData.nextBatchRegistrationDate}
-                    onChange={(e) => setCourseFormData({ ...courseFormData, nextBatchRegistrationDate: e.target.value })}
-                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                    Total Lessons
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={courseFormData.totalLessons}
-                    onChange={(e) => setCourseFormData({ ...courseFormData, totalLessons: Number(e.target.value) })}
-                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2 text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
-                    Classes Planned
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={courseFormData.totalClassesPlanned}
-                    onChange={(e) => setCourseFormData({ ...courseFormData, totalClassesPlanned: Number(e.target.value) })}
-                    className="w-full bg-text/5 border border-text/10 rounded-xl p-2 text-xs font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-3">
-                <button 
-                  type="button" 
-                  onClick={() => setShowCourseModal(false)} 
-                  className="flex-1 py-2 bg-text/5 hover:bg-text/10 rounded-xl text-xs cursor-pointer font-semibold transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex-1 py-2 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md shadow-secondary/20 transition-all"
-                >
-                  Save to MongoDB
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

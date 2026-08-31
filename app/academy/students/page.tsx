@@ -21,14 +21,18 @@ import {
   XCircle,
   Copy,
   Check,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { academyData } from "@/data/academy";
+import { IStudent, ICourse } from "@/types/academy";
 
-// 👈 Environment Variable থেকে পাসকোড লোড
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function StudentsListPage() {
-  const { students, courses } = academyData;
+  // MongoDB লাইভ ডেটা স্টেট
+  const [students, setStudents] = useState<IStudent[]>([]);
+  const [courses, setCourses] = useState<ICourse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Admin authentication states
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -54,9 +58,37 @@ export default function StudentsListPage() {
     }
   }, []);
 
+  // সরাসরি MongoDB API থেকে লাইভ স্টুডেন্ট ও কোর্স ডেটা ফেচ
+  const fetchStudentsAndCourses = async () => {
+    setLoading(true);
+    try {
+      const [studentsRes, coursesRes] = await Promise.all([
+        fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
+        fetch("/api/academy/courses", { cache: "no-store" }),
+      ]);
+
+      const studentsData = await studentsRes.json();
+      const coursesData = await coursesRes.json();
+
+      if (studentsData.success && Array.isArray(studentsData.students)) {
+        setStudents(studentsData.students);
+      }
+      if (coursesData.success && Array.isArray(coursesData.courses)) {
+        setCourses(coursesData.courses);
+      }
+    } catch (err) {
+      console.error("Failed to load students data from MongoDB:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudentsAndCourses();
+  }, []);
+
   const handleUnlockAdmin = (e: React.FormEvent) => {
     e.preventDefault();
-    // 👈 ENV ভেরিয়েবলের সাথে চেক
     if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
       setIsAdminUnlocked(true);
       sessionStorage.setItem("academy_admin_unlocked", "true");
@@ -83,7 +115,6 @@ export default function StudentsListPage() {
   const cleanPhone = (phone: string) =>
     phone ? phone.replace(/[^0-9]/g, "") : "";
 
-  // ক্লিপবোর্ডে কপি করার ফাংশন
   const handleCopyNumber = (phone: string, roll: string | number) => {
     navigator.clipboard.writeText(phone);
     setCopiedRoll(roll);
@@ -92,7 +123,18 @@ export default function StudentsListPage() {
     }, 2000);
   };
 
-  // 1. Detect duplicate phone numbers across the student list
+  // 👈 Helper: সেফলি শিক্ষার্থীর কোর্স আইডিগুলোর অ্যারে বের করা
+  const getEnrolledCourseIds = (student: any): string[] => {
+    if (Array.isArray(student?.enrolledCourseIds) && student.enrolledCourseIds.length > 0) {
+      return student.enrolledCourseIds.map((id: any) => String(id).trim());
+    }
+    if (student?.enrolledCourseId) {
+      return [String(student.enrolledCourseId).trim()];
+    }
+    return [];
+  };
+
+  // ডুপ্লিকেট ফোন নম্বর শনাক্তকরণ
   const duplicatePhoneNumbers = useMemo(() => {
     const counts: Record<string, number> = {};
     students.forEach((s) => {
@@ -104,7 +146,7 @@ export default function StudentsListPage() {
     return new Set(Object.keys(counts).filter((p) => counts[p] > 1));
   }, [students]);
 
-  // 2. Extract unique locations for filtering
+  // ইউনিক লোকেশন তালিকা
   const uniqueLocations = useMemo(() => {
     const locs = new Set<string>();
     students.forEach((s) => {
@@ -113,17 +155,20 @@ export default function StudentsListPage() {
     return Array.from(locs).sort();
   }, [students]);
 
-  // 3. Dynamic Attendance Calculation Helper
+  // ডাইনামিক অ্যাটেনডেন্স গণনা
   const getStudentStats = (
     rollNumber: string | number,
-    enrolledCourseIds: string[]
+    enrolledCourseIds: string[] = []
   ) => {
     let totalHeld = 0;
     let totalAttended = 0;
     const targetRoll = String(rollNumber).trim();
 
     courses.forEach((course) => {
-      if (enrolledCourseIds.includes(course.courseId)) {
+      const isEnrolled = enrolledCourseIds.some(
+        (id) => id.toLowerCase() === course.courseId.toLowerCase()
+      );
+      if (isEnrolled) {
         const classes = course.classes ?? [];
         totalHeld += classes.length;
         totalAttended += classes.filter((cls) =>
@@ -138,31 +183,26 @@ export default function StudentsListPage() {
     return { totalHeld, totalAttended, attendanceRate, numericRate };
   };
 
-  // 4. Combined Filter, Search & Sort Logic
+  // সার্চ, ফিল্টার ও সর্টিং
   const filteredStudents = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     const queryDigits = cleanPhone(searchQuery);
 
     return students
       .filter((student) => {
-        const nameMatch = student.nameEnglish.toLowerCase().includes(query);
-        const rollMatch = String(student.rollNumber)
-          .toLowerCase()
-          .includes(query);
+        const nameMatch = (student.nameEnglish || "").toLowerCase().includes(query);
+        const rollMatch = String(student.rollNumber || "").toLowerCase().includes(query);
         const phoneMatch =
-          cleanPhone(student.whatsapp).includes(queryDigits) ||
-          student.whatsapp.toLowerCase().includes(query);
-        const locationTextMatch = student.location
-          ?.toLowerCase()
-          .includes(query);
+          cleanPhone(student.whatsapp || "").includes(queryDigits) ||
+          (student.whatsapp || "").toLowerCase().includes(query);
+        const locationTextMatch = (student.location || "").toLowerCase().includes(query);
 
         const matchesSearch =
           nameMatch || rollMatch || phoneMatch || locationTextMatch;
 
         const matchesLocation =
           selectedLocation === "all" ||
-          student.location?.trim().toLowerCase() ===
-            selectedLocation.toLowerCase();
+          (student.location || "").trim().toLowerCase() === selectedLocation.toLowerCase();
 
         const matchesGroup =
           groupFilter === "all" ||
@@ -172,8 +212,11 @@ export default function StudentsListPage() {
         return matchesSearch && matchesLocation && matchesGroup;
       })
       .sort((a, b) => {
-        const statsA = getStudentStats(a.rollNumber, a.enrolledCourseIds ?? []);
-        const statsB = getStudentStats(b.rollNumber, b.enrolledCourseIds ?? []);
+        const enrolledA = getEnrolledCourseIds(a);
+        const enrolledB = getEnrolledCourseIds(b);
+
+        const statsA = getStudentStats(a.rollNumber, enrolledA);
+        const statsB = getStudentStats(b.rollNumber, enrolledB);
 
         if (sortBy === "attendance-desc") {
           return statsB.numericRate - statsA.numericRate;
@@ -196,6 +239,7 @@ export default function StudentsListPage() {
   return (
     <div className="min-h-screen bg-background text-text py-6 sm:py-8 lg:py-10 px-3 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        
         {/* Top Header & Admin Toggle Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -210,11 +254,19 @@ export default function StudentsListPage() {
               Enrolled Students Directory ({students.length})
             </h1>
             <p className="text-xs sm:text-sm text-text/50 mt-1">
-              Search by name/phone, filter WhatsApp group status, location, and attendance
+              Search by name/phone, filter WhatsApp group status, location, and attendance (MongoDB Live)
             </p>
           </div>
 
-          <div className="self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={fetchStudentsAndCourses}
+              className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
+              title="Refresh Live Data from MongoDB"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
+
             {isAdminUnlocked ? (
               <button
                 onClick={handleLockAdmin}
@@ -275,7 +327,7 @@ export default function StudentsListPage() {
               </select>
             </div>
 
-            {/* Location Filter Dropdown */}
+            {/* Location Filter */}
             <div className="relative flex-1 sm:w-40">
               <Filter className="w-3.5 h-3.5 text-text/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
@@ -292,7 +344,7 @@ export default function StudentsListPage() {
               </select>
             </div>
 
-            {/* Attendance & Location Sorter */}
+            {/* Sorter */}
             <div className="relative flex-1 sm:w-44">
               <ArrowUpDown className="w-3.5 h-3.5 text-text/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
@@ -329,8 +381,13 @@ export default function StudentsListPage() {
           )}
         </div>
 
-        {/* Student Cards Grid */}
-        {filteredStudents.length === 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="py-24 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-xs font-mono text-text/50">Fetching Live Students Directory from MongoDB...</p>
+          </div>
+        ) : filteredStudents.length === 0 ? (
           <div className="p-12 text-center rounded-2xl bg-text/5 border border-text/10 space-y-2">
             <p className="text-sm font-semibold text-text">
               No students found matching your criteria
@@ -342,11 +399,11 @@ export default function StudentsListPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredStudents.map((student) => {
-              const { totalHeld, totalAttended, attendanceRate } =
-                getStudentStats(
-                  student.rollNumber,
-                  student.enrolledCourseIds ?? []
-                );
+              const enrolledCourses = getEnrolledCourseIds(student);
+              const { totalHeld, totalAttended, attendanceRate } = getStudentStats(
+                student.rollNumber,
+                enrolledCourses
+              );
 
               const isDuplicateNumber = duplicatePhoneNumbers.has(
                 cleanPhone(student.whatsapp)
@@ -354,7 +411,7 @@ export default function StudentsListPage() {
 
               const avatarSrc =
                 student.avatarUrl ||
-                `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`;
+                `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish || "student")}`;
 
               const isCopied = copiedRoll === student.rollNumber;
 
@@ -392,7 +449,7 @@ export default function StudentsListPage() {
                       <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-secondary/20 via-background to-primary/20 p-0.5 border border-text/10 shadow-md shrink-0 overflow-hidden flex items-center justify-center">
                         <Image
                           src={avatarSrc}
-                          alt={student.nameEnglish}
+                          alt={student.nameEnglish || "Student"}
                           width={56}
                           height={56}
                           className="w-full h-full object-cover rounded-2xl"
@@ -405,7 +462,7 @@ export default function StudentsListPage() {
                           {student.nameEnglish}
                         </h4>
                         <p className="text-xs font-mono text-text/50">
-                          Roll: {student.rollNumber}
+                          Roll: #{student.rollNumber}
                         </p>
                       </div>
                     </div>
@@ -419,7 +476,7 @@ export default function StudentsListPage() {
                         </span>
                       </div>
 
-                      {/* WhatsApp Row with Click to Chat & Copy Action */}
+                      {/* WhatsApp Row */}
                       <div className="flex items-center justify-between gap-2">
                         {isAdminUnlocked ? (
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -484,7 +541,7 @@ export default function StudentsListPage() {
                       <div className="flex justify-between items-center pt-1 border-t border-text/10">
                         <span className="text-text/50">Enrolled In</span>
                         <span className="font-mono text-[11px] text-secondary font-semibold">
-                          {student.enrolledCourseIds?.join(", ") || "None"}
+                          {enrolledCourses.length > 0 ? enrolledCourses.join(", ") : "None"}
                         </span>
                       </div>
                     </div>
@@ -494,8 +551,7 @@ export default function StudentsListPage() {
                     href={`/academy/students/${student.rollNumber}`}
                     className="flex items-center justify-center gap-1 w-full py-2 bg-text/10 hover:bg-text/20 text-text/70 hover:text-text rounded-lg text-xs font-semibold transition-colors"
                   >
-                    View Profile & Attendance{" "}
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    View Profile & Attendance <ArrowUpRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               );
@@ -503,7 +559,7 @@ export default function StudentsListPage() {
           </div>
         )}
 
-        {/* Admin Verification Passcode Modal */}
+        {/* Admin Verification Modal */}
         {showAdminModal && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="w-full max-w-sm bg-background border border-text/10 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 transition-colors">
@@ -525,8 +581,7 @@ export default function StudentsListPage() {
               </div>
 
               <p className="text-xs text-text/50">
-                Enter your instructor/admin passkey to reveal all student
-                WhatsApp contact numbers.
+                Enter your instructor/admin passkey to reveal all student WhatsApp contact numbers.
               </p>
 
               <form onSubmit={handleUnlockAdmin} className="space-y-3">

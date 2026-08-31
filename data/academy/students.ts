@@ -145,17 +145,6 @@ export const studentsData: IStudent[] = [
     ]
   },
   {
-    "rollNumber": 14,
-    "nameEnglish": "Thakurdash Chandra Ray",
-    "whatsapp": "+8801780588812",
-    "isWhatsAppGroupJoined": true,
-    "location": "Khansama, Dinajpur",
-    "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Milo",
-    "enrolledCourseIds": [
-      "HSK-101"
-    ]
-  },
-  {
     "rollNumber": 15,
     "nameEnglish": "Aiful islam",
     "whatsapp": "+8801816147180",
@@ -580,6 +569,61 @@ export const studentsData: IStudent[] = [
     "isWhatsAppGroupJoined": true,
     "location": "Sherpur",
     "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Fahad",
+    "enrolledCourseIds": [
+      "HSK-201"
+    ]
+  },
+  {
+    "rollNumber": 54,
+    "nameEnglish": "IRFAN AHMED",
+    "whatsapp": "+8801768695940",
+    "isWhatsAppGroupJoined": false,
+    "location": "Mongla, Bagerhat",
+    "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=IRFAN%20AHMED",
+    "enrolledCourseIds": [
+      "HSK-101"
+    ]
+  },
+  {
+    "rollNumber": 55,
+    "nameEnglish": "Sohel Rana",
+    "whatsapp": "+8801710780535",
+    "isWhatsAppGroupJoined": false,
+    "location": "Gaibandha",
+    "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Sohel%20Rana",
+    "enrolledCourseIds": [
+      "HSK-201"
+    ]
+  },
+  {
+    "rollNumber": 56,
+    "nameEnglish": "Md Nayan Sheikh",
+    "whatsapp": "+8801716604823",
+    "isWhatsAppGroupJoined": false,
+    "location": "Mirpur",
+    "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Md%20Nayan%20Sheikh",
+    "enrolledCourseIds": [
+      "HSK-101"
+    ]
+  },
+  {
+    "rollNumber": 57,
+    "nameEnglish": "Shaun",
+    "whatsapp": "+8801329437213",
+    "isWhatsAppGroupJoined": false,
+    "location": "Norsingdi",
+    "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Shaun",
+    "enrolledCourseIds": [
+      "HSK-201"
+    ]
+  },
+  {
+    "rollNumber": 58,
+    "nameEnglish": "Thakurdash Chandra Ray",
+    "whatsapp": "+8801780588812",
+    "isWhatsAppGroupJoined": false,
+    "location": "Pakerhat,Khansama,Dinajpur",
+    "avatarUrl": "https://api.dicebear.com/10.x/adventurer/svg?seed=Thakurdash%20Chandra%20Ray",
     "enrolledCourseIds": [
       "HSK-201"
     ]

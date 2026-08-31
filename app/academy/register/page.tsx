@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -11,9 +11,11 @@ import {
   User, 
   Phone, 
   MapPin, 
-  BookOpen 
+  BookOpen,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
-import { academyData } from "@/data/academy";
+import { ICourse } from "@/types/academy";
 
 const COUNTRY_CODES = [
   { code: "+880", country: "Bangladesh", flag: "🇧🇩", minDigits: 10 },
@@ -27,19 +29,45 @@ const ADMIN_WHATSAPP = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "+8801787881334
 export default function StudentRegistrationPage() {
   const router = useRouter();
   
-  // লোকাল ফাইল থেকে Coming Soon কোর্স ফিল্টার
-  const comingSoonCourses = academyData.courses.filter((c) => c.status === "Coming Soon");
+  // 👈 MongoDB লাইভ কোর্স স্টেট
+  const [courses, setCourses] = useState<ICourse[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+880");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
-  const [selectedCourseId, setSelectedCourseId] = useState(comingSoonCourses[0]?.courseId || "");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // পোস্ট-রেজিস্ট্রেশন পপআপ স্টেট
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [registeredData, setRegisteredData] = useState<any>(null);
+
+  // 👈 সরাসরি MongoDB API থেকে লাইভ কোর্স লোড
+  const fetchLiveCourses = async () => {
+    setLoadingCourses(true);
+    try {
+      const res = await fetch("/api/academy/courses", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.courses)) {
+        // শুধুমাত্র যে কোর্সগুলো Coming Soon বা উন্মুক্ত
+        const openCourses = data.courses.filter((c: ICourse) => c.status === "Coming Soon");
+        setCourses(openCourses);
+        if (openCourses.length > 0) {
+          setSelectedCourseId(openCourses[0].courseId);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load courses from MongoDB:", err);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveCourses();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +85,6 @@ export default function StudentRegistrationPage() {
     };
 
     try {
-      // সরাসরি MongoDB API-তে পাঠানো
       const res = await fetch("/api/academy/students/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -104,22 +131,43 @@ export default function StudentRegistrationPage() {
   return (
     <div className="min-h-screen bg-background text-text py-10 px-4 transition-colors">
       <div className="max-w-xl mx-auto space-y-6">
-        <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
-        </Link>
-        
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-primary" /> Scholar Admission
-        </h1>
+        <div className="flex justify-between items-center">
+          <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
+          </Link>
 
-        {comingSoonCourses.length === 0 ? (
+          <button
+            type="button"
+            onClick={fetchLiveCourses}
+            className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
+            title="Refresh Available Courses from MongoDB"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingCourses ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+        
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary" /> Scholar Admission
+          </h1>
+          <p className="text-xs text-text/50 mt-1 font-mono">
+            Direct Admission via MongoDB Live
+          </p>
+        </div>
+
+        {loadingCourses ? (
+          <div className="p-12 border border-text/10 rounded-3xl text-center space-y-3 bg-text/5 flex flex-col items-center justify-center">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-xs font-mono text-text/50">Fetching Open Batches from MongoDB...</p>
+          </div>
+        ) : courses.length === 0 ? (
           <div className="p-8 border border-text/10 rounded-2xl text-center space-y-3 bg-text/5">
             <AlertCircle className="w-10 h-10 text-secondary mx-auto" />
             <h3 className="text-lg font-bold">All Batches Currently Running!</h3>
-            <p className="text-xs text-text/60">No upcoming courses are open for admission at this moment.</p>
+            <p className="text-xs text-text/60">No upcoming courses are open for admission in MongoDB at this moment.</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-text/5 border border-text/10 space-y-4 shadow-xl">
+          <form onSubmit={handleSubmit} className="p-6 rounded-3xl bg-text/5 border border-text/10 space-y-4 shadow-xl">
             {/* Name */}
             <div>
               <label className="text-xs font-bold flex items-center gap-1 mb-1">
@@ -176,7 +224,7 @@ export default function StudentRegistrationPage() {
               />
             </div>
 
-            {/* Course Select */}
+            {/* Course Select from MongoDB */}
             <div>
               <label className="text-xs font-bold flex items-center gap-1 mb-1">
                 <BookOpen className="w-3.5 h-3.5 text-primary" /> Select Track
@@ -186,9 +234,9 @@ export default function StudentRegistrationPage() {
                 onChange={(e) => setSelectedCourseId(e.target.value)}
                 className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm font-semibold cursor-pointer"
               >
-                {comingSoonCourses.map((c) => (
+                {courses.map((c) => (
                   <option key={c.courseId} value={c.courseId}>
-                    {c.courseId} - {c.courseName} (Coming Soon)
+                    {c.courseId} - {c.courseName} (Admission Open)
                   </option>
                 ))}
               </select>
@@ -197,9 +245,9 @@ export default function StudentRegistrationPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-sm shadow-md shadow-secondary/20 cursor-pointer transition-all"
+              className="w-full py-3.5 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-2xl text-sm shadow-md shadow-secondary/20 cursor-pointer transition-all disabled:opacity-50"
             >
-              {submitting ? "Submitting to Database..." : "Submit Registration"}
+              {submitting ? "Submitting to MongoDB..." : "Submit Registration"}
             </button>
           </form>
         )}

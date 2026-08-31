@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -12,16 +12,20 @@ import {
   CheckCircle2,
   XCircle,
   Calendar,
-  Clock
+  Clock,
+  Loader2
 } from "lucide-react";
-import { academyData } from "@/data/academy";
+import { ICourse, IStudent } from "@/types/academy";
 
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function TeacherClassLogPage() {
-  const { courses, students } = academyData;
+  // MongoDB লাইভ ডাটা স্টেট
+  const [courses, setCourses] = useState<ICourse[]>([]);
+  const [students, setStudents] = useState<IStudent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedCourseId, setSelectedCourseId] = useState(courses[0]?.courseId || "");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [teacherPasscode, setTeacherPasscode] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00 PM - 10:10 PM");
@@ -31,11 +35,41 @@ export default function TeacherClassLogPage() {
   const [toLesson, setToLesson] = useState(1);
   const [toText, setToText] = useState(2);
 
-  // স্ট্রিং ফরম্যাটে রোল সংরক্ষণ (টাইপ মিসম্যাচ রোধ করতে)
   const [presentRolls, setPresentRolls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // 👈 স্টুডেন্ট ফিল্টারিং (array বা string উভয় ফিল্ড সাপোর্ট সহ)
+  // 👈 MongoDB থেকে লাইভ কোর্স এবং স্টুডেন্ট ফেচ
+  useEffect(() => {
+    const fetchLiveData = async () => {
+      setLoading(true);
+      try {
+        const [coursesRes, studentsRes] = await Promise.all([
+          fetch("/api/academy/courses", { cache: "no-store" }),
+          fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
+        ]);
+
+        const coursesData = await coursesRes.json();
+        const studentsData = await studentsRes.json();
+
+        if (coursesData.success && coursesData.courses?.length > 0) {
+          setCourses(coursesData.courses);
+          setSelectedCourseId(coursesData.courses[0].courseId);
+        }
+
+        if (studentsData.success && studentsData.students) {
+          setStudents(studentsData.students);
+        }
+      } catch (err) {
+        console.error("Failed to load live data from MongoDB:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLiveData();
+  }, []);
+
+  // নির্বাচিত কোর্সে এনরোল্ড স্টুডেন্ট ফিল্টার
   const currentCourseCode = selectedCourseId.toLowerCase();
   const enrolled = students.filter((s: any) => {
     if (Array.isArray(s.enrolledCourseIds)) {
@@ -44,10 +78,9 @@ export default function TeacherClassLogPage() {
     if (s.enrolledCourseId) {
       return String(s.enrolledCourseId).toLowerCase() === currentCourseCode;
     }
-    return true;
+    return false;
   });
 
-  // একক স্টুডেন্ট টগল (Present <-> Absent)
   const toggleAttendance = (roll: string | number) => {
     const rollStr = String(roll).trim();
     setPresentRolls((prev) =>
@@ -55,7 +88,6 @@ export default function TeacherClassLogPage() {
     );
   };
 
-  // All Student Select / Deselect Toggle Logic
   const isAllSelected = enrolled.length > 0 && presentRolls.length === enrolled.length;
 
   const handleToggleSelectAll = () => {
@@ -73,7 +105,6 @@ export default function TeacherClassLogPage() {
 
     const allRolls = enrolled.map((s) => String(s.rollNumber).trim());
     const absentRolls = allRolls.filter((roll) => !presentRolls.includes(roll));
-
     const summary = `Lesson ${fromLesson} Text ${fromText} to Lesson ${toLesson} Text ${toText}`;
 
     try {
@@ -95,7 +126,7 @@ export default function TeacherClassLogPage() {
       setSubmitting(false);
 
       if (result.success) {
-        alert("Class session logged successfully! Submitted to MongoDB for Admin approval.");
+        alert("Class session logged successfully to MongoDB!");
         window.location.href = "/academy";
       } else {
         alert(result.message || "Failed to submit class log");
@@ -105,6 +136,17 @@ export default function TeacherClassLogPage() {
       alert("Error submitting class session. Please try again.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-xs font-mono text-text/50">Fetching Live Cohorts from MongoDB...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-6 lg:px-8 transition-colors">
@@ -118,7 +160,7 @@ export default function TeacherClassLogPage() {
             <Sparkles className="w-6 h-6 text-primary" /> Teacher Class Logger
           </h1>
           <p className="text-xs sm:text-sm text-text/50 mt-1">
-            Log class progress and mark attendance directly for live cohorts.
+            Log class progress and mark attendance directly for live cohorts. (MongoDB Live)
           </p>
         </div>
 
@@ -133,7 +175,7 @@ export default function TeacherClassLogPage() {
               required
               value={teacherPasscode}
               onChange={(e) => setTeacherPasscode(e.target.value)}
-              placeholder="Enter PIN"
+              placeholder="Enter PIN (e.g. 8131)"
               className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary font-mono tracking-widest"
             />
           </div>
@@ -189,7 +231,7 @@ export default function TeacherClassLogPage() {
             </div>
           </div>
 
-          {/* 👈 CourseDetailsPage Style Attendance Selector */}
+          {/* Attendance Section */}
           <div className="space-y-4 p-4 sm:p-6 bg-background border border-text/10 rounded-3xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-text/10 pb-4">
               <div className="flex items-center gap-2">
@@ -210,7 +252,6 @@ export default function TeacherClassLogPage() {
                 </div>
               </div>
               
-              {/* Select All Toggle Button */}
               {enrolled.length > 0 && (
                 <button
                   type="button"
@@ -236,7 +277,6 @@ export default function TeacherClassLogPage() {
               )}
             </div>
 
-            {/* Interactive Present/Absent Tiles */}
             {enrolled.length === 0 ? (
               <p className="text-xs text-text/40 py-8 text-center italic">
                 No students enrolled in this course track yet.

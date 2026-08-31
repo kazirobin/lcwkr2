@@ -14,15 +14,14 @@ import {
   KeyRound, 
   X, 
   Lock, 
-  Unlock,
-  CheckSquare,
-  Square,
-  Save,
-  Trash2,
-  RefreshCw,
-  Loader2
+  Unlock, 
+  CheckSquare, 
+  Square, 
+  Save, 
+  Trash2, 
+  RefreshCw, 
+  Loader2 
 } from "lucide-react";
-import { academyData } from "@/data/academy";
 import { ICourse, IClassSession, IStudent } from "@/types/academy";
 
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
@@ -36,12 +35,10 @@ export default function CourseDetailsPage({ params }: Props) {
   const resolvedParams = use(params);
   const courseId = decodeURIComponent(resolvedParams.id).trim();
 
-  // MongoDB লাইভ ডাটা স্টেট
-  const [course, setCourse] = useState<ICourse | null>(
-    academyData.courses.find((c) => c.courseId.toLowerCase() === courseId.toLowerCase()) || null
-  );
-  const [allStudents, setAllStudents] = useState<IStudent[]>(academyData.students || []);
-  const [loading, setLoading] = useState(false);
+  // MongoDB লাইভ স্টেট
+  const [course, setCourse] = useState<ICourse | null>(null);
+  const [allStudents, setAllStudents] = useState<IStudent[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // অ্যাডমিন স্টেট
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -72,7 +69,7 @@ export default function CourseDetailsPage({ params }: Props) {
     }
   }, []);
 
-  // MongoDB API থেকে লাইভ ডেটা ফেচ
+  // MongoDB থেকে লাইভ ডেটা ফেচ
   const fetchLiveCourseData = async () => {
     setLoading(true);
     try {
@@ -84,14 +81,14 @@ export default function CourseDetailsPage({ params }: Props) {
       const coursesData = await coursesRes.json();
       const studentsData = await studentsRes.json();
 
-      if (coursesData.success && coursesData.courses) {
+      if (coursesData.success && Array.isArray(coursesData.courses)) {
         const found = coursesData.courses.find(
           (c: ICourse) => c.courseId.toLowerCase() === courseId.toLowerCase()
         );
-        if (found) setCourse(found);
+        setCourse(found || null);
       }
 
-      if (studentsData.success && studentsData.students && studentsData.students.length > 0) {
+      if (studentsData.success && Array.isArray(studentsData.students)) {
         setAllStudents(studentsData.students);
       }
     } catch (err) {
@@ -105,11 +102,10 @@ export default function CourseDetailsPage({ params }: Props) {
     fetchLiveCourseData();
   }, [courseId]);
 
-  // স্টুডেন্ট ফিল্টারিং (array বা string উভয় ফিল্ড সাপোর্ট)
+  // স্টুডেন্ট ফিল্টারিং
   const currentCourseCode = (course?.courseId || courseId).toLowerCase();
-  
-  const studentSourceList = allStudents.length > 0 ? allStudents : academyData.students;
-  const filteredEnrolled = studentSourceList.filter((s: any) => {
+
+  const enrolledStudents = allStudents.filter((s: any) => {
     if (Array.isArray(s.enrolledCourseIds)) {
       return s.enrolledCourseIds.some((id: string) => id.toLowerCase() === currentCourseCode);
     }
@@ -119,12 +115,9 @@ export default function CourseDetailsPage({ params }: Props) {
     return false;
   });
 
-  // যদি ফিল্টারিংয়ে কোনো স্টুডেন্ট না মেলে, সেফ ফলব্যাক হিসেবে সব স্টুডেন্ট দেখাবে
-  const enrolledStudents = filteredEnrolled.length > 0 ? filteredEnrolled : studentSourceList;
-
   // রোল নম্বর থেকে শিক্ষার্থীর নাম ম্যাপ
   const studentMap = new Map<string, string>();
-  studentSourceList.forEach((s) => {
+  allStudents.forEach((s) => {
     studentMap.set(String(s.rollNumber).trim(), s.nameEnglish);
   });
 
@@ -227,7 +220,7 @@ export default function CourseDetailsPage({ params }: Props) {
       if (data.success) {
         await fetchLiveCourseData();
         setEditingClass(null);
-        alert("Attendance & Class Details Updated Successfully!");
+        alert("Attendance & Class Details Updated Live in MongoDB!");
       } else {
         alert(data.message || "Failed to update attendance.");
       }
@@ -246,7 +239,7 @@ export default function CourseDetailsPage({ params }: Props) {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete "${classId}"?\n\nSubsequent classes will automatically shift up to fill this sequence.`)) {
+    if (!confirm(`Are you sure you want to delete "${classId}" from MongoDB?\n\nSubsequent classes will automatically shift up to fill this sequence.`)) {
       return;
     }
 
@@ -277,12 +270,12 @@ export default function CourseDetailsPage({ params }: Props) {
     }
   };
 
-  if (loading && !course) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs font-mono text-text/50">Fetching Course Data...</p>
+          <p className="text-xs font-mono text-text/50">Fetching Course Data from MongoDB...</p>
         </div>
       </div>
     );
@@ -291,7 +284,7 @@ export default function CourseDetailsPage({ params }: Props) {
   if (!course) {
     return (
       <div className="min-h-screen bg-background text-text py-20 px-4 text-center space-y-4">
-        <p className="text-sm font-semibold text-text/70">Course Track "{courseId}" not found.</p>
+        <p className="text-sm font-semibold text-text/70">Course Track "{courseId}" not found in MongoDB.</p>
         <Link href="/academy/courses" className="text-xs text-primary hover:underline font-bold">
           ← Back to Courses
         </Link>
@@ -320,7 +313,7 @@ export default function CourseDetailsPage({ params }: Props) {
             <button
               onClick={fetchLiveCourseData}
               className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
-              title="Refresh Live Data"
+              title="Refresh Live Data from MongoDB"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
@@ -354,6 +347,7 @@ export default function CourseDetailsPage({ params }: Props) {
               <span className="text-xs bg-text/5 border border-text/10 px-2.5 py-1 rounded-xl">
                 Target: <b>{course.targetLevel}</b>
               </span>
+              <span className="text-[11px] font-mono text-emerald-500 font-semibold">● Live MongoDB</span>
             </div>
 
             <span
@@ -406,7 +400,7 @@ export default function CourseDetailsPage({ params }: Props) {
 
           {!course.classes || course.classes.length === 0 ? (
             <div className="p-8 text-center rounded-3xl bg-text/5 border border-text/10 text-xs text-text/40">
-              No classes logged yet for this cohort.
+              No classes logged yet for this cohort in MongoDB.
             </div>
           ) : (
             <div className="space-y-4">
@@ -487,7 +481,7 @@ export default function CourseDetailsPage({ params }: Props) {
                       </div>
                     )}
 
-                    {/* Attendance Details (Names & Rolls) */}
+                    {/* Attendance Details */}
                     <div className="space-y-3 pt-1">
                       <div className="flex items-center gap-3 text-xs font-semibold">
                         <span className="inline-flex items-center gap-1 text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
@@ -614,7 +608,7 @@ export default function CourseDetailsPage({ params }: Props) {
         </div>
       )}
 
-      {/* 2. 👈 Class Log Edit Modal (Full Open Student Grid without Inner Scrollbar) */}
+      {/* 2. Class Log Edit Modal */}
       {editingClass && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <div className="w-full max-w-2xl bg-background border border-text/10 rounded-3xl p-5 sm:p-7 space-y-5 max-h-[92vh] overflow-y-auto shadow-2xl">
@@ -705,7 +699,7 @@ export default function CourseDetailsPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* Attendance Selection (Full Open Grid without Scrollbar) */}
+              {/* Attendance Selection */}
               <div className="space-y-3 p-4 bg-background border border-text/10 rounded-2xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-text/10 pb-3">
                   <div>
@@ -744,7 +738,6 @@ export default function CourseDetailsPage({ params }: Props) {
                   </button>
                 </div>
 
-                {/* 👈 Open Grid (সব নাম একসাথে দেখাবে) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                   {enrolledStudents.map((s) => {
                     const rollStr = String(s.rollNumber).trim();

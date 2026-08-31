@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { useParams, useRouter, notFound } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
   MapPin, 
-  CheckCircle2, 
-  Phone, 
   BookOpen, 
   Lock, 
   Unlock, 
@@ -16,33 +13,28 @@ import {
   X, 
   Copy, 
   Check, 
-  MessageSquare,
-  ChevronLeft
+  MessageSquare, 
+  ChevronLeft, 
+  Loader2, 
+  RefreshCw,
+  Layers,
+  Calendar
 } from "lucide-react";
-import { academyData } from "@/data/academy";
+import { IStudent, ICourse } from "@/types/academy";
 
-// 👈 Environment Variable থেকে এডমিন পাসকোড লোড
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function StudentProfilePage() {
   const router = useRouter();
   const params = useParams();
   
-  // 👈 useParams() থেকে সেফলি rollNumber এক্সট্র্যাক্ট করা
   const rawRoll = params?.roll ? (Array.isArray(params.roll) ? params.roll[0] : params.roll) : "";
   const targetRoll = decodeURIComponent(String(rawRoll)).trim();
 
-  // লোকাল ডাটা থেকে স্টুডেন্ট ও কোর্স লুকআপ
-  const student = academyData.students.find(
-    (s) => String(s.rollNumber).trim() === targetRoll
-  );
-
-  if (!student) {
-    notFound();
-  }
-
-  const enrolledCourseId = student.enrolledCourseIds[0] || "HSK-101";
-  const course = academyData.courses.find((c) => c.courseId === enrolledCourseId);
+  // MongoDB লাইভ ডেটা স্টেট
+  const [student, setStudent] = useState<IStudent | null>(null);
+  const [courses, setCourses] = useState<ICourse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // সিকিউরিটি পিন ও আনলক স্টেট
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
@@ -59,9 +51,43 @@ export default function StudentProfilePage() {
     }
   }, []);
 
+  // সরাসরি MongoDB API থেকে স্টুডেন্ট ও কোর্স লাইভ ফেচ
+  const fetchStudentProfileData = async () => {
+    setLoading(true);
+    try {
+      const [studentsRes, coursesRes] = await Promise.all([
+        fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
+        fetch("/api/academy/courses", { cache: "no-store" }),
+      ]);
+
+      const studentsData = await studentsRes.json();
+      const coursesData = await coursesRes.json();
+
+      if (studentsData.success && Array.isArray(studentsData.students)) {
+        const found = studentsData.students.find(
+          (s: any) => String(s.rollNumber).trim() === targetRoll
+        );
+        setStudent(found || null);
+      }
+
+      if (coursesData.success && Array.isArray(coursesData.courses)) {
+        setCourses(coursesData.courses);
+      }
+    } catch (err) {
+      console.error("Failed to load student profile from MongoDB:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (targetRoll) {
+      fetchStudentProfileData();
+    }
+  }, [targetRoll]);
+
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    // 👈 ENV ভেরিয়েবলের সাথে ভ্যালিডেশন
     if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
       setIsAdminUnlocked(true);
       sessionStorage.setItem("academy_admin_unlocked", "true");
@@ -74,19 +100,62 @@ export default function StudentProfilePage() {
   };
 
   const handleCopyPhone = () => {
-    if (!student.whatsapp) return;
+    if (!student?.whatsapp) return;
     navigator.clipboard.writeText(student.whatsapp);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // মোবাইল নম্বর মাস্ক করার ফাংশন (+88017 •••• 334)
   const maskPhone = (phone: string) => {
     if (!phone || phone.length < 8) return "••••••••••";
     const start = phone.slice(0, 6);
     const end = phone.slice(-3);
     return `${start} •••• ${end}`;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-xs font-mono text-text/50">Fetching Student Profile from MongoDB...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-background text-text py-20 px-4 text-center space-y-4">
+        <p className="text-sm font-semibold text-text/70">Student with Roll #{targetRoll} not found in database.</p>
+        <button
+          onClick={() => router.push("/academy/students")}
+          className="text-xs text-primary hover:underline font-bold cursor-pointer"
+        >
+          ← Return to Scholars List
+        </button>
+      </div>
+    );
+  }
+
+  // 👈 Type-Safe Normalization (enrolledCourseIds বা enrolledCourseId যাই থাকুক না কেন সেফলি অ্যারে তৈরি করবে)
+  const normalizedEnrolledCourseIds: string[] = (() => {
+    if (Array.isArray(student.enrolledCourseIds) && student.enrolledCourseIds.length > 0) {
+      return student.enrolledCourseIds.map((id) => String(id).trim());
+    }
+    const anyStudent = student as any;
+    if (anyStudent.enrolledCourseId) {
+      return [String(anyStudent.enrolledCourseId).trim()];
+    }
+    return ["HSK-101"];
+  })();
+
+  // শিক্ষার্থীর এনরোল্ড কোর্সগুলোর ফুল অবজেক্ট তালিকা
+  const enrolledCoursesList = courses.filter((c) =>
+    normalizedEnrolledCourseIds.some(
+      (id) => id.toLowerCase() === c.courseId.toLowerCase()
+    )
+  );
 
   const cleanDigits = student.whatsapp ? student.whatsapp.replace(/[^0-9]/g, "") : "";
 
@@ -103,63 +172,77 @@ export default function StudentProfilePage() {
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
 
-          {isAdminUnlocked ? (
-            <span className="text-[11px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
-              <Unlock className="w-3 h-3" /> Admin Mode Active
-            </span>
-          ) : (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                setEnteredPin("");
-                setPinError(false);
-                setShowPinModal(true);
-              }}
-              className="text-xs text-text/50 hover:text-text bg-text/5 border border-text/10 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all"
+              onClick={fetchStudentProfileData}
+              className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
+              title="Refresh Live Data"
             >
-              <Lock className="w-3 h-3 text-primary" /> Unlock Contacts
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
-          )}
+
+            {isAdminUnlocked ? (
+              <span className="text-[11px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                <Unlock className="w-3 h-3" /> Admin Mode Active
+              </span>
+            ) : (
+              <button
+                onClick={() => {
+                  setEnteredPin("");
+                  setPinError(false);
+                  setShowPinModal(true);
+                }}
+                className="text-xs text-text/50 hover:text-text bg-text/5 border border-text/10 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all"
+              >
+                <Lock className="w-3 h-3 text-primary" /> Unlock Contacts
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Profile Card */}
-        <div className="p-6 rounded-3xl bg-text/5 border border-text/10 flex flex-col sm:flex-row items-center gap-6 shadow-sm">
-          <div className="w-24 h-24 rounded-2xl overflow-hidden bg-background border border-text/10 shrink-0">
+        <div className="p-6 sm:p-8 rounded-3xl bg-text/5 border border-text/10 flex flex-col sm:flex-row items-center sm:items-start gap-6 shadow-sm">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-background border border-text/10 shrink-0">
             <Image
-              src={student.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish)}`}
-              alt={student.nameEnglish}
-              width={96}
-              height={96}
+              src={student.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish || "student")}`}
+              alt={student.nameEnglish || "Student"}
+              width={112}
+              height={112}
               className="w-full h-full object-cover"
               unoptimized
             />
           </div>
 
-          <div className="space-y-2 text-center sm:text-left flex-1">
+          <div className="space-y-3 text-center sm:text-left flex-1">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <h1 className="text-2xl font-bold">{student.nameEnglish}</h1>
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold">
-                Roll: {student.rollNumber}
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-text">{student.nameEnglish}</h1>
+              <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold">
+                Roll: #{student.rollNumber}
               </span>
-              {!student.isWhatsAppGroupJoined && (
-                <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              {!student.isWhatsAppGroupJoined ? (
+                <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
                   Not in Group
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  Group Joined
                 </span>
               )}
             </div>
 
-            <p className="text-xs text-text/50 flex items-center justify-center sm:justify-start gap-1">
-              <MapPin className="w-3.5 h-3.5 text-secondary" /> {student.location || "Dhaka, Bangladesh"}
+            <p className="text-xs sm:text-sm text-text/50 flex items-center justify-center sm:justify-start gap-1.5">
+              <MapPin className="w-4 h-4 text-secondary shrink-0" /> {student.location || "Location not set"}
             </p>
 
             {/* Protected Contact View */}
             <div className="pt-1 flex items-center justify-center sm:justify-start gap-2">
               {isAdminUnlocked ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <a
                     href={`https://wa.me/${cleanDigits}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-mono font-bold text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20"
+                    className="text-xs font-mono font-bold text-primary hover:underline flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 shadow-sm"
                     title="Chat on WhatsApp"
                   >
                     <MessageSquare className="w-3.5 h-3.5" /> {student.whatsapp}
@@ -167,7 +250,7 @@ export default function StudentProfilePage() {
 
                   <button
                     onClick={handleCopyPhone}
-                    className="p-1 text-text/40 hover:text-text rounded-md hover:bg-text/5 transition-colors cursor-pointer"
+                    className="p-1.5 text-text/40 hover:text-text rounded-lg hover:bg-text/5 transition-colors cursor-pointer border border-text/10"
                     title={copied ? "Copied!" : "Copy Number"}
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -180,7 +263,7 @@ export default function StudentProfilePage() {
                     setPinError(false);
                     setShowPinModal(true);
                   }}
-                  className="text-xs font-mono text-text/40 hover:text-text/70 bg-background border border-text/10 px-3 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="text-xs font-mono text-text/40 hover:text-text/70 bg-background border border-text/10 px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
                   title="Click to enter admin PIN"
                 >
                   <Lock className="w-3.5 h-3.5 text-primary" />
@@ -191,21 +274,50 @@ export default function StudentProfilePage() {
           </div>
         </div>
 
-        {/* Course Track Info */}
-        <div className="p-6 rounded-3xl bg-text/5 border border-text/10 space-y-4">
-          <h3 className="text-base font-bold flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-secondary" /> Enrolled Cohort: {course?.courseName || enrolledCourseId}
+        {/* Enrolled Course Tracks Info */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-text/70 uppercase tracking-wider flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-secondary" /> Enrolled Cohorts & Tracks ({normalizedEnrolledCourseIds.length})
           </h3>
-          <p className="text-xs text-text/50">
-            Target Level: <span className="font-mono text-text font-bold">{course?.targetLevel || "HSK 1"}</span> • Status: <span className="font-bold text-emerald-500">{course?.status || "Running"}</span>
-          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {enrolledCoursesList.length > 0 ? (
+              enrolledCoursesList.map((c) => (
+                <div
+                  key={c.courseId}
+                  className="p-5 rounded-2xl bg-text/5 border border-text/10 space-y-2.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-xs font-bold text-secondary bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded-md">
+                        {c.courseId}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        {c.status}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-base text-text">{c.courseName}</h4>
+                  </div>
+
+                  <div className="pt-2 border-t border-text/10 text-xs text-text/60 flex justify-between items-center font-mono">
+                    <span>Target: <b>{c.targetLevel}</b></span>
+                    <span>Lessons: <b>{c.totalLessons}</b></span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-5 rounded-2xl bg-text/5 border border-text/10 col-span-full text-xs font-mono text-text/60">
+                Track ID: <b className="text-secondary">{normalizedEnrolledCourseIds.join(", ")}</b>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Bottom Back Link */}
         <div className="pt-2">
           <button
             onClick={() => router.back()}
-            className="w-full py-2.5 bg-text/5 hover:bg-text/10 border border-text/10 rounded-2xl text-xs font-semibold text-text/70 hover:text-text flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            className="w-full py-3 bg-text/5 hover:bg-text/10 border border-text/10 rounded-2xl text-xs font-semibold text-text/70 hover:text-text flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Return to Scholars List
           </button>
