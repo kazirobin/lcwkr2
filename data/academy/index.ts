@@ -9,12 +9,12 @@ export const academyData: IAcademyData = {
     "courseId": "HSK-101",
     "courseName": "Beginner Chinese (HSK 1)",
     "targetLevel": "HSK 1",
-    "status": "Running",
+    "status": "Coming Soon",
     "startDate": "2026-09-29",
     "nextBatchRegistrationDate": "September 20, 2026",
     "totalLessons": 15,
     "totalClassesPlanned": 20,
-    "completedClassesCount": 1,
+    "completedClassesCount": 2,
     "classes": [
       {
         "classId": "CLS-HSK101-01",
@@ -26,7 +26,7 @@ export const academyData: IAcademyData = {
           "fromLesson": 1,
           "fromText": 1,
           "toLesson": 1,
-          "toText": 2
+          "toText": 3
         },
         "presentStudents": [
           2,
@@ -47,15 +47,17 @@ export const academyData: IAcademyData = {
           37,
           36,
           33,
-          25
-        ],
-        "absentStudents": [
+          25,
           1,
           3,
           7,
           10,
-          11,
           12,
+          11,
+          29,
+          32
+        ],
+        "absentStudents": [
           13,
           14,
           15,
@@ -64,10 +66,8 @@ export const academyData: IAcademyData = {
           18,
           22,
           28,
-          29,
           30,
           31,
-          32,
           34,
           35,
           38,
@@ -76,6 +76,67 @@ export const academyData: IAcademyData = {
           50
         ],
         "_id": "6a93152d464718e9f494b871"
+      },
+      {
+        "classId": "CLS-HSK101-02",
+        "date": "2026-08-30",
+        "time": "09:00 PM - 10:10 PM",
+        "status": "Completed",
+        "contentCovered": {
+          "summary": "Lesson 2 Text 1 to Lesson 2 Text 3",
+          "fromLesson": 2,
+          "fromText": 1,
+          "toLesson": 2,
+          "toText": 3
+        },
+        "presentStudents": [
+          20,
+          3,
+          21,
+          28,
+          29,
+          30,
+          50,
+          43,
+          44,
+          39,
+          27,
+          23,
+          24,
+          10,
+          15,
+          4,
+          7,
+          5,
+          12,
+          11,
+          18,
+          8,
+          2,
+          37,
+          22,
+          36,
+          14
+        ],
+        "absentStudents": [
+          1,
+          6,
+          9,
+          13,
+          16,
+          17,
+          25,
+          26,
+          31,
+          32,
+          33,
+          34,
+          35,
+          38,
+          40,
+          42
+        ],
+        "_id": "6a94575a6ba259d2cb6787f6"
       }
     ],
     "weekendExams": [
@@ -127,13 +188,42 @@ export const academyData: IAcademyData = {
     "courseId": "HSK-201",
     "courseName": "Elementary Chinese (HSK 2)",
     "targetLevel": "HSK 2",
-    "status": "Running",
+    "status": "Coming Soon",
     "startDate": "2026-08-29",
     "nextBatchRegistrationDate": "September 20, 2026",
     "totalLessons": 15,
     "totalClassesPlanned": 20,
-    "completedClassesCount": 0,
-    "classes": [],
+    "completedClassesCount": 1,
+    "classes": [
+      {
+        "classId": "CLS-HSK201-01",
+        "date": "2026-08-30",
+        "time": "09:00 PM - 10:10 PM",
+        "status": "Completed",
+        "contentCovered": {
+          "summary": "Lesson 1 Text 1 to Lesson 1 Text 2",
+          "fromLesson": 1,
+          "fromText": 1,
+          "toLesson": 1,
+          "toText": 2
+        },
+        "presentStudents": [
+          46,
+          19,
+          41,
+          48
+        ],
+        "absentStudents": [
+          45,
+          47,
+          49,
+          51,
+          52,
+          53
+        ],
+        "_id": "6a9457576ba259d2cb6787f5"
+      }
+    ],
     "weekendExams": []
   }
 ],
