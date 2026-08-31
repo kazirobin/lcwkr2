@@ -18,10 +18,12 @@ import {
   MessageSquare, 
   XCircle, 
   CheckCircle2, 
-  DownloadCloud
+  DownloadCloud,
+  BookOpen,
+  ArrowRightLeft
 } from "lucide-react";
 
-// 👈 Environment Variable থেকে পাসকোড লোড
+// Environment Variable থেকে পাসকোড লোড
 const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function AdminControlPanel() {
@@ -52,6 +54,11 @@ export default function AdminControlPanel() {
     totalClassesPlanned: 24,
   });
 
+  // 👈 স্টুডেন্ট কোর্স পরিবর্তনের মোডাল স্টেট
+  const [changingCourseStudent, setChangingCourseStudent] = useState<any | null>(null);
+  const [selectedNewCourseId, setSelectedNewCourseId] = useState("");
+  const [updatingCourse, setUpdatingCourse] = useState(false);
+
   // সরাসরি MongoDB API থেকে লাইভ ডাটা ফেচ
   const fetchAdminData = async () => {
     setLoading(true);
@@ -81,7 +88,6 @@ export default function AdminControlPanel() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // 👈 ENV ভেরিয়েবলের সাথে চেক
     if (passcode.trim() === ADMIN_SECRET_PASSCODE.trim()) {
       setIsAuthenticated(true);
       fetchAdminData();
@@ -90,7 +96,7 @@ export default function AdminControlPanel() {
     }
   };
 
-  // MongoDB থেকে লোকাল .ts ফাইলে ডেটা সিঙ্ক হ্যান্ডলার
+  // MongoDB থেকে লোকাল .ts ফাইলে ডেটা সিঙ্ক
   const handleSyncToFile = async () => {
     if (!confirm("Are you sure you want to download and overwrite local .ts files with MongoDB live data?")) {
       return;
@@ -112,7 +118,7 @@ export default function AdminControlPanel() {
     }
   };
 
-  // স্টুডেন্ট অনুমোদন / রিজেক্ট / ডিলিট (Auto Roll Re-index)
+  // স্টুডেন্ট অনুমোদন / রিজেক্ট / ডিলিট
   const handleStudentAction = async (rollNumber: number, action: "APPROVE" | "REJECT" | "DELETE", studentName?: string) => {
     const confirmMsg = action === "DELETE" 
       ? `Are you sure you want to permanently delete Roll #${rollNumber} (${studentName || 'Student'}) from MongoDB?\n\nSubsequent rolls will automatically shift down by 1.` 
@@ -158,6 +164,47 @@ export default function AdminControlPanel() {
     }
   };
 
+  // 👈 স্টুডেন্ট কোর্স পরিবর্তনের সাবমিট হ্যান্ডলার
+// 👈 স্টুডেন্ট কোর্স পরিবর্তনের হ্যান্ডলার (Crash Proof)
+  const handleSaveCourseChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!changingCourseStudent || !selectedNewCourseId) return;
+
+    setUpdatingCourse(true);
+    try {
+      const res = await fetch("/api/academy/students/change-course", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rollNumber: Number(changingCourseStudent.rollNumber),
+          newCourseId: selectedNewCourseId,
+          adminPasscode: passcode.trim(),
+        }),
+      });
+
+      // খালি রেসপন্স হ্যান্ডেল করা
+      const text = await res.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText})`);
+      }
+
+      if (res.ok && data.success) {
+        alert(data.message || "Course changed successfully!");
+        setChangingCourseStudent(null);
+        await fetchAdminData();
+      } else {
+        alert(data.message || `Failed to change course. (Status: ${res.status})`);
+      }
+    } catch (err: any) {
+      console.error("Error changing course:", err);
+      alert(err.message || "Network error. Please make sure the API route exists.");
+    } finally {
+      setUpdatingCourse(false);
+    }
+  };
   // পেন্ডিং ক্লাস লগ অনুমোদন / রিজেক্ট
   const handleClassAction = async (logId: string, action: "APPROVE" | "REJECT") => {
     try {
@@ -376,7 +423,9 @@ export default function AdminControlPanel() {
                     <tr key={s.rollNumber} className="hover:bg-text/5">
                       <td className="p-3 font-semibold text-text">{s.nameEnglish}</td>
                       <td className="p-3 font-mono text-primary font-bold">{s.whatsapp}</td>
-                      <td className="p-3 font-mono text-secondary font-bold">{s.enrolledCourseId}</td>
+                      <td className="p-3 font-mono text-secondary font-bold">
+                        {s.enrolledCourseId || s.enrolledCourseIds?.[0]}
+                      </td>
                       <td className="p-3 text-right space-x-2">
                         <button
                           onClick={() => handleStudentAction(s.rollNumber, "APPROVE")}
@@ -399,7 +448,7 @@ export default function AdminControlPanel() {
           )}
         </div>
 
-        {/* 2. Approved Students & WhatsApp Group Status + Delete Option */}
+        {/* 2. Approved Students & WhatsApp Group Status + Course Transfer Option */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="text-lg font-bold flex items-center gap-2">
@@ -449,60 +498,83 @@ export default function AdminControlPanel() {
                 No students found for this filter.
               </p>
             ) : (
-              <table className="w-full text-left text-xs min-w-[550px]">
+              <table className="w-full text-left text-xs min-w-[620px]">
                 <thead className="bg-text/5 border-b border-text/10 text-text/60 font-semibold">
                   <tr>
                     <th className="p-3.5 w-16">Roll</th>
                     <th className="p-3.5">Student Name</th>
+                    <th className="p-3.5">Course Track</th>
                     <th className="p-3.5">WhatsApp Number</th>
                     <th className="p-3.5 text-center">Group Status</th>
-                    <th className="p-3.5 text-right">Delete Action</th>
+                    <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-text/10">
-                  {filteredApprovedStudents.map((s) => (
-                    <tr key={s.rollNumber} className="hover:bg-text/5">
-                      <td className="p-3.5 font-mono font-bold text-secondary text-xs">
-                        #{s.rollNumber}
-                      </td>
-                      <td className="p-3.5 font-bold text-text text-sm">
-                        {s.nameEnglish}
-                      </td>
-                      <td className="p-3.5">
-                        <a
-                          href={`https://wa.me/${s.whatsapp.replace(/[^0-9]/g, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-mono text-xs font-bold text-primary hover:underline inline-flex items-center gap-1.5"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          {s.whatsapp}
-                        </a>
-                      </td>
-                      <td className="p-3.5 text-center">
-                        <button
-                          onClick={() => handleToggleGroupStatus(s.rollNumber, s.isWhatsAppGroupJoined)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                            s.isWhatsAppGroupJoined 
-                              ? "bg-text/10 text-text/60 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/20" 
-                              : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                          }`}
-                        >
-                          {s.isWhatsAppGroupJoined ? "Set as Not in Group" : "Mark as Group Joined"}
-                        </button>
-                      </td>
-                      <td className="p-3.5 text-right">
-                        <button
-                          onClick={() => handleStudentAction(s.rollNumber, "DELETE", s.nameEnglish)}
-                          className="px-3 py-1.5 bg-secondary/10 hover:bg-secondary hover:text-white text-secondary border border-secondary/20 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                          title="Permanently remove student & shift down rolls"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredApprovedStudents.map((s) => {
+                    const studentCourse = s.enrolledCourseId || s.enrolledCourseIds?.[0] || "HSK-101";
+
+                    return (
+                      <tr key={s.rollNumber} className="hover:bg-text/5 transition-colors">
+                        <td className="p-3.5 font-mono font-bold text-secondary text-xs">
+                          #{s.rollNumber}
+                        </td>
+                        <td className="p-3.5 font-bold text-text text-sm">
+                          {s.nameEnglish}
+                        </td>
+                        <td className="p-3.5">
+                          <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-secondary/10 text-secondary border border-secondary/20">
+                            {studentCourse}
+                          </span>
+                        </td>
+                        <td className="p-3.5">
+                          <a
+                            href={`https://wa.me/${s.whatsapp.replace(/[^0-9]/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-xs font-bold text-primary hover:underline inline-flex items-center gap-1.5"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            {s.whatsapp}
+                          </a>
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <button
+                            onClick={() => handleToggleGroupStatus(s.rollNumber, s.isWhatsAppGroupJoined)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                              s.isWhatsAppGroupJoined 
+                                ? "bg-text/10 text-text/60 hover:bg-secondary/10 hover:text-secondary hover:border-secondary/20" 
+                                : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                            }`}
+                          >
+                            {s.isWhatsAppGroupJoined ? "Set as Not in Group" : "Mark as Group Joined"}
+                          </button>
+                        </td>
+                        <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
+                          {/* 👈 Change Course Button */}
+                          <button
+                            onClick={() => {
+                              setChangingCourseStudent(s);
+                              setSelectedNewCourseId(studentCourse);
+                            }}
+                            className="p-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                            title="Change Enrolled Course Track"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Track</span>
+                          </button>
+
+                          {/* Delete Student Button */}
+                          <button
+                            onClick={() => handleStudentAction(s.rollNumber, "DELETE", s.nameEnglish)}
+                            className="p-1.5 bg-secondary/10 hover:bg-secondary hover:text-white text-secondary border border-secondary/20 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                            title="Permanently remove student & shift down rolls"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -542,7 +614,7 @@ export default function AdminControlPanel() {
           )}
         </div>
 
-        {/* 4. Course Management & Class History Delete Option */}
+        {/* 4. Course Management */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Layers className="w-5 h-5 text-primary" /> Manage Courses & Logged Classes ({courses.length})
@@ -583,7 +655,7 @@ export default function AdminControlPanel() {
                     </div>
                   </div>
 
-                  {/* Approved Classes List with Delete Button */}
+                  {/* Approved Classes List */}
                   <div className="space-y-1.5 pt-2 border-t border-text/10">
                     <span className="text-[10px] font-mono text-text/50 uppercase block">Approved Classes ({classesList.length}):</span>
                     {classesList.length === 0 ? (
@@ -619,7 +691,62 @@ export default function AdminControlPanel() {
 
       </div>
 
-      {/* Course Create/Edit Modal with Visible Labels */}
+      {/* 👈 Student Course Transfer Modal */}
+      {changingCourseStudent && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-background border border-text/10 rounded-3xl p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-text/10 pb-3">
+              <div>
+                <h3 className="text-base font-bold flex items-center gap-1.5">
+                  <ArrowRightLeft className="w-4 h-4 text-primary" /> Transfer Course Track
+                </h3>
+                <span className="text-xs text-text/50">Roll #{changingCourseStudent.rollNumber} - {changingCourseStudent.nameEnglish}</span>
+              </div>
+              <button onClick={() => setChangingCourseStudent(null)} className="p-1 text-text/40 hover:text-text cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCourseChange} className="space-y-4">
+              <div>
+                <label className="text-[11px] font-bold text-text/70 uppercase block mb-1.5">
+                  Select New Enrolled Track
+                </label>
+                <select
+                  value={selectedNewCourseId}
+                  onChange={(e) => setSelectedNewCourseId(e.target.value)}
+                  className="w-full bg-text/5 border border-text/10 rounded-xl p-3 text-xs font-semibold cursor-pointer"
+                >
+                  {courses.map((c) => (
+                    <option key={c.courseId} value={c.courseId}>
+                      {c.courseId} - {c.courseName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setChangingCourseStudent(null)}
+                  className="flex-1 py-2.5 bg-text/5 hover:bg-text/10 rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingCourse}
+                  className="flex-1 py-2.5 bg-primary text-background font-bold rounded-xl text-xs cursor-pointer shadow-md shadow-primary/20 disabled:opacity-50"
+                >
+                  {updatingCourse ? "Updating..." : "Update Course Track"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Course Create/Edit Modal */}
       {showCourseModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-background border border-text/10 rounded-3xl p-6 space-y-4">
@@ -631,7 +758,6 @@ export default function AdminControlPanel() {
             </div>
 
             <form onSubmit={handleCourseSubmit} className="space-y-3.5">
-              {/* Course ID */}
               <div>
                 <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
                   Course ID
@@ -646,7 +772,6 @@ export default function AdminControlPanel() {
                 />
               </div>
 
-              {/* Course Title */}
               <div>
                 <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
                   Course Title
@@ -661,7 +786,6 @@ export default function AdminControlPanel() {
                 />
               </div>
 
-              {/* Course Status */}
               <div>
                 <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
                   Admission / Batch Status
@@ -677,7 +801,6 @@ export default function AdminControlPanel() {
                 </select>
               </div>
 
-              {/* Date Inputs with Titles */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
@@ -704,7 +827,6 @@ export default function AdminControlPanel() {
                 </div>
               </div>
 
-              {/* Class & Lesson Counts */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-text/70 uppercase block mb-1">
@@ -732,7 +854,6 @@ export default function AdminControlPanel() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-2 pt-3">
                 <button 
                   type="button" 

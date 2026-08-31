@@ -1,0 +1,90 @@
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import { Student } from "@/models/Student";
+import { Course } from "@/models/Course";
+
+// Vercel/Next.js dynamic execution enforce করা
+export const dynamic = "force-dynamic";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { rollNumber, newCourseId, adminPasscode } = body;
+
+    const expectedPasscode =
+      process.env.ADMIN_PASSCODE ||
+      process.env.NEXT_PUBLIC_ADMIN_PASSCODE ||
+      "8131";
+
+    if (!adminPasscode || adminPasscode.trim() !== expectedPasscode.trim()) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized Admin PIN" },
+        { status: 401 }
+      );
+    }
+
+    if (!rollNumber || !newCourseId) {
+      return NextResponse.json(
+        { success: false, message: "Roll Number and New Course ID are required" },
+        { status: 400 }
+      );
+    }
+
+    // ১. MongoDB কানেক্ট করা
+    await connectDB();
+
+    const numRoll = Number(rollNumber);
+
+    // ২. স্টুডেন্ট আপডেট (Fast Direct Update)
+    const student = await Student.findOneAndUpdate(
+      { rollNumber: numRoll },
+      {
+        $set: {
+          enrolledCourseId: newCourseId,
+          enrolledCourseIds: [newCourseId],
+        },
+      },
+      { new: true }
+    ).lean();
+
+    if (!student) {
+      return NextResponse.json(
+        { success: false, message: `Student with roll #${rollNumber} not found` },
+        { status: 404 }
+      );
+    }
+
+    // ৩. কোর্সের তালিকা ব্যাকগ্রাউন্ডে সেফ আপডেট (যাতে রেসপন্স আটকে না থাকে)
+    try {
+      await Promise.all([
+        // সব কোর্স থেকে এই রোল রিমুভ করা
+        Course.updateMany(
+          { courseId: { $ne: newCourseId } },
+          { $pull: { enrolledStudentRolls: numRoll } }
+        ),
+        // নতুন কোর্সে রোল পুশ করা
+        Course.updateOne(
+          { courseId: newCourseId },
+          { $addToSet: { enrolledStudentRolls: numRoll } }
+        ),
+      ]);
+    } catch (courseErr) {
+      console.warn("Course enrolledStudentRolls sync skipped:", courseErr);
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Course successfully changed to ${newCourseId} for Roll #${rollNumber}`,
+        student,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Change course 504 error:", error);
+    return NextResponse.json(
+      { success: false, message: error.message || "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
