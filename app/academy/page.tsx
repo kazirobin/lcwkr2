@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -21,13 +22,20 @@ import {
   Sparkles,
   Loader2,
   RefreshCw,
+  Trophy,
+  Video,
+  Award,
+  Users,
+  Target,
+  Flame,
+  GraduationCap
 } from "lucide-react";
 import { ICourse, IStudent } from "@/types/academy";
 
 export default function AcademyMainPage() {
   const router = useRouter();
 
-  // 👈 MongoDB লাইভ ডেটা স্টেট
+  // MongoDB লাইভ ডেটা স্টেট
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [students, setStudents] = useState<IStudent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +43,7 @@ export default function AcademyMainPage() {
   const [showModal, setShowModal] = useState(false);
   const [countdown, setCountdown] = useState(20);
 
-  // 👈 সরাসরি MongoDB API থেকে লাইভ ডেটা ফেচ
+  // সরাসরি MongoDB API থেকে লাইভ ডেটা ফেচ
   const fetchLiveAcademyData = async () => {
     setLoading(true);
     try {
@@ -98,6 +106,55 @@ export default function AcademyMainPage() {
     0
   );
 
+  const totalClassesPlanned = courses.reduce(
+    (acc, c) => acc + (c.totalClassesPlanned || 24),
+    0
+  );
+
+  const overallBatchProgress = totalClassesPlanned > 0 
+    ? Math.min(100, Math.round((totalClassesDone / totalClassesPlanned) * 100)) 
+    : 0;
+
+  // 👈 সেরা নিয়মিত শিক্ষার্থী (Top Attendance & Regular Attendance Scholars) ক্যালকুলেশন
+  const topRegularScholars = useMemo(() => {
+    if (students.length === 0 || courses.length === 0) return [];
+
+    return students.map((stu) => {
+      const stuRoll = String(stu.rollNumber).trim();
+      const enrolledTrackIds = Array.isArray(stu.enrolledCourseIds) && stu.enrolledCourseIds.length > 0
+        ? stu.enrolledCourseIds
+        : (stu as any).enrolledCourseId ? [(stu as any).enrolledCourseId] : [];
+
+      let totalHeld = 0;
+      let totalAttended = 0;
+
+      courses.forEach((crs) => {
+        const isEnrolled = enrolledTrackIds.some(
+          (id: string) => id.toLowerCase() === crs.courseId.toLowerCase()
+        );
+        if (isEnrolled) {
+          const sessions = crs.classes ?? [];
+          totalHeld += sessions.length;
+          totalAttended += sessions.filter((cls) =>
+            cls.presentStudents?.some((r) => String(r).trim() === stuRoll)
+          ).length;
+        }
+      });
+
+      const numericRate = totalHeld > 0 ? (totalAttended / totalHeld) * 100 : 100;
+
+      return {
+        ...stu,
+        totalHeld,
+        totalAttended,
+        numericRate: Math.round(numericRate),
+      };
+    })
+    .filter((s) => s.totalHeld > 0)
+    .sort((a, b) => b.numericRate - a.numericRate || b.totalAttended - a.totalAttended)
+    .slice(0, 6);
+  }, [students, courses]);
+
   // পরবর্তী ব্যাচের সম্ভাব্য তারিখ
   const nextBatchDate =
     courses.find((c) => c.nextBatchRegistrationDate)?.nextBatchRegistrationDate ||
@@ -105,7 +162,7 @@ export default function AcademyMainPage() {
 
   return (
     <div className="min-h-screen bg-background text-text py-8 px-4 sm:px-6 lg:px-8 transition-colors">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-10">
         
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-5">
@@ -140,9 +197,9 @@ export default function AcademyMainPage() {
             </Link>
             <button
               onClick={handleRegister}
-              className="px-3 py-1.5 bg-primary text-background font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90 cursor-pointer"
+              className="px-3.5 py-1.5 bg-primary text-background font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90 cursor-pointer shadow-sm shadow-primary/20"
             >
-              <UserPlus className="w-3.5 h-3.5" /> Register
+              <UserPlus className="w-3.5 h-3.5" /> Register Now
             </button>
             <Link
               href="/academy/students"
@@ -155,21 +212,21 @@ export default function AcademyMainPage() {
 
         {/* Overview Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
             <span className="text-[10px] text-text/50 uppercase font-mono">Active Batches</span>
             <p className="text-xl font-bold text-primary mt-1">{courses.length}</p>
           </div>
-          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
             <span className="text-[10px] text-text/50 uppercase font-mono">Running Batches</span>
             <p className="text-xl font-bold text-emerald-500 mt-1">{runningCourses.length}</p>
           </div>
-          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
-            <span className="text-[10px] text-text/50 uppercase font-mono">Total Classes Held</span>
-            <p className="text-xl font-bold text-secondary mt-1">{totalClassesDone}</p>
+          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
+            <span className="text-[10px] text-text/50 uppercase font-mono">Classes Completed</span>
+            <p className="text-xl font-bold text-secondary mt-1">{totalClassesDone} / {totalClassesPlanned}</p>
           </div>
-          <div className="p-4 rounded-xl bg-text/5 border border-text/10">
+          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
             <span className="text-[10px] text-text/50 uppercase font-mono">Total Enrolled</span>
-            <p className="text-xl font-bold text-text mt-1">{students.length} Students</p>
+            <p className="text-xl font-bold text-text mt-1">{students.length} Scholars</p>
           </div>
         </div>
 
@@ -307,7 +364,126 @@ export default function AcademyMainPage() {
               )}
             </div>
 
-            {/* 2. পরবর্তী ব্যাচের নোটিশ বক্স */}
+            {/* 🌟 2. ACADEMY VALUE & FEATURES IN-DEPTH SECTION (নতুন যুক্ত করা হয়েছে) */}
+            <div className="p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-text/[0.04] via-background to-text/[0.02] border border-text/10 space-y-8 shadow-sm">
+              <div className="text-center max-w-2xl mx-auto space-y-2">
+                <span className="text-xs font-mono text-primary font-bold uppercase tracking-widest bg-primary/10 border border-primary/20 px-3 py-1 rounded-full inline-block">
+                  Why Learn Chinese with Kazi Robin?
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-text">
+                  আমাদের অ্যাকাডেমির বিশেষ বৈশিষ্ট্য ও সুবিধা
+                </h2>
+                <p className="text-xs sm:text-sm text-text/60 leading-relaxed">
+                  আন্তর্জাতিক মানসম্পন্ন HSK কারিকুলাম, শতভাগ লাইভ ইন্টারেক্টিভ ক্লাস এবং সম্পূর্ণ ডিজিটাল উপস্থিতি ট্র্যাকিং সিস্টেম।
+                </p>
+              </div>
+
+              {/* Feature Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* Feature 1 */}
+                <div className="p-6 rounded-2xl bg-background border border-text/10 space-y-3 hover:border-primary/30 transition-all">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <Video className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base text-text">১০০% লাইভ ইন্টারেক্টিভ ক্লাস</h3>
+                  <p className="text-xs text-text/60 leading-relaxed">
+                    রেকর্ডেড ভিডিওর পরিবর্তে সরাসরি Google Meet-এ রিয়েল-টাইম লাইভ ক্লাস, সঠিক চাইনিজ উচ্চারণ (Pinyin) এবং তাৎক্ষণিক ফিডব্যাক সুবিধা।
+                  </p>
+                </div>
+
+                {/* Feature 2 */}
+                <div className="p-6 rounded-2xl bg-background border border-text/10 space-y-3 hover:border-secondary/30 transition-all">
+                  <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
+                    <Target className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base text-text">HSK এক্সাম ও সিলেবাস ফোকাস্ড</h3>
+                  <p className="text-xs text-text/60 leading-relaxed">
+                    Lesson ও Text ভিত্তিক পাঠ পরিকল্পনা, HSK 1 ও HSK 2 এর নতুন শব্দভাণ্ডার, ব্যাকরণ নিয়মাবলী এবং সাপ্তাহিক প্র্যাকটিস টেস্ট।
+                  </p>
+                </div>
+
+                {/* Feature 3 */}
+                <div className="p-6 rounded-2xl bg-background border border-text/10 space-y-3 hover:border-emerald-500/30 transition-all">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base text-text">রিয়েল-টাইম উপস্থিতি ট্র্যাকার</h3>
+                  <p className="text-xs text-text/60 leading-relaxed">
+                    প্রতিটি ক্লাসে শিক্ষার্থীর উপস্থিতি স্বয়ংক্রিয়ভাবে রেকর্ড হয়। প্রোফাইলে গিয়ে যেকোনো সময় ব্যক্তিগত ক্লাসের হিস্টোরি ও অগ্রগতি দেখা যায়।
+                  </p>
+                </div>
+              </div>
+
+              {/* 🏆 3. REGULAR & TOP ATTENDANCE SCHOLARS SPOTLIGHT */}
+              {topRegularScholars.length > 0 && (
+                <div className="pt-6 border-t border-text/10 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-base font-bold flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-amber-500" /> Regular & Dedicated Scholars Spotlight
+                      </h3>
+                      <p className="text-xs text-text/50">
+                        যেসব শিক্ষার্থী প্রতিটি ক্লাসে নিয়মিত উপস্থিত থেকে সেরা অগ্রগতি অর্জন করছেন
+                      </p>
+                    </div>
+
+                    <Link
+                      href="/academy/students"
+                      className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      View All Scholars ({students.length}) <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    {topRegularScholars.map((s) => (
+                      <div
+                        key={String(s.rollNumber)}
+                        className="p-3.5 rounded-2xl bg-background border border-text/10 text-center space-y-2 hover:border-primary/30 transition-all"
+                      >
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-text/5 mx-auto border border-text/10">
+                          <Image
+                            src={s.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(s.nameEnglish || "student")}`}
+                            alt={s.nameEnglish || "Student"}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-xs truncate text-text">{s.nameEnglish}</h4>
+                          <span className="text-[10px] font-mono text-text/50 block">Roll: #{s.rollNumber}</span>
+                        </div>
+                        <div className="pt-1.5 border-t border-text/10 flex items-center justify-center gap-1 text-[11px] font-bold text-emerald-500 font-mono">
+                          <CheckCircle2 className="w-3 h-3" /> {s.numericRate}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Call To Action Banner */}
+              <div className="p-6 rounded-2xl bg-secondary text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg shadow-secondary/20">
+                <div className="space-y-1 text-center sm:text-left">
+                  <h3 className="text-lg font-bold flex items-center justify-center sm:justify-start gap-2">
+                    <GraduationCap className="w-5 h-5" /> চাইনিজ ভাষা শিখে এগিয়ে থাকুন বিশ্বমঞ্চে
+                  </h3>
+                  <p className="text-xs opacity-90">
+                    স্কলারশিপ, ক্যারিয়ার ও উচ্চশিক্ষার জন্য এখনই আপনার পছন্দের ব্যাচে যুক্ত হন।
+                  </p>
+                </div>
+                <button
+                  onClick={handleRegister}
+                  className="px-5 py-2.5 bg-white text-secondary font-bold text-xs rounded-xl shadow-md hover:bg-white/95 transition-all cursor-pointer shrink-0"
+                >
+                  Join Next Batch
+                </button>
+              </div>
+            </div>
+
+            {/* 4. পরবর্তী ব্যাচের নোটিশ বক্স */}
             {!hasComingSoon && (
               <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-secondary/10 via-text/5 to-primary/10 border border-secondary/20 space-y-4 text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-6">
                 <div className="space-y-2">

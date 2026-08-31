@@ -26,10 +26,9 @@ const COUNTRY_CODES = [
 
 const ADMIN_WHATSAPP = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "+8801787881334";
 
-export default function StudentRegistrationPage() {
+export default function StudentAdmissionPage() {
   const router = useRouter();
   
-  // 👈 MongoDB লাইভ কোর্স স্টেট
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
 
@@ -44,15 +43,15 @@ export default function StudentRegistrationPage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [registeredData, setRegisteredData] = useState<any>(null);
 
-  // 👈 সরাসরি MongoDB API থেকে লাইভ কোর্স লোড
+  // MongoDB থেকে লাইভ ওপেন কোর্স লোড
   const fetchLiveCourses = async () => {
     setLoadingCourses(true);
     try {
       const res = await fetch("/api/academy/courses", { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.courses)) {
-        // শুধুমাত্র যে কোর্সগুলো Coming Soon বা উন্মুক্ত
-        const openCourses = data.courses.filter((c: ICourse) => c.status === "Coming Soon");
+        // যদি Coming Soon থাকে সেগুলো দেখাবে, নতুবা সকল ওপেন কোর্স
+        const openCourses = data.courses.filter((c: ICourse) => c.status === "Coming Soon" || c.status === "Running");
         setCourses(openCourses);
         if (openCourses.length > 0) {
           setSelectedCourseId(openCourses[0].courseId);
@@ -101,7 +100,7 @@ export default function StudentRegistrationPage() {
         });
         setShowJoinModal(true);
       } else {
-        alert(result.message || "Registration failed");
+        alert(result.message || "Admission registration failed");
       }
     } catch (err) {
       setSubmitting(false);
@@ -151,7 +150,7 @@ export default function StudentRegistrationPage() {
             <Sparkles className="w-6 h-6 text-primary" /> Scholar Admission
           </h1>
           <p className="text-xs text-text/50 mt-1 font-mono">
-            Direct Admission via MongoDB Live
+            Direct Online Admission (MongoDB Live)
           </p>
         </div>
 
@@ -224,7 +223,7 @@ export default function StudentRegistrationPage() {
               />
             </div>
 
-            {/* Course Select from MongoDB */}
+            {/* Course Track Select */}
             <div>
               <label className="text-xs font-bold flex items-center gap-1 mb-1">
                 <BookOpen className="w-3.5 h-3.5 text-primary" /> Select Track
@@ -236,7 +235,7 @@ export default function StudentRegistrationPage() {
               >
                 {courses.map((c) => (
                   <option key={c.courseId} value={c.courseId}>
-                    {c.courseId} - {c.courseName} (Admission Open)
+                    {c.courseId} - {c.courseName} ({c.status})
                   </option>
                 ))}
               </select>
