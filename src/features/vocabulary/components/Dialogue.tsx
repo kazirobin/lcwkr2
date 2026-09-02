@@ -1,93 +1,122 @@
-"use client";
+import type { Dialogue as DialogueType } from "@/features/vocabulary/types";
 
-import { Dialogue } from "@/features/vocabulary/types";
+/**
+ * The short dialogue that opens some texts, shown as the conversation it is:
+ * a two-person exchange sits left / right like a chat; three or more speakers
+ * (or a scene with a Narrator) fall back to a stacked, avatared transcript.
+ * Bubble position carries the speaker — the text inside every bubble stays
+ * left-aligned so it reads cleanly.
+ */
 
-interface DialogueComponentProps {
-  dialogue: Dialogue;
-}
+const NARRATOR = new Set(["Narrator", "旁白", "Narration"]);
 
-export default function DialogueComponent({
+/** First code point — works for "Wang Yixue" → W and "服务员" → 服. */
+const initialOf = (name: string) => [...name.trim()][0] ?? "·";
+
+export default function Dialogue({
   dialogue,
-}: DialogueComponentProps) {
-  // Get the speaker color with better contrast
-  const getSpeakerColor = (speaker: string): string => {
-    const colors: Record<string, string> = {
-      Teacher: "bg-primary text-background",
-      Students: "bg-secondary text-background",
-      Customer: "bg-accent text-background",
-      Waiter: "bg-primary/80 text-background",
-      "Shop Assistant": "bg-secondary/80 text-background",
-      A: "bg-accent/80 text-background",
-      B: "bg-primary/60 text-background",
-    };
-    return colors[speaker] || "bg-text/20 text-text";
-  };
-
-  // Get the border color
-  const getBorderColor = (speaker: string): string => {
-    const colors: Record<string, string> = {
-      Teacher: "border-primary/40",
-      Students: "border-secondary/40",
-      Customer: "border-accent/40",
-      Waiter: "border-primary/30",
-      "Shop Assistant": "border-secondary/30",
-      A: "border-accent/30",
-      B: "border-primary/20",
-    };
-    return colors[speaker] || "border-text/10";
-  };
-
-  // Get the background color with better contrast
-  const getBgColor = (speaker: string): string => {
-    const colors: Record<string, string> = {
-      Teacher: "bg-primary/5 hover:bg-primary/10",
-      Students: "bg-secondary/5 hover:bg-secondary/10",
-      Customer: "bg-accent/5 hover:bg-accent/10",
-      Waiter: "bg-primary/5 hover:bg-primary/10",
-      "Shop Assistant": "bg-secondary/5 hover:bg-secondary/10",
-      A: "bg-accent/5 hover:bg-accent/10",
-      B: "bg-primary/5 hover:bg-primary/10",
-    };
-    return colors[speaker] || "bg-text/5 hover:bg-text/10";
-  };
+  speakersLabel,
+}: {
+  dialogue: DialogueType;
+  speakersLabel: string;
+}) {
+  const speakers: string[] = [];
+  const firstLineOf = new Map<string, number>();
+  dialogue.lines.forEach((line, i) => {
+    if (NARRATOR.has(line.speaker)) return;
+    if (!speakers.includes(line.speaker)) {
+      speakers.push(line.speaker);
+      firstLineOf.set(line.speaker, i);
+    }
+  });
+  const duo = speakers.length <= 2;
 
   return (
-    <div className="bg-background rounded-xl shadow-lg overflow-hidden border border-secondary/20 transition-colors">
-      <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-4">
-        <h3 className="text-lg font-semibold text-background flex items-center gap-2">
-          <span className="text-xl">💬</span>
-          {dialogue.title}
-        </h3>
-      </div>
+    <figure className="mt-3">
+      <figcaption className="font-serif text-base font-medium text-text">
+        {dialogue.title}
+      </figcaption>
 
-      <div className="p-6 space-y-4">
-        {dialogue.lines.map((line, index) => (
-          <div
-            key={index}
-            className={`flex items-start gap-4 p-4 rounded-lg transition-all duration-200 ${getBgColor(line.speaker)} border-l-4 ${getBorderColor(line.speaker)}`}
-          >
-            <div className="flex-shrink-0 min-w-[90px]">
+      <ol aria-label={speakersLabel} className="mt-4 space-y-1.5">
+        {dialogue.lines.map((line, i) => {
+          const sameAsPrev = dialogue.lines[i - 1]?.speaker === line.speaker;
+
+          if (NARRATOR.has(line.speaker)) {
+            return (
+              <li key={i} className="px-4 py-2 text-center">
+                <p lang="zh" className="text-sm leading-relaxed text-text/60">
+                  {line.hanzi}
+                </p>
+                <p className="mt-0.5 text-[12px] italic leading-5 text-text/45">
+                  {line.english}
+                </p>
+              </li>
+            );
+          }
+
+          const side = duo && speakers.indexOf(line.speaker) === 1;
+          const isAB = /^[AB]$/.test(line.speaker);
+          // Duo mode: name once (position + avatar carry it after). Group
+          // mode: name on every turn change.
+          const showName =
+            !isAB &&
+            (duo ? firstLineOf.get(line.speaker) === i : !sameAsPrev);
+
+          return (
+            <li
+              key={i}
+              className={`flex items-start gap-2.5 ${side ? "flex-row-reverse" : ""} ${
+                sameAsPrev ? "" : "pt-2"
+              }`}
+            >
               <span
-                className={`inline-block px-3 py-1.5 rounded-full text-xs font-semibold ${getSpeakerColor(line.speaker)}`}
+                aria-hidden="true"
+                className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${
+                  sameAsPrev
+                    ? "invisible"
+                    : side
+                      ? "bg-primary/15 text-text/70"
+                      : "bg-text/10 text-text/65"
+                }`}
               >
-                {line.speaker}
+                {initialOf(line.speaker)}
               </span>
-            </div>
 
-            <div className="flex-1 space-y-1.5">
-              <p className="text-lg font-medium text-text leading-relaxed">
-                {line.hanzi}
-              </p>
-              <p className="text-sm text-text/60 font-medium">
-                {line.pinyin}
-              </p>
-              <p className="text-sm text-text/70 border-t border-text/5 pt-2 mt-1">
-                {line.english}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+              <div
+                className={`max-w-[82%] rounded-2xl border px-4 py-2.5 ${
+                  side
+                    ? "rounded-tr-sm border-primary/15 bg-primary/[0.07]"
+                    : "rounded-tl-sm border-text/10 bg-card/75"
+                }`}
+              >
+                <span className="sr-only">{line.speaker}: </span>
+                {showName && (
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.08em] text-text/45">
+                    {line.speaker}
+                  </span>
+                )}
+                <p lang="zh" className="text-[1.05rem] leading-relaxed text-text">
+                  {line.hanzi}
+                </p>
+                <p
+                  lang="zh-Latn-pinyin"
+                  className="mt-0.5 text-[13px] leading-5 text-text/55"
+                >
+                  {line.pinyin}
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-text/70">
+                  {line.english}
+                </p>
+                {line.bangla && (
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-text/70">
+                    {line.bangla}
+                  </p>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </figure>
   );
 }

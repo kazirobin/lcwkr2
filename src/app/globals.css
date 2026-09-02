@@ -8,6 +8,18 @@
   font-family: var(--font-hind-siliguri), sans-serif;
 }
 
+/* Bangla (Hind Siliguri) carries taller vowel signs and low-hanging
+   conjuncts than Latin — tight Tailwind line-heights clip them. On the
+   /hsk workbook, give Bangla headings and compact UI text enough
+   vertical room. Unlayered so it beats the utility line-heights; scoped
+   to .hsk-page.font-bn so it touches nothing else. */
+.hsk-page.font-bn :is(h1, h2, h3) {
+  line-height: 1.3;
+}
+.hsk-page.font-bn :is(.text-xs, .text-sm) {
+  line-height: 1.6;
+}
+
 @layer base {
   :root {
     /* #071614 - Dark Teal */
@@ -82,6 +94,10 @@
   /* Geist Mono drives the technical /apps registry (spec rows, package IDs). */
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", SFMono-Regular,
     Menlo, monospace;
+
+  /* Lora — the reading serif for the /hsk workbook (headings, lesson numbers,
+     the vocabulary glossary). */
+  --font-serif: var(--font-lora), Georgia, "Times New Roman", serif;
 
   --color-text: hsl(var(--text));
   --color-background: hsl(var(--background));

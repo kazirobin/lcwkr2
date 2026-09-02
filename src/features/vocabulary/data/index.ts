@@ -1,367 +1,226 @@
-// app/data/vocabulary/index.ts
-import {
+// src/features/vocabulary/data/index.ts
+//
+// The vocabulary lookup layer. The three `hsk{1,2,3}/index.ts` registries
+// each hand-list their text modules under ad-hoc string keys that are NOT
+// consistent across levels ("1-1" vs "1-1-1" vs "2-1-1"). We ignore those
+// keys entirely and re-index every record by the one identity that IS
+// reliable and present on every file: `hskLevel` / `lesson` / `text`.
+//
+// SERVER ONLY in spirit — this module closes over every text file, so it
+// must never be imported into a client component. Route pages call it,
+// derive exactly what a view needs, and pass plain props down.
+
+import type {
   VocabularyData,
-  VocabularyDataMap,
-  LevelInfo,
-  LevelTextKey,
+  LevelSummary,
+  LevelDetail,
+  LessonDetail,
+  LessonSummary,
+  TextSummary,
+  TextNav,
 } from "@/features/vocabulary/types";
 
-
-import { hsk2DataMap } from "./hsk2";
 import { hsk1DataMap } from "./hsk1";
+import { hsk2DataMap } from "./hsk2";
 import { hsk3DataMap } from "./hsk3";
 
-// ============ DATA MAP ============
+/** Levels that have content today. 4–6 are planned — see {@link ALL_LEVELS}. */
+const LEVELS_WITH_DATA = [1, 2, 3] as const;
+/** Every level the track promises, present or not. */
+export const ALL_LEVELS = [1, 2, 3, 4, 5, 6] as const;
 
-export const vocabularyDataMap: VocabularyDataMap = {
-  ...hsk1DataMap,
-  ...hsk2DataMap,
-  ...hsk3DataMap,
+const key = (level: number, lesson: number, text: number) =>
+  `${level}-${lesson}-${text}`;
+
+// ── one-time index ───────────────────────────────────────────────────
+
+const records: VocabularyData[] = [
+  ...Object.values(hsk1DataMap),
+  ...Object.values(hsk2DataMap),
+  ...Object.values(hsk3DataMap),
+];
+
+const byKey = new Map<string, VocabularyData>();
+/** level → sorted lesson numbers */
+const lessonsByLevel = new Map<number, number[]>();
+/** `${level}-${lesson}` → sorted text numbers */
+const textsByLesson = new Map<string, number[]>();
+/** level → every text as {lesson,text}, ordered for prev/next */
+const orderedTexts = new Map<number, { lesson: number; text: number }[]>();
+
+for (const r of records) {
+  byKey.set(key(r.hskLevel, r.lesson, r.text), r);
+
+  const lessons = lessonsByLevel.get(r.hskLevel) ?? [];
+  if (!lessons.includes(r.lesson)) lessons.push(r.lesson);
+  lessonsByLevel.set(r.hskLevel, lessons);
+
+  const lk = `${r.hskLevel}-${r.lesson}`;
+  const texts = textsByLesson.get(lk) ?? [];
+  if (!texts.includes(r.text)) texts.push(r.text);
+  textsByLesson.set(lk, texts);
+}
+
+for (const [level, lessons] of lessonsByLevel) {
+  lessons.sort((a, b) => a - b);
+  for (const lesson of lessons) {
+    textsByLesson.get(`${level}-${lesson}`)?.sort((a, b) => a - b);
+  }
+  const flat = lessons.flatMap((lesson) =>
+    (textsByLesson.get(`${level}-${lesson}`) ?? []).map((text) => ({
+      lesson,
+      text,
+    })),
+  );
+  orderedTexts.set(level, flat);
+}
+
+const wordCount = (level: number, lesson?: number, text?: number): number => {
+  let total = 0;
+  for (const r of records) {
+    if (r.hskLevel !== level) continue;
+    if (lesson !== undefined && r.lesson !== lesson) continue;
+    if (text !== undefined && r.text !== text) continue;
+    total += r.vocabulary.length;
+  }
+  return total;
 };
-// ============= HELPER FUNCTIONS =============
 
-// Get all unique HSK levels
-export function getAllLevels(): number[] {
-  const levels = new Set<number>();
-  Object.values(vocabularyDataMap).forEach((data) => {
-    levels.add(data.hskLevel || data.lesson);
+// ── public API ───────────────────────────────────────────────────────
+
+/** Every level for the `/hsk` picker, including the not-yet-built 4–6. */
+export function getLevelSummaries(): LevelSummary[] {
+  return ALL_LEVELS.map((level) => {
+    const lessons = lessonsByLevel.get(level) ?? [];
+    const texts = orderedTexts.get(level) ?? [];
+    return {
+      level,
+      available: LEVELS_WITH_DATA.includes(level as 1 | 2 | 3),
+      lessons: lessons.length,
+      texts: texts.length,
+      words: wordCount(level),
+    };
   });
-  return Array.from(levels).sort((a, b) => a - b);
 }
 
-// Get all texts for a specific HSK level
-export function getTextsForLevel(hskLevel: number): number[] {
-  const texts = new Set<number>();
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const level = data.hskLevel || data.lesson;
-    if (level === hskLevel) {
-      texts.add(data.text);
-    }
+/** Lesson-by-lesson breakdown of one level, or null if it has no data. */
+export function getLevelDetail(level: number): LevelDetail | null {
+  const lessons = lessonsByLevel.get(level);
+  if (!lessons || lessons.length === 0) return null;
+
+  const lessonSummaries: LessonSummary[] = lessons.map((lesson) => {
+    const texts = textsByLesson.get(`${level}-${lesson}`) ?? [];
+    const hasDialogue = texts.some(
+      (text) => byKey.get(key(level, lesson, text))?.dialogue != null,
+    );
+    return {
+      lesson,
+      texts: texts.length,
+      words: wordCount(level, lesson),
+      hasDialogue,
+    };
   });
-  return Array.from(texts).sort((a, b) => a - b);
+
+  return {
+    level,
+    lessons: lessonSummaries,
+    texts: (orderedTexts.get(level) ?? []).length,
+    words: wordCount(level),
+  };
 }
 
-// Get data for a specific lesson and text
-export function getLessonTextData(
+/** Text-by-text breakdown of one lesson, or null if it has no data. */
+export function getLessonDetail(
+  level: number,
+  lesson: number,
+): LessonDetail | null {
+  const texts = textsByLesson.get(`${level}-${lesson}`);
+  if (!texts || texts.length === 0) return null;
+
+  const textSummaries: TextSummary[] = texts.map((text) => {
+    const record = byKey.get(key(level, lesson, text));
+    return {
+      text,
+      words: record?.vocabulary.length ?? 0,
+      hasDialogue: record?.dialogue != null,
+      preview: (record?.vocabulary ?? []).slice(0, 5).map((v) => v.hanzi),
+    };
+  });
+
+  return {
+    level,
+    lesson,
+    texts: textSummaries,
+    words: wordCount(level, lesson),
+  };
+}
+
+/** The full record for one text, or null. */
+export function getText(
   level: number,
   lesson: number,
   text: number,
-): VocabularyData | undefined {
-  // Search through all entries
-  for (const [key, data] of Object.entries(vocabularyDataMap)) {
-    const hskLevel = data.hskLevel || data.lesson;
-    if (hskLevel === level && data.lesson === lesson && data.text === text) {
-      return data;
-    }
-  }
-  return undefined;
+): VocabularyData | null {
+  return byKey.get(key(level, lesson, text)) ?? null;
 }
 
-// Get all lesson numbers for a specific HSK level
-export function getLessonsForLevel(hskLevel: number): number[] {
-  const lessons = new Set<number>();
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const level = data.hskLevel || data.lesson;
-    if (level === hskLevel) {
-      lessons.add(data.lesson);
-    }
-  });
-  return Array.from(lessons).sort((a, b) => a - b);
+/** Ordered text numbers for a lesson (used by the in-lesson jump strip). */
+export function getTextsForLesson(level: number, lesson: number): number[] {
+  return textsByLesson.get(`${level}-${lesson}`) ?? [];
 }
 
-// Get all texts for a specific lesson
-export function getTextsForLesson(hskLevel: number, lesson: number): number[] {
-  const texts = new Set<number>();
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const level = data.hskLevel || data.lesson;
-    if (level === hskLevel && data.lesson === lesson) {
-      texts.add(data.text);
-    }
-  });
-  return Array.from(texts).sort((a, b) => a - b);
-}
-
-// Get lesson data with texts for a specific HSK level
-export function getLevelLessonData(hskLevel: number): {
-  lesson: number;
-  texts: number[];
-  totalVocabulary: number;
-}[] {
-  const lessonMap = new Map<
-    number,
-    { texts: Set<number>; vocabularyCount: number }
-  >();
-
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const level = data.hskLevel || data.lesson;
-    if (level === hskLevel) {
-      const lesson = data.lesson;
-      if (!lessonMap.has(lesson)) {
-        lessonMap.set(lesson, {
-          texts: new Set<number>(),
-          vocabularyCount: 0,
-        });
-      }
-      const lessonData = lessonMap.get(lesson)!;
-      lessonData.texts.add(data.text);
-      lessonData.vocabularyCount += data.vocabulary.length;
-    }
-  });
-
-  return Array.from(lessonMap.entries())
-    .map(([lesson, data]) => ({
-      lesson,
-      texts: Array.from(data.texts).sort((a, b) => a - b),
-      totalVocabulary: data.vocabularyCount,
-    }))
-    .sort((a, b) => a.lesson - b.lesson);
-}
-
-// Get all vocabulary data as array
-export function getAllVocabularyData(): VocabularyData[] {
-  return Object.values(vocabularyDataMap);
-}
-
-// Get level information
-export function getLevelInfo(): LevelInfo[] {
-  const levelMap = new Map<number, number[]>();
-
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const level = data.hskLevel || data.lesson;
-    const texts = levelMap.get(level) || [];
-    texts.push(data.text);
-    levelMap.set(level, texts);
-  });
-
-  return Array.from(levelMap.entries())
-    .map(([level, texts]) => ({
-      level,
-      texts: texts.sort((a, b) => a - b),
-    }))
-    .sort((a, b) => a.level - b.level);
-}
-
-// Get next and previous navigation info
-export function getNavigationInfo(
+/** Where a text sits in its level and where prev / next lead. */
+export function getTextNav(
   level: number,
+  lesson: number,
   text: number,
-): {
-  prevText: LevelTextKey | null;
-  nextText: LevelTextKey | null;
-  currentLevel: number;
-  currentText: number;
-} {
-  const allData = Object.entries(vocabularyDataMap).sort(([keyA], [keyB]) => {
-    const partsA = keyA.split("-").map(Number);
-    const partsB = keyB.split("-").map(Number);
-    const levelA = partsA[0];
-    const levelB = partsB[0];
-    if (levelA !== levelB) return levelA - levelB;
-    return partsA[partsA.length - 1] - partsB[partsB.length - 1];
-  });
-
-  const currentKey = `${level}-${text}` as LevelTextKey;
-  const currentIndex = allData.findIndex(([key]) => key === currentKey);
-
-  if (currentIndex === -1) {
-    return {
-      prevText: null,
-      nextText: null,
-      currentLevel: level,
-      currentText: text,
-    };
-  }
-
-  const prevKey =
-    currentIndex > 0 ? (allData[currentIndex - 1][0] as LevelTextKey) : null;
-  const nextKey =
-    currentIndex < allData.length - 1
-      ? (allData[currentIndex + 1][0] as LevelTextKey)
-      : null;
+): TextNav | null {
+  const flat = orderedTexts.get(level);
+  if (!flat) return null;
+  const i = flat.findIndex((t) => t.lesson === lesson && t.text === text);
+  if (i === -1) return null;
 
   return {
-    prevText: prevKey,
-    nextText: nextKey,
-    currentLevel: level,
-    currentText: text,
+    indexInLevel: i + 1,
+    totalInLevel: flat.length,
+    lessonTexts: getTextsForLesson(level, lesson),
+    totalLessons: (lessonsByLevel.get(level) ?? []).length,
+    prev: i > 0 ? flat[i - 1] : null,
+    next: i < flat.length - 1 ? flat[i + 1] : null,
   };
 }
 
-// Get navigation info within the same level only
-export function getLevelNavigationInfo(
-  hskLevel: number,
-  text: number,
-): {
-  prevText: number | null;
-  nextText: number | null;
-  totalTexts: number;
-  currentIndex: number;
-} {
-  const texts = getTextsForLevel(hskLevel);
-  const currentIndex = texts.indexOf(text);
+// ── static-params helpers (build time only) ──────────────────────────
 
-  if (currentIndex === -1) {
-    return {
-      prevText: null,
-      nextText: null,
-      totalTexts: texts.length,
-      currentIndex: -1,
-    };
-  }
-
-  return {
-    prevText: currentIndex > 0 ? texts[currentIndex - 1] : null,
-    nextText: currentIndex < texts.length - 1 ? texts[currentIndex + 1] : null,
-    totalTexts: texts.length,
-    currentIndex: currentIndex,
-  };
+export function getLevelParams(): { level: string }[] {
+  return [...lessonsByLevel.keys()]
+    .sort((a, b) => a - b)
+    .map((level) => ({ level: String(level) }));
 }
 
-// Check if a level-text combination exists
-export function isValidLevelText(level: number, text: number): boolean {
-  const key = `${level}-${text}` as LevelTextKey;
-  return key in vocabularyDataMap;
-}
-
-// Get total count of vocabulary items in a level
-export function getVocabularyCountForLevel(hskLevel: number): number {
-  let total = 0;
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const level = data.hskLevel || data.lesson;
-    if (level === hskLevel) {
-      total += data.vocabulary.length;
-    }
-  });
-  return total;
-}
-
-// Get all text keys for a level
-export function getTextKeysForLevel(hskLevel: number): string[] {
-  return getTextsForLevel(hskLevel).map((text) => `${hskLevel}-${text}`);
-}
-
-// Get total number of lessons for a specific HSK level
-export function getTotalLessonsForLevel(hskLevel: number): number {
-  return getLessonsForLevel(hskLevel).length;
-}
-
-// Get all lessons data for a specific HSK level with details
-export function getDetailedLevelData(hskLevel: number): {
-  level: number;
-  lessons: {
-    lesson: number;
-    texts: number[];
-    vocabulary: VocabularyData[];
-  }[];
-  totalVocabulary: number;
-  totalTexts: number;
-} {
-  const lessons = getLevelLessonData(hskLevel);
-  let totalVocabulary = 0;
-  let totalTexts = 0;
-
-  const detailedLessons = lessons.map((lessonData) => {
-    const vocabularyData = lessonData.texts
-      .map((text) => getLessonTextData(hskLevel, lessonData.lesson, text))
-      .filter((data): data is VocabularyData => data !== undefined);
-
-    totalVocabulary += lessonData.totalVocabulary;
-    totalTexts += lessonData.texts.length;
-
-    return {
-      lesson: lessonData.lesson,
-      texts: lessonData.texts,
-      vocabulary: vocabularyData,
-    };
-  });
-
-  return {
-    level: hskLevel,
-    lessons: detailedLessons,
-    totalVocabulary,
-    totalTexts,
-  };
-}
-
-// Search vocabulary across all levels
-export function searchVocabulary(searchTerm: string): {
-  level: number;
-  lesson: number;
-  text: number;
-  items: VocabularyData["vocabulary"];
-}[] {
-  const results: {
-    level: number;
-    lesson: number;
-    text: number;
-    items: VocabularyData["vocabulary"];
-  }[] = [];
-
-  const term = searchTerm.toLowerCase();
-
-  Object.values(vocabularyDataMap).forEach((data) => {
-    const matchingItems = data.vocabulary.filter(
-      (item) =>
-        item.hanzi.includes(term) ||
-        item.pinyin.toLowerCase().includes(term) ||
-        item.english.toLowerCase().includes(term) ||
-        item.bangla.includes(term),
+export function getLessonParams(): { level: string; lessonNumber: string }[] {
+  return [...lessonsByLevel.entries()]
+    .sort(([a], [b]) => a - b)
+    .flatMap(([level, lessons]) =>
+      lessons.map((lesson) => ({
+        level: String(level),
+        lessonNumber: String(lesson),
+      })),
     );
-
-    if (matchingItems.length > 0) {
-      const level = data.hskLevel || data.lesson;
-      results.push({
-        level,
-        lesson: data.lesson,
-        text: data.text,
-        items: matchingItems,
-      });
-    }
-  });
-
-  return results;
 }
 
-// Get statistics for all levels
-export function getVocabularyStats(): {
-  totalLevels: number;
-  totalLessons: number;
-  totalTexts: number;
-  totalVocabulary: number;
-  levelStats: {
-    level: number;
-    lessons: number;
-    texts: number;
-    vocabulary: number;
-  }[];
-} {
-  const levels = getAllLevels();
-  let totalLessons = 0;
-  let totalTexts = 0;
-  let totalVocabulary = 0;
-
-  const levelStats = levels.map((level) => {
-    const lessons = getLessonsForLevel(level);
-    const texts = getTextsForLevel(level);
-    const vocabulary = getVocabularyCountForLevel(level);
-
-    totalLessons += lessons.length;
-    totalTexts += texts.length;
-    totalVocabulary += vocabulary;
-
-    return {
-      level,
-      lessons: lessons.length,
-      texts: texts.length,
-      vocabulary,
-    };
-  });
-
-  return {
-    totalLevels: levels.length,
-    totalLessons,
-    totalTexts,
-    totalVocabulary,
-    levelStats,
-  };
+export function getTextParams(): {
+  level: string;
+  lessonNumber: string;
+  textNumber: string;
+}[] {
+  return [...orderedTexts.entries()]
+    .sort(([a], [b]) => a - b)
+    .flatMap(([level, texts]) =>
+      texts.map(({ lesson, text }) => ({
+        level: String(level),
+        lessonNumber: String(lesson),
+        textNumber: String(text),
+      })),
+    );
 }
