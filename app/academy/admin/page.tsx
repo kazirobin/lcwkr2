@@ -14,7 +14,8 @@ import {
   DownloadCloud,
   ArrowRight,
   LogOut,
-  Loader2
+  Loader2,
+  Languages
 } from "lucide-react";
 
 const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
@@ -30,6 +31,7 @@ export default function AdminDashboardPage() {
     approvedStudents: 0,
     pendingClasses: 0,
     courses: 0,
+    chineseWords: 0,
   });
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -38,18 +40,20 @@ export default function AdminDashboardPage() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const [pendingStuRes, approvedStuRes, logRes, crsRes] = await Promise.all([
+      const [pendingStuRes, approvedStuRes, logRes, crsRes, wordsRes] = await Promise.all([
         fetch("/api/academy/students?status=Pending", { cache: "no-store" }),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
         fetch("/api/academy/classes/pending", { cache: "no-store" }),
         fetch("/api/academy/courses", { cache: "no-store" }),
+        fetch("/api/chinese-words", { cache: "no-store" }),
       ]);
 
-      const [pStu, aStu, logs, crs] = await Promise.all([
+      const [pStu, aStu, logs, crs, words] = await Promise.all([
         pendingStuRes.json(),
         approvedStuRes.json(),
         logRes.json(),
         crsRes.json(),
+        wordsRes.json(),
       ]);
 
       setStats({
@@ -57,6 +61,7 @@ export default function AdminDashboardPage() {
         approvedStudents: aStu.students?.length || 0,
         pendingClasses: logs.pendingClasses?.length || 0,
         courses: crs.courses?.length || 0,
+        chineseWords: words.data?.length || 0,
       });
     } catch (err) {
       console.error("Failed to load admin stats:", err);
@@ -65,7 +70,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 👈 ১. পেজ লোড হলেই localStorage থেকে পাসকোড রিড করে Auto Login করা
+  // ১. পেজ লোড হলেই localStorage থেকে পাসকোড রিড করে Auto Login করা
   useEffect(() => {
     const savedPin = localStorage.getItem("academy_admin_pin");
     if (savedPin && savedPin.trim() === ADMIN_SECRET_PASSCODE.trim()) {
@@ -76,7 +81,7 @@ export default function AdminDashboardPage() {
     setCheckingAuth(false);
   }, []);
 
-  // 👈 ২. ম্যানুয়াল লগইন এবং localStorage-এ সংরক্ষণ
+  // ২. ম্যানুয়াল লগইন এবং localStorage-এ সংরক্ষণ
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passcode.trim() === ADMIN_SECRET_PASSCODE.trim()) {
@@ -89,7 +94,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 👈 ৩. লগআউট হ্যান্ডলার (localStorage ক্লিয়ার করা)
+  // ৩. লগআউট হ্যান্ডলার (localStorage ক্লিয়ার করা)
   const handleLogout = () => {
     if (confirm("Are you sure you want to log out from Admin Console?")) {
       localStorage.removeItem("academy_admin_pin");
@@ -202,6 +207,15 @@ export default function AdminDashboardPage() {
       color: "text-primary",
       bg: "bg-primary/10",
       link: "/academy/admin/courses",
+    },
+    {
+      title: "Chinese Core Words",
+      desc: "Add, edit, or remove core characters and build vocabulary families",
+      count: stats.chineseWords,
+      icon: Languages,
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      link: "/academy/admin/chinese-words",
     },
   ];
 

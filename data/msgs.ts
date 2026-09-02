@@ -9,17 +9,89 @@ export type Snippet = {
 export const snippets: Snippet[] = [
   {
     id: 1,
-    title: "(5.00pm class)Chinese special for beginner",
-    description: "Attendances Form Link",
+    title: "core word",
+    description: "json",
     language: "tsx",
-    code: `https://forms.gle/8K7SB1wW9xAc6gJX6`,
+    code: `{
+    character: "生",
+    pinyin: "shēng",
+    meaningEn: "to be born; life; student",
+    meaningBn: "জন্ম নেওয়া; জীবন",
+    hskLevel: 1,
+    strokeCount: 5,
+    relatedWords: [
+      {
+        word: "生日",
+        pinyin: "shēngrì",
+        meaningEn: "birthday",
+        meaningBn: "জন্মদিন",
+        wordType: "Noun",
+        hskLevel: 2,
+        examples: [
+          {
+            chinese: "祝你生日快乐！",
+            pinyin: "Zhù nǐ shēngrì kuàilè!",
+            meaningEn: "Happy birthday to you!",
+            meaningBn: "শুভ জন্মদিন!",
+          },
+        ],
+      },
+      {
+        word: "医生",
+        pinyin: "yīshēng",
+        meaningEn: "doctor",
+        meaningBn: "ডাক্তার",
+        wordType: "Noun",
+        hskLevel: 1,
+        examples: [],
+      },
+    ],
+  },`,
   },
     {
     id: 2,
-    title: "(5.00pm class)Chinese special for beginner",
-    description: "Registration Form Link",
+    title: "core prompt",
+    description: " caracter",
     language: "tsx",
-    code: `https://forms.gle/3WreFQcs2opZC1317`,
+    code: `Act as an expert Chinese language teacher and full-stack developer data assistant. 
+
+I will give you one or multiple Chinese Core Characters. For each character, generate a JavaScript/TypeScript data object exactly matching this schema:
+
+{
+  character: string,
+  pinyin: string, // with tone marks (e.g., shēng)
+  meaningEn: string,
+  meaningBn: string, // Accurate Bengali meaning
+  hskLevel: number, // (1 to 6)
+  strokeCount: number,
+  relatedWords: [
+    {
+      word: string, // Chinese compound word formed with the core character
+      pinyin: string,
+      meaningEn: string,
+      meaningBn: string,
+      wordType: string, // "Noun" | "Verb" | "Adjective" | "Phrase" etc.
+      hskLevel: number,
+      examples: [
+        {
+          chinese: string, // Natural, useful sentence
+          pinyin: string,
+          meaningEn: string,
+          meaningBn: string
+        }
+      ]
+    }
+  ]
+}
+
+Strict Rules:
+1. Provide 3 to 6 common/practical relatedWords for each core character.
+2. Provide at least 1 or 2 high-quality example sentences with Pinyin, English, and Bangla translation for the main related words. Empty array `[]` is allowed for secondary words.
+3. Accurate Bangla translation is mandatory for every meaning and sentence.
+4. Output ONLY the valid JavaScript/JSON array or objects so I can copy-paste directly into my code. Do not include markdown introductions or chit-chat.
+
+Here are the Core Characters:
+[এখানে আপনার ক্যারেক্টারগুলো লিখুন, যেমন: 看, 说, 吃, 喝]`,
   },
 {
     id: 3,
