@@ -4,7 +4,7 @@ import { Hind } from "next/font/google"; // <- সঠিকভাবে ইম�
 import "./globals.css";
 import Nav from "@/components/Nav";
 import { LanguageProvider } from "../context/LanguageContext";
-import ThemeProvider from "./providers/ThemeProvider";
+import ThemeProvider from "@/providers/ThemeProvider";
 import { Hind_Siliguri } from "next/font/google";
 
 // ... অন্যান্য ফন্ট

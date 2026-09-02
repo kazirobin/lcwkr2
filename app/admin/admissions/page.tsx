@@ -46,7 +46,7 @@ export default function PendingAdmissionsPage() {
     <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 space-y-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <Link href="/academy/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
+          <Link href="/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
           </Link>
           <button onClick={fetchPending} className="p-1.5 bg-text/5 border border-text/10 rounded-xl">

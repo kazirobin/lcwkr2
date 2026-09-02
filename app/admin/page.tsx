@@ -179,7 +179,7 @@ export default function AdminDashboardPage() {
       icon: UserCheck,
       color: "text-amber-500",
       bg: "bg-amber-500/10",
-      link: "/academy/admin/admissions",
+      link: "/admin/admissions",
     },
     {
       title: "WhatsApp & Course Track",
@@ -188,7 +188,7 @@ export default function AdminDashboardPage() {
       icon: MessageSquare,
       color: "text-emerald-500",
       bg: "bg-emerald-500/10",
-      link: "/academy/admin/students",
+      link: "/admin/students",
     },
     {
       title: "Class Logs Approval",
@@ -197,7 +197,7 @@ export default function AdminDashboardPage() {
       icon: BookOpenCheck,
       color: "text-secondary",
       bg: "bg-secondary/10",
-      link: "/academy/admin/class-logs",
+      link: "/admin/class-logs",
     },
     {
       title: "Manage Course Tracks",
@@ -206,7 +206,7 @@ export default function AdminDashboardPage() {
       icon: Layers,
       color: "text-primary",
       bg: "bg-primary/10",
-      link: "/academy/admin/courses",
+      link: "/admin/courses",
     },
     {
       title: "Chinese Core Words",
@@ -215,7 +215,7 @@ export default function AdminDashboardPage() {
       icon: Languages,
       color: "text-red-500",
       bg: "bg-red-500/10",
-      link: "/academy/admin/chinese-words",
+      link: "/admin/chinese-words",
     },
   ];
 

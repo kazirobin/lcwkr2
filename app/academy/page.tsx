@@ -183,12 +183,7 @@ export default function AcademyMainPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
-            <Link
-              href="/academy/admin"
-              className="px-3 py-1.5 bg-secondary/10 border border-secondary/30 text-secondary font-bold text-xs rounded-lg flex items-center gap-1.5 hover:bg-secondary/20 transition-all"
-            >
-              <Shield className="w-3.5 h-3.5" /> Admin Console
-            </Link>
+          
             <Link
               href="/academy/classes/create"
               className="px-3 py-1.5 bg-secondary text-white font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90"

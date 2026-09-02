@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowLeft, BookOpenCheck, RefreshCw } from "lucide-react";
+
 import React, { useState, useEffect } from "react";
 
 export default function AdminChineseWordsPage() {
@@ -130,6 +133,9 @@ const handleBulkSeed = async () => {
   return (
     <div className="min-h-screen bg-background text-text p-6 sm:p-10 max-w-6xl mx-auto space-y-12 font-sans">
       <div>
+<Link href="/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
+          </Link>
         <h1 className="text-2xl font-bold">Chinese Words Admin (CRUD)</h1>
         <p className="text-xs text-text/60">
           Create, edit, and delete core characters with sub-word networks.
@@ -143,7 +149,6 @@ const handleBulkSeed = async () => {
 >
   {seeding ? "Pushing Words..." : "⚡ Push Bulk Demo Words"}
 </button>
-
       {/* Form: Create or Edit */}
       <form
         onSubmit={handleSubmit}
