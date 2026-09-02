@@ -56,31 +56,31 @@ export default function AdminDashboardPage() {
       title: t("অপেক্ষমাণ ভর্তি", "Pending admissions"),
       desc: t("শিক্ষার্থীর রেজিস্ট্রেশন অনুমোদন বা প্রত্যাখ্যান করুন।", "Approve or reject student registration requests."),
       count: stats.pendingStudents,
-      href: "/academy/admin/admissions",
+      href: "/admin/admissions",
     },
     {
       title: t("শিক্ষার্থী ও ট্র্যাক", "Students & tracks"),
       desc: t("গ্রুপ স্ট্যাটাস, ট্র্যাক পরিবর্তন বা শিক্ষার্থী অপসারণ।", "Group status, track transfers, or removing a student."),
       count: stats.approvedStudents,
-      href: "/academy/admin/students",
+      href: "/admin/students",
     },
     {
       title: t("ক্লাস লগ অনুমোদন", "Class log approvals"),
       desc: t("শিক্ষকের জমা দেওয়া উপস্থিতি সেশন পর্যালোচনা করুন।", "Review attendance sessions submitted by teachers."),
       count: stats.pendingClasses,
-      href: "/academy/admin/class-logs",
+      href: "/admin/class-logs",
     },
     {
       title: t("কোর্স ট্র্যাক", "Course tracks"),
       desc: t("নতুন কোর্স তৈরি করুন, ব্যাচের সময়সূচি সম্পাদনা করুন।", "Create courses and edit cohort schedules."),
       count: stats.courses,
-      href: "/academy/admin/courses",
+      href: "/admin/courses",
     },
     {
       title: t("চাইনিজ কোর ওয়ার্ডস", "Chinese core words"),
       desc: t("কোর ক্যারেক্টার ও শব্দ পরিবার যোগ, সম্পাদনা বা মুছুন।", "Add, edit, or remove core characters and word families."),
       count: stats.chineseWords,
-      href: "/academy/admin/chinese-words",
+      href: "/admin/chinese-words",
     },
   ];
 

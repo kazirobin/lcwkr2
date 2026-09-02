@@ -20,7 +20,7 @@ const PIN_KEY = "academy_admin_pin";
 const UNLOCK_KEY = "academy_admin_unlocked";
 
 /**
- * Shared gate + chrome for every /academy/admin page. NOTE: the passcode check
+ * Shared gate + chrome for every /admin page. NOTE: the passcode check
  * is still client-side only — real server-enforced auth is a separate,
  * deferred piece of work. This unifies the previously inconsistent gating
  * (the dashboard had one, the sub-pages had none) and the visual shell.
@@ -154,8 +154,7 @@ export function AdminShell({
 
       <Breadcrumb
         items={[
-          { label: t("একাডেমি", "Academy"), href: "/academy" },
-          { label: t("অ্যাডমিন", "Admin"), href: "/academy/admin" },
+          { label: t("অ্যাডমিন", "Admin"), href: "/admin" },
           { label: crumb },
         ]}
       />

@@ -74,7 +74,7 @@ designed extension point.
 
 These must be resolved **before** shipping anything paid:
 
-- **Auth is not enforced.** `/academy/admin` is gated only in the browser
+- **Auth is not enforced.** `/admin` is gated only in the browser
   (`src/features/academy/components/admin/AdminShell.tsx`, `localStorage`).
 - **Hardcoded passcode fallbacks.** Several `src/app/api/academy/**` handlers
   accept a literal `"8131"` / `"2026"` in addition to the env var.

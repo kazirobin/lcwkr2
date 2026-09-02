@@ -56,9 +56,11 @@ app/
 ├── todos/                      Todo demo.
 │
 ├── academy/                    The LMS. Has its own layout.tsx (rice-paper chrome).
-│   ├── admission/  courses/[id]/  students/[roll]/  classes/create/
-│   └── admin/                   Staff console — admissions, students, courses,
-│                                class-logs, chinese-words. Gated by AdminShell.
+│   └── admission/  courses/[id]/  students/[roll]/  classes/create/
+│
+├── admin/                      Staff console — admissions, students, courses,
+│                               class-logs, chinese-words. Own layout.tsx
+│                               (rice-paper chrome); gated by AdminShell.
 │
 └── api/                        Route handlers. Each is THIN — it calls a
     │                           feature `server/` function and shapes the response.
