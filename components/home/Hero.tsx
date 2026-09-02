@@ -2,6 +2,16 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  FileText,
+  GraduationCap,
+  Star,
+  Users,
+} from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 type Props = {
@@ -10,295 +20,328 @@ type Props = {
 };
 
 /**
- * Vocabulary hidden in the paper — revealed on cursor pointer move.
+ * Landing hero — soft sumi-e (ink-wash) mood: warm paper ground, layered
+ * mountain silhouettes, a low sun, drifting birds and a bamboo sprig, with the
+ * lesson content and a 田字格 stroke-order card floating above it.
  */
-const SCATTER_CHARS = [
-  { ch: "学", top: "3%", left: "43%", size: "text-8xl", rotate: "-rotate-6" },
-  { ch: "好", top: "11%", left: "64%", size: "text-2xl", rotate: "rotate-3" },
-  { ch: "听", top: "20%", left: "90%", size: "text-6xl", rotate: "rotate-6" },
-  { ch: "读", top: "47%", left: "60%", size: "text-3xl", rotate: "-rotate-4" },
-  { ch: "写", top: "56%", left: "94%", size: "text-7xl", rotate: "rotate-2" },
-  { ch: "说", top: "71%", left: "65%", size: "text-4xl", rotate: "-rotate-6" },
-  { ch: "你好", top: "87%", left: "37%", size: "text-xl", rotate: "rotate-2" },
-  { ch: "加油", top: "2%", left: "3%", size: "text-5xl", rotate: "-rotate-3" },
-  { ch: "谢谢", top: "92%", left: "6%", size: "text-2xl", rotate: "rotate-4" },
-  { ch: "习", top: "34%", left: "2%", size: "text-7xl", rotate: "rotate-6" },
-  { ch: "语", top: "62%", left: "24%", size: "text-8xl", rotate: "-rotate-3" },
-  { ch: "我", top: "42%", left: "82%", size: "text-2xl", rotate: "rotate-5" },
-  { ch: "问", top: "80%", left: "84%", size: "text-5xl", rotate: "-rotate-2" },
-  { ch: "字", top: "15%", left: "12%", size: "text-3xl", rotate: "rotate-3" },
-];
-
 export function Hero({ photoSrc }: Props) {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
   const root = useRef<HTMLElement>(null);
-  const torchRef = useRef<HTMLDivElement>(null);
 
+  // Gentle pointer parallax on the ink-wash layers.
   useEffect(() => {
     const el = root.current;
-    const torch = torchRef.current;
-    if (!el || !torch) return;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const onTorchMove = (e: PointerEvent) => {
+    const onMove = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
-      el.style.setProperty("--tx", `${e.clientX - r.left}px`);
-      el.style.setProperty("--ty", `${e.clientY - r.top}px`);
-      torch.style.opacity = "0.22";
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      el.style.setProperty("--px", px.toFixed(3));
+      el.style.setProperty("--py", py.toFixed(3));
     };
 
-    const onTorchLeave = () => {
-      torch.style.opacity = "0";
-    };
-
-    el.addEventListener("pointermove", onTorchMove);
-    el.addEventListener("pointerleave", onTorchLeave);
-
-    return () => {
-      el.removeEventListener("pointermove", onTorchMove);
-      el.removeEventListener("pointerleave", onTorchLeave);
-    };
+    el.addEventListener("pointermove", onMove);
+    return () => el.removeEventListener("pointermove", onMove);
   }, []);
+
+  const src = photoSrc
+    ? photoSrc.startsWith("/") || photoSrc.startsWith("http")
+      ? photoSrc
+      : `/${photoSrc}`
+    : undefined;
+
+  const stats: { icon: typeof Users; value: string; label: string }[] = [
+    { icon: Users, value: "8.2k+", label: t("শিক্ষার্থী রেটিং", "Student rating") },
+    {
+      icon: GraduationCap,
+      value: "12,000+",
+      label: t("সন্তুষ্ট শিক্ষার্থী", "Happy students"),
+    },
+    { icon: BookOpen, value: "HSK 1-6", label: t("রোডম্যাপ", "Roadmap") },
+    {
+      icon: Star,
+      value: "100%",
+      label: t("ফ্রি রিসোর্স", "Free resources"),
+    },
+  ];
 
   return (
     <section
       ref={root}
       aria-labelledby="hl-title"
-      className={`relative isolate min-h-screen w-full overflow-hidden bg-background text-text transition-colors duration-300 ${
+      className={`relative isolate -mt-16 min-h-screen w-full overflow-hidden bg-[#f8f3ea] text-text transition-colors duration-300 in-[.dark]:bg-background sm:-mt-20 ${
         language === "bn" ? "font-bn" : "font-en"
       }`}
+      style={{ "--px": "0", "--py": "0" } as React.CSSProperties}
     >
-      {/* Colour wash gradients */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,var(--color-secondary)/0.15,transparent_55%),radial-gradient(100%_80%_at_0%_100%,var(--color-primary)/0.18,transparent_60%)]"
-      />
-
-      {/* Ruled practice-sheet grid pattern */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(to_bottom,transparent_0_63px,var(--color-text)/0.05_63px_64px),repeating-linear-gradient(to_right,transparent_0_63px,var(--color-text)/0.05_63px_64px)] [mask-image:radial-gradient(75%_75%_at_50%_30%,black,transparent_92%)]"
-      />
-
-      {/* Vocabulary hidden in the paper — revealed on cursor pointer move */}
-      <div
-        ref={torchRef}
-        aria-hidden="true"
-        style={{ opacity: 0 }}
-        className="pointer-events-none absolute inset-0 z-10 text-text transition-opacity duration-300 ease-out [mask-image:radial-gradient(circle_240px_at_var(--tx,-9999px)_var(--ty,-9999px),black_0%,black_35%,transparent_78%)]"
-      >
-        {SCATTER_CHARS.map((c, i) => (
-          <span
-            key={i}
-            lang="zh"
-            className={`absolute font-bold select-none ${c.size} ${c.rotate}`}
-            style={{ top: c.top, left: c.left }}
-          >
-            {c.ch}
-          </span>
-        ))}
+      {/* ---------- Ink-wash landscape background ---------- */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        {/* warm rice-paper ground so the art blends seamlessly in light mode */}
+        <div className="absolute inset-0 bg-[#f8f3ea] in-[.dark]:hidden" />
+        <Image
+          src="/assets/ink-landscape.jpg"
+          alt=""
+          width={1672}
+          height={941}
+          priority
+          sizes="100vw"
+          className="absolute inset-x-0 top-0 w-full [mask-image:linear-gradient(to_bottom,black_50%,transparent_92%)] in-[.dark]:opacity-20"
+          style={{
+            transform:
+              "translate3d(calc(var(--px) * -10px), calc(var(--py) * -6px), 0)",
+          }}
+        />
+        {/* scrims: keep the left column readable, blend the art into the theme background */}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#f8f3ea_0%,rgba(248,243,234,0.72)_20%,rgba(248,243,234,0.1)_46%,transparent_66%)] in-[.dark]:hidden" />
+        <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,var(--color-background)_0%,var(--color-background)/0.6_24%,transparent_58%)] in-[.dark]:block" />
+        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-[linear-gradient(0deg,#f8f3ea,transparent)] in-[.dark]:hidden" />
+        <div className="absolute inset-x-0 bottom-0 hidden h-1/3 bg-[linear-gradient(0deg,var(--color-background),transparent)] in-[.dark]:block" />
       </div>
 
-      <div className="relative z-20 mx-auto flex min-h-screen w-full max-w-[1360px] flex-col px-5 pt-24 pb-8 sm:px-8 sm:pt-28 lg:px-12">
-        <div className="grid flex-1 grid-cols-1 items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
-          {/* ---------------- Left Content ---------------- */}
+      {/* ---------- Giant 学 watermark ---------- */}
+      <span
+        aria-hidden="true"
+        lang="zh"
+        className="pointer-events-none absolute top-[6%] left-[38%] hidden select-none text-[26rem] leading-none font-bold text-text/[0.03] lg:block"
+        style={{
+          transform:
+            "translate3d(calc(var(--px) * -14px), calc(var(--py) * -14px), 0)",
+        }}
+      >
+        学
+      </span>
+
+      {/* ================= CONTENT ================= */}
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-3 pt-28 pb-10 sm:px-6 lg:px-8">
+        <div className="grid flex-1 grid-cols-1 items-center gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
+          {/* ---------------- Left ---------------- */}
           <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <span
                 aria-hidden="true"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-secondary text-sm font-bold text-background shadow-[2px_2px_0_var(--color-text)/0.18]"
+                lang="zh"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-sm font-bold text-white shadow-sm"
               >
                 汉
               </span>
-              <span className="h-px w-6 sm:w-8 bg-text/25" aria-hidden="true" />
-              <span className="font-mono text-xs font-medium tracking-wider text-secondary uppercase">
-                {t("শিক্ষা সবার জন্য উন্মুক্ত", "Education Must Be Free")}
+              <span className="text-xs font-semibold tracking-wide text-secondary uppercase">
+                {t("শিক্ষা সবার জন্য উন্মুক্ত", "Education open for all")}
               </span>
-              <span className="hidden sm:inline text-text/30">·</span>
-              <span className="font-mono text-xs tracking-[0.14em] text-text/60">
-                {t("পাঠ ০১ · বিনামূল্যে কোর্স", "Lesson 01 · Free Course")}
+              <span className="text-text/25" aria-hidden="true">
+                ·
+              </span>
+              <span className="text-xs tracking-wide text-text/55">
+                {t("পাঠ ০১", "Lesson 01")}
+              </span>
+              <span className="text-text/25" aria-hidden="true">
+                ·
+              </span>
+              <span className="text-xs tracking-wide text-text/55">
+                {t("বিনামূল্যে কোর্স", "Free course")}
               </span>
             </div>
 
             <h1
               id="hl-title"
-              className="mt-6 flex flex-col text-[2.5rem] leading-[1.1] font-bold tracking-tight sm:text-6xl lg:text-[4.5rem]"
+              className="mt-7 text-[2.6rem] leading-[1.12] font-bold tracking-tight sm:text-6xl lg:text-[4.25rem]"
             >
-              <span className="block pb-1">
-                {t("চাইনিজ শেখা শুরু,", "Start Learning Chinese,")}
+              <span className="block">
+                {t("চাইনিজ শেখা শুরু,", "Start learning Chinese,")}
               </span>
-              <span className="inline-flex items-baseline pb-2">
-                <span className="text-secondary">
-                  {t("একদম বিনামূল্যে।", "Completely Free.")}
-                </span>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
+              <span className="mt-1 inline-flex items-center gap-3 text-secondary">
+                {t("একদম বিনামূল্যে", "completely free")}
+                <span
                   aria-hidden="true"
-                  className="ml-3 mb-2 h-7 w-7 shrink-0 self-center text-secondary"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-secondary"
                 >
-                  <path
-                    d="M4 13 L9.5 18.5 L20 5"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                  <Check className="h-5 w-5" strokeWidth={3} />
+                </span>
               </span>
             </h1>
 
-            <p className="mt-6 max-w-[46ch] text-base leading-[1.75] text-text/75 sm:text-lg">
+            <p className="mt-6 max-w-[48ch] text-base leading-[1.8] text-text/70 sm:text-lg">
               {t(
                 "শূন্য থেকে সাবলীল পর্যন্ত — কাজী রবিনের সাথে প্রতি সপ্তাহে লাইভ ক্লাসে, ধাপে ধাপে।",
-                "From zero to fluency — step-by-step in weekly live classes with Kazi Robin."
+                "From zero to fluency — step-by-step in weekly live classes with Kazi Robin.",
               )}
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-              <span className="relative inline-block">
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-sm bg-text"
-                />
-                <a
-                  href="#live"
-                  className="relative inline-flex items-center gap-2 rounded-sm bg-secondary px-6 py-3.5 text-[15px] font-semibold text-background transition-transform duration-200 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                >
-                  {t("লাইভ ক্লাসে যোগ দিন", "Join Live Class")} <span aria-hidden="true">→</span>
-                </a>
-              </span>
-
+            <div className="mt-9 flex flex-wrap items-center gap-4">
               <a
-                href="#pdf"
-                className="rounded-sm border border-text/25 px-6 py-3.5 text-[15px] font-medium text-text transition-colors hover:border-secondary hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                href="https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-secondary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
               >
-                {t("PDF নোট ডাউনলোড", "Download PDF Notes")}
+                {t("লাইভ ক্লাসে যোগ দিন", "Join live class")}
+                <ArrowRight className="h-4 w-4" />
               </a>
 
-              <a
-                href="#intro"
-                className="inline-flex items-center gap-1.5 text-[15px] text-text/70 underline decoration-text/30 underline-offset-4 transition-colors hover:text-secondary hover:decoration-secondary"
+              <Link
+                href="/pdf"
+                className="inline-flex items-center gap-2 rounded-xl border border-text/15 bg-background px-6 py-3.5 text-[15px] font-medium text-text transition-colors hover:border-secondary/50 hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
               >
-                {t("ভাষা পরিচিতি দেখুন", "Explore Language Intro")} <span aria-hidden="true">→</span>
-              </a>
+                <FileText className="h-4 w-4" />
+                {t("PDF নোট ডাউনলোড", "Download PDF notes")}
+              </Link>
+
+              <Link
+                href="/intro"
+                className="inline-flex items-center gap-1.5 text-[15px] text-text/65 underline decoration-text/25 underline-offset-[6px] transition-colors hover:text-secondary hover:decoration-secondary"
+              >
+                {t("কীভাবে চলে দেখুন", "See how it works")}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-
-            <p className="mt-10 font-mono text-[13px] tracking-wide text-text/60">
-              {t(
-                "৪.৯ ★ শিক্ষার্থী রেটিং  ·  ১২,০০০+ শিক্ষার্থী  ·  HSK ১–৬ রোডম্যাপ  ·  ১০০% ফ্রি",
-                "4.9 ★ Student Rating  ·  12,000+ Students  ·  HSK 1–6 Roadmap  ·  100% Free"
-              )}
-            </p>
           </div>
 
-          {/* ---------------- Right Practice Cell ---------------- */}
-          <div className="flex flex-col items-center lg:items-end">
-            <div className="relative aspect-square w-full max-w-[300px] overflow-hidden rounded-[3px] border border-text/15 bg-background/50 shadow-[10px_10px_0_var(--color-text)/0.06] sm:max-w-[340px]">
-              <div className="absolute inset-0">
-                {/* 田字格 guide lines */}
-                <svg
-                  viewBox="0 0 100 100"
-                  className="absolute inset-0 h-full w-full text-secondary/30"
-                  aria-hidden="true"
-                >
-                  <path d="M50 4 L50 96" stroke="currentColor" strokeWidth={0.6} strokeDasharray="3 3" />
-                  <path d="M4 50 L96 50" stroke="currentColor" strokeWidth={0.6} strokeDasharray="3 3" />
-                  <path d="M8 8 L92 92" stroke="currentColor" strokeWidth={0.4} strokeDasharray="2 3" />
-                  <path d="M92 8 L8 92" stroke="currentColor" strokeWidth={0.4} strokeDasharray="2 3" />
-                </svg>
+          {/* ---------------- Right ---------------- */}
+          <div
+            className="flex flex-col items-center gap-5 lg:items-end"
+            style={{
+              transform:
+                "translate3d(calc(var(--px) * -8px), calc(var(--py) * -8px), 0)",
+            }}
+          >
+            {/* Stroke-order card */}
+            <div className="relative aspect-square w-full max-w-[360px] rounded-3xl border border-text/10 bg-background shadow-[0_30px_70px_-25px_rgba(0,0,0,0.25)]">
+              <span
+                aria-hidden="true"
+                lang="zh"
+                className="absolute top-4 right-4 rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-semibold tracking-widest text-white"
+              >
+                中文
+              </span>
 
-                {/* 中 (zhōng) Character Strokes */}
-                <svg viewBox="0 0 100 140" className="absolute inset-[14%] h-[72%] w-[72%]" aria-hidden="true">
-                  <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={8}>
-                    <path d="M25 35 L25 95" className="stroke-text" />
-                    <path d="M25 35 L75 35 L75 95" className="stroke-text" />
-                    <path d="M25 95 L75 95" className="stroke-text" />
-                    <path d="M50 15 L50 115" className="stroke-secondary" />
+              {/* 田字格 + 中 */}
+              <svg
+                viewBox="0 0 100 100"
+                className="absolute inset-0 h-full w-full"
+                aria-hidden="true"
+              >
+                <g transform="translate(14 14) scale(0.72)">
+                  <rect
+                    x="1"
+                    y="1"
+                    width="98"
+                    height="98"
+                    rx="2"
+                    fill="none"
+                    className="stroke-secondary/30"
+                    strokeWidth="1"
+                  />
+                  <path
+                    d="M50 1 V99 M1 50 H99 M1 1 L99 99 M99 1 L1 99"
+                    className="stroke-secondary/25"
+                    strokeWidth="0.8"
+                    strokeDasharray="4 4"
+                  />
+                  {/* 中 strokes */}
+                  <g
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="8.5"
+                  >
+                    <path d="M38 36 V66" className="stroke-text" />
+                    <path d="M38 36 H62 V66" className="stroke-text" />
+                    <path d="M38 66 H62" className="stroke-text" />
+                    <path d="M50 19 V83" className="stroke-secondary" />
                   </g>
-                  {[
-                    [15, 30],
-                    [34, 25],
-                    [15, 100],
-                    [50, 6],
-                  ].map(([cx, cy], i) => (
-                    <g key={i} transform={`translate(${cx} ${cy})`}>
-                      <circle r={7} className="fill-secondary" />
-                      <text x={0} y={2.5} textAnchor="middle" fontSize={8} fontWeight={700} className="fill-background">
-                        {i + 1}
+                  {/* numbered stroke starts */}
+                  {(
+                    [
+                      [29, 33, "1"],
+                      [44, 24, "2"],
+                      [29, 69, "3"],
+                      [51, 9, "4"],
+                    ] as const
+                  ).map(([cx, cy, n]) => (
+                    <g key={n} transform={`translate(${cx} ${cy})`}>
+                      <circle r="6.5" className="fill-secondary" />
+                      <text
+                        x="0"
+                        y="2.6"
+                        textAnchor="middle"
+                        fontSize="8"
+                        fontWeight="700"
+                        className="fill-white"
+                      >
+                        {n}
                       </text>
                     </g>
                   ))}
-                </svg>
+                </g>
+              </svg>
 
-                <p className="absolute bottom-4 left-4 font-mono text-xs text-text/60">
-                  zhōng
-                  <span className="ml-1 text-text/45">
-                    · {t("মধ্য / চীন", "Middle / China")}
-                  </span>
-                </p>
-
-                <span
-                  aria-hidden="true"
-                  className="absolute top-4 right-4 rounded-sm bg-secondary px-2 py-1 font-mono text-[10px] tracking-widest text-background"
-                >
-                  中文
-                </span>
-              </div>
+              <p className="absolute bottom-5 left-6 text-xs text-text/55">
+                <span className="font-medium text-text/75">zhōng</span>
+                <span className="mx-1.5">·</span>
+                {t("মধ্য / চীন", "middle / China")}
+              </p>
             </div>
 
-            {/* Instructor Credit */}
-            <div className="mt-5 flex w-full max-w-[300px] items-center gap-3 sm:max-w-[340px]">
-              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-sm border border-text/20 bg-background/50">
-                {photoSrc ? (
-                  <Image
-                    src={photoSrc}
-                    alt={t("শিক্ষক কাজী রবিন", "Instructor Kazi Robin")}
-                    fill
-                    sizes="48px"
-                    className="object-cover grayscale"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-sm font-bold text-text/70">
-                    {t("কর", "KR")}
-                  </span>
-                )}
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-1.5 -bottom-1.5 flex h-5 w-5 items-center justify-center rounded-sm bg-secondary text-[9px] font-bold text-background"
-                >
-                  名
-                </span>
+            {/* Instructor card */}
+            <div className="relative w-full max-w-[360px] overflow-hidden rounded-2xl border border-text/10 bg-background p-4 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.2)]">
+              <span
+                aria-hidden="true"
+                className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-secondary/12 text-secondary"
+              >
+                <Star className="h-3.5 w-3.5 fill-current" />
+              </span>
+              <div className="flex items-center gap-3.5">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-text/10 bg-text/5">
+                  {src ? (
+                    <Image
+                      src={src}
+                      alt={t("শিক্ষক কাজী রবিন", "Instructor Kazi Robin")}
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-sm font-bold text-text/70">
+                      {t("কর", "KR")}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[13px] leading-snug text-text/65">
+                  <strong className="block text-sm font-semibold text-text">
+                    {t("কাজী রবিন", "Kazi Robin")}
+                  </strong>
+                  {t(
+                    "কমিউনিটি চাইনিজের প্রতিষ্ঠাতা এবং কনটেন্ট ক্রিয়েটর।",
+                    "Founder of Community Chinese and content creator.",
+                  )}
+                </p>
               </div>
-              <p className="text-[13px] leading-snug text-text/70">
-                <strong className="block font-semibold text-text">
-                  {t("কাজী রবিন", "Kazi Robin")}
-                </strong>
-                {t(
-                  "কমিউনিটি চাইনিজের প্রতিষ্ঠাতা এবং কনটেন্ট ক্রিয়েটর।",
-                  "Founder of Community Chinese and Content Creator."
-                )}
-              </p>
             </div>
           </div>
         </div>
 
-        {/* ---------------- Bottom Footer Anchor ---------------- */}
-        <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-text/15 pt-5 sm:flex-row sm:items-center">
-          <span className="font-mono text-[11px] tracking-[0.14em] text-text/50">
-            {t(
-              "বিস্তারিত জানতে সম্পূর্ণ ওয়েব সাইট ভিজিট করুন",
-              "Explore the full website to learn more"
-            )}
-          </span>
-          <a
-            href="#next"
-            className="inline-flex items-center gap-2 text-xs tracking-wide text-text/60 transition-colors hover:text-secondary"
-          >
-            {t("নিচে স্ক্রল করুন", "Scroll down")} <span aria-hidden="true">↓</span>
-          </a>
+        {/* ---------------- Stats bar ---------------- */}
+        <div className="mt-12 grid grid-cols-2 divide-text/10 rounded-2xl border border-text/10 bg-background/70 backdrop-blur-sm sm:grid-cols-4 sm:divide-x">
+          {stats.map(({ icon: Icon, value, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-3 px-5 py-5 sm:px-6"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-lg font-bold tracking-tight text-text">
+                  {value}
+                </span>
+                <span className="block text-xs text-text/55">{label}</span>
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

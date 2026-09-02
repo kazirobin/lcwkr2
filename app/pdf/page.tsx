@@ -390,7 +390,7 @@ export default function PDF() {
   return (
     <div className="min-h-screen bg-background text-text">
       {/* Single Banner - Solid Color */}
-      <section className="relative overflow-hidden bg-primary py-16 sm:py-20">
+      <section className="relative -mt-16 overflow-hidden bg-primary pt-28 pb-16 sm:-mt-20 sm:pt-32 sm:pb-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 -left-4 w-72 h-72 bg-background rounded-full mix-blend-multiply filter blur-xl animate-pulse" />
           <div className="absolute bottom-0 -right-4 w-72 h-72 bg-background/50 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000" />

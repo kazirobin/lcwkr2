@@ -1,162 +1,113 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Plus, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 type FAQItem = {
   question: string;
-  answer: React.ReactNode;
+  answer: string;
+  action?: { label: string; href: string };
 };
 
-export const faq = {
+type FAQContent = {
+  kicker: string;
+  title: { first: string; highlight: string };
+  subtitle: string;
+  items: FAQItem[];
+  support: {
+    lead: string;
+    button: string;
+    available: string;
+    href: string;
+  };
+};
+
+const DRIVE_URL =
+  "https://drive.google.com/drive/folders/12fEKjDBRU5NgnpgE4WluoRMer94LIkaQ";
+const PRACTICE_GROUP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
+const SUPPORT_URL = "https://wa.me/8801787881334";
+
+/* Chinese numerals — double as a passing glance of the language itself */
+const CN_NUMERALS = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+
+export const faq: { en: FAQContent; bn: FAQContent } = {
   en: {
-    badge: "FAQs",
-
-    title: {
-      first: "Frequently Asked",
-      highlight: "Questions",
-    },
-
+    kicker: "问 · Questions",
+    title: { first: "Everything you might", highlight: "want to ask" },
     subtitle:
-      "Here are some common questions about our Chinese learning community. If you need more help, feel free to contact our support team.",
-
+      "The community, the lessons, the practice loop. If your question isn't here, one message gets you a real answer.",
     items: [
       {
         question: "How can I join the Chinese Learning Community?",
-        answer: (
-          <>
-            Click the <strong>Join Community</strong> button on the website.
-            You'll be redirected to our WhatsApp community where you can join as
-            a member.
-          </>
-        ),
+        answer:
+          'Tap the "Join Community" button on the website. You\'ll be taken to our WhatsApp community, where you can join as a member.',
       },
       {
         question: "Do I need any previous Chinese language knowledge?",
         answer:
-          "No. This course is designed for complete beginners. You can start learning Chinese from zero.",
+          "No. The course is built for complete beginners — you can start from zero.",
       },
       {
         question: "Where can I watch the Pinyin lessons?",
-        answer: (
-          <>
-            All Pinyin lessons are available in our{" "}
-            <Link
-              href="https://drive.google.com/drive/folders/12fEKjDBRU5NgnpgE4WluoRMer94LIkaQ"
-              target="_blank"
-              className="font-semibold text-primary hover:underline"
-            >
-              Google Drive
-            </Link>
-            .
-          </>
-        ),
+        answer: "All Pinyin lessons live in our shared Google Drive folder.",
+        action: { label: "Open Google Drive", href: DRIVE_URL },
       },
       {
         question: "How do I submit my Pinyin pronunciation practice?",
-        answer: (
-          <>
-            Record your pronunciation and send it as a voice message in our{" "}
-            <a
-              href="https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-primary hover:underline"
-            >
-              WhatsApp Practice Group
-            </a>
-            .
-          </>
-        ),
+        answer:
+          "Record yourself and send it as a voice message in our WhatsApp practice group.",
+        action: { label: "Open the practice group", href: PRACTICE_GROUP_URL },
       },
       {
         question: "Will I receive help if I face any problems?",
         answer:
-          "Yes. Our teachers and community members are always ready to help you.",
+          "Yes. Our teachers and community members are always ready to help.",
       },
       {
         question: "Is the learning community free?",
-        answer:
-          "Yes. Joining our Chinese learning community is completely free.",
+        answer: "Yes. Joining the Chinese learning community is completely free.",
       },
       {
         question: "How can I improve faster?",
         answer:
-          "Practice every day, complete your assignments, submit your voice recordings, and actively participate in community discussions.",
+          "Practice daily, finish your assignments, send your voice recordings, and take part in community discussions.",
       },
-    ] as FAQItem[],
-
+    ],
     support: {
-      title: "Still have questions?",
-      highlight: "We're here to help!",
-      description:
-        "If you couldn't find the answer you're looking for, feel free to contact our support team.",
-      button: "Contact Support",
-      available: "Available: 10:00 AM - 10:00 PM",
+      lead: "Still holding a question?",
+      button: "Message support",
+      available: "Replies 10:00 AM – 10:00 PM",
+      href: SUPPORT_URL,
     },
   },
 
   bn: {
-    badge: "প্রশ্নোত্তর",
-
-    title: {
-      first: "সচরাচর",
-      highlight: "জিজ্ঞাসিত প্রশ্ন",
-    },
-
+    kicker: "问 · প্রশ্ন",
+    title: { first: "যা কিছু জানতে", highlight: "চান" },
     subtitle:
-      "আমাদের চীনা ভাষা শেখার কমিউনিটি সম্পর্কে সাধারণ কিছু প্রশ্নের উত্তর এখানে দেওয়া হয়েছে। আরও সাহায্যের প্রয়োজন হলে আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।",
-
+      "কমিউনিটি, ক্লাস, অনুশীলনের ধাপ — সব এখানে। আপনার প্রশ্ন না থাকলে একটি মেসেজেই সত্যিকারের উত্তর পাবেন।",
     items: [
       {
         question: "আমি কীভাবে চীনা ভাষা শেখার কমিউনিটিতে যোগ দিতে পারি?",
-        answer: (
-          <>
-            ওয়েবসাইটের <strong>Join Community</strong> বাটনে ক্লিক করুন। এরপর
-            আপনাকে আমাদের WhatsApp কমিউনিটিতে নিয়ে যাওয়া হবে, যেখানে আপনি
-            সদস্য হতে পারবেন।
-          </>
-        ),
+        answer:
+          'ওয়েবসাইটের "Join Community" বাটনে ক্লিক করুন। এরপর আপনাকে আমাদের WhatsApp কমিউনিটিতে নিয়ে যাওয়া হবে, যেখানে আপনি সদস্য হতে পারবেন।',
       },
       {
         question: "চীনা ভাষা শেখার জন্য আগে থেকে কিছু জানা কি প্রয়োজন?",
         answer:
-          "না। আমাদের কোর্স সম্পূর্ণ নতুনদের জন্য তৈরি। আপনি একদম শুরু থেকেই শিখতে পারবেন।",
+          "না। আমাদের কোর্স সম্পূর্ণ নতুনদের জন্য তৈরি — আপনি একদম শুরু থেকেই শিখতে পারবেন।",
       },
       {
         question: "আমি Pinyin-এর ভিডিওগুলো কোথায় পাব?",
-        answer: (
-          <>
-            সব Pinyin ভিডিও আমাদের{" "}
-            <Link
-              href="https://drive.google.com/drive/folders/12fEKjDBRU5NgnpgE4WluoRMer94LIkaQ"
-              target="_blank"
-              className="font-semibold text-primary hover:underline"
-            >
-              Google Drive
-            </Link>{" "}
-            থেকে দেখতে পারবেন।
-          </>
-        ),
+        answer: "সব Pinyin ভিডিও আমাদের শেয়ার্ড Google Drive ফোল্ডারে আছে।",
+        action: { label: "Google Drive খুলুন", href: DRIVE_URL },
       },
       {
         question: "Pinyin উচ্চারণের ভয়েস কীভাবে জমা দেব?",
-        answer: (
-          <>
-            আপনার উচ্চারণ রেকর্ড করে আমাদের{" "}
-            <a
-              href="https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-primary hover:underline"
-            >
-              WhatsApp Practice Group
-            </a>{" "}
-            -এ ভয়েস মেসেজ হিসেবে পাঠিয়ে দিন।
-          </>
-        ),
+        answer:
+          "নিজের উচ্চারণ রেকর্ড করে আমাদের WhatsApp প্র্যাকটিস গ্রুপে ভয়েস মেসেজ হিসেবে পাঠিয়ে দিন।",
+        action: { label: "প্র্যাকটিস গ্রুপ খুলুন", href: PRACTICE_GROUP_URL },
       },
       {
         question: "পড়ার সময় কোনো সমস্যা হলে কি সাহায্য পাব?",
@@ -172,102 +123,165 @@ export const faq = {
         answer:
           "প্রতিদিন অনুশীলন করুন, অ্যাসাইনমেন্ট সম্পন্ন করুন, নিয়মিত ভয়েস জমা দিন এবং আলোচনায় সক্রিয়ভাবে অংশ নিন।",
       },
-    ] as FAQItem[],
-
+    ],
     support: {
-      title: "আরও কোনো প্রশ্ন আছে?",
-      highlight: "আমরা সাহায্য করতে প্রস্তুত!",
-      description:
-        "আপনার প্রয়োজনীয় উত্তর না পেলে আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন।",
-      button: "সাপোর্টে যোগাযোগ করুন",
-      available: "সময়: সকাল ১০টা - রাত ১০টা",
+      lead: "এখনও কোনো প্রশ্ন রয়ে গেছে?",
+      button: "সাপোর্টে মেসেজ",
+      available: "উত্তর: সকাল ১০টা – রাত ১০টা",
+      href: SUPPORT_URL,
     },
   },
 };
 
-export default function FAQ() {
-  const { language } = useLanguage();
-  const [open, setOpen] = useState<number | null>(0);
-
-  const data = language === "bn" ? faq.bn : faq.en;
+function FaqJsonLd() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.en.items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.action ? `${item.answer} ${item.action.href}` : item.answer,
+      },
+    })),
+  };
 
   return (
-    <section className="bg-background">
-      <div className="mx-auto max-w-4xl px-4">
-        {/* Header */}
-        <div className="mb-4 text-center">
-          <span className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-semibold text-primary">
-            {data.badge}
-          </span>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+      }}
+    />
+  );
+}
 
-          <h2 className="mt-5 text-3xl font-bold text-text md:text-4xl">
+export default function FAQ() {
+  const { language } = useLanguage();
+  const data = language === "bn" ? faq.bn : faq.en;
+
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    el.classList.add("faq-anim");
+
+    if (reduced || !("IntersectionObserver" in window)) {
+      el.classList.add("faq-in");
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          el.classList.add("faq-in");
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section
+      id="faq"
+      className="relative scroll-mt-24 overflow-hidden bg-background py-24 md:py-32"
+    >
+      <FaqJsonLd />
+
+      {/* oversized character — pure atmosphere */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-6 -top-10 select-none font-[system-ui] text-[13rem] font-bold leading-none text-primary/[0.05] md:right-4 md:text-[22rem]"
+      >
+        问
+      </span>
+
+      <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 md:grid-cols-[minmax(0,20rem)_1fr]">
+        {/* Left rail */}
+        <div className="md:sticky md:top-28 md:self-start">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-text/55">
+            {data.kicker}
+          </p>
+
+          <h2 className="mt-5 text-3xl font-bold leading-[1.15] tracking-tight text-text md:text-[2.5rem]">
             {data.title.first}{" "}
-            <span className="text-primary">{data.title.highlight}</span>
+            <span className="underline decoration-primary/70 decoration-2 underline-offset-[6px]">
+              {data.title.highlight}
+            </span>
           </h2>
 
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+          <p className="mt-5 max-w-sm text-[15px] leading-7 text-muted-foreground">
             {data.subtitle}
           </p>
+
+          <div className="mt-8 border-t border-border pt-6">
+            <p className="text-sm text-muted-foreground">{data.support.lead}</p>
+            <a
+              href={data.support.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md text-base font-semibold text-text underline decoration-primary/50 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+            >
+              {data.support.button}
+              <ArrowRight size={17} aria-hidden="true" />
+            </a>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {data.support.available}
+            </p>
+          </div>
         </div>
 
-        {/* FAQ */}
-        <div className="space-y-3">
-          {data.items.map((item, index) => {
-            const isOpen = open === index;
+        {/* Questions */}
+        <div ref={rootRef} className="faq-accordion md:pt-1">
+          {data.items.map((item, index) => (
+            <details
+              key={item.question}
+              open={index === 0}
+              className="faq-row group border-b border-border first:border-t"
+              style={{ "--i": index } as React.CSSProperties}
+            >
+              <summary className="flex cursor-pointer list-none items-start gap-5 rounded-lg py-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text">
+                <span className="faq-numeral mt-0.5 shrink-0 text-lg font-semibold text-text/25 group-open:text-text/60">
+                  {CN_NUMERALS[index] ?? index + 1}
+                </span>
 
-            return (
-              <div
-                key={index}
-                className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200"
-              >
-                <button
-                  onClick={() => setOpen(isOpen ? null : index)}
-                  className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition-colors hover:bg-primary/5"
-                >
-                  <h3 className="font-semibold text-text">{item.question}</h3>
+                <h3 className="flex-1 text-lg font-semibold leading-snug text-text md:text-xl">
+                  {item.question}
+                </h3>
 
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    {isOpen ? (
-                      <ChevronUp size={18} />
-                    ) : (
-                      <ChevronDown size={18} />
-                    )}
-                  </div>
-                </button>
+                <Plus
+                  size={20}
+                  aria-hidden="true"
+                  className="faq-mark mt-1 shrink-0 text-text/45"
+                />
+              </summary>
 
-                {isOpen && (
-                  <div className="border-t border-border px-5 pb-5 pt-4 leading-7 text-muted-foreground">
-                    {item.answer}
-                  </div>
+              <div className="pb-8 pl-10 pr-2 text-[15px] leading-8 text-muted-foreground md:max-w-2xl">
+                <p>{item.answer}</p>
+
+                {item.action && (
+                  <a
+                    href={item.action.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-text underline decoration-primary/50 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                  >
+                    {item.action.label}
+                    <ArrowRight size={15} aria-hidden="true" />
+                  </a>
                 )}
               </div>
-            );
-          })}
-        </div>
-
-        {/* Support */}
-        <div className="mt-4 rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
-          <h3 className="text-2xl font-bold text-text">
-            {data.support.title}{" "}
-            <span className="text-primary">{data.support.highlight}</span>
-          </h3>
-
-          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            {data.support.description}
-          </p>
-
-          <a
-            href="https://wa.me/8801787881334"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-7 inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition-all hover:opacity-90"
-          >
-            {data.support.button}
-          </a>
-
-          <p className="mt-4 text-sm text-muted-foreground">
-            {data.support.available}
-          </p>
+            </details>
+          ))}
         </div>
       </div>
     </section>

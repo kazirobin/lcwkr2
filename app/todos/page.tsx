@@ -7,8 +7,8 @@ export const metadata = {
 
 export default function TodosPage() {
   return (
-    <main className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-4">
       <TodoApp />
-    </main>
+    </div>
   );
 }

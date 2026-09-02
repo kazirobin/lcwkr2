@@ -25,6 +25,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("language", language);
 
+    document.documentElement.lang = language;
     document.documentElement.classList.remove("font-en", "font-bn");
     document.documentElement.classList.add(
       language === "bn" ? "font-bn" : "font-en",

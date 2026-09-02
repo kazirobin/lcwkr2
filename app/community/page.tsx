@@ -237,7 +237,7 @@ export default function CommunityPage() {
   return (
     <div className="min-h-screen bg-background text-text">
       {/* Hero Banner */}
-      <section className="relative overflow-hidden bg-primary py-16 sm:py-20">
+      <section className="relative -mt-16 overflow-hidden bg-primary pt-28 pb-16 sm:-mt-20 sm:pt-32 sm:pb-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 -left-4 h-72 w-72 rounded-full bg-background mix-blend-multiply blur-xl animate-pulse" />
           <div className="absolute bottom-0 -right-4 h-72 w-72 rounded-full bg-background/50 mix-blend-multiply blur-xl animate-pulse delay-1000" />

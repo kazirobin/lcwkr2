@@ -23,9 +23,12 @@ const VALID_ACCESS_PASSWORDS = [
 
 const STORAGE_KEY = "chinese_words_unlocked";
 
+// Primary call-to-action — the live-class WhatsApp group (mirrors the Hero CTA).
+const WHATSAPP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
+
 const MAIN_LINKS = [
   { id: "home", href: "/", en: "Home", bn: "হোম" },
-  { id: "intro", href: "/intro", en: "Intro", bn: "ইন্ট্রো" },
+  { id: "intro", href: "/intro", en: "How it works", bn: "কীভাবে চলে" },
 ] as const;
 
 const DROPDOWNS = {
@@ -73,6 +76,10 @@ const DROPDOWNS = {
 
 type DropdownId = keyof typeof DROPDOWNS;
 
+// Shared glass surface for the dropdown / mobile panels.
+const PANEL_GLASS =
+  "border border-text/10 bg-background/80 backdrop-blur-xl ring-1 ring-white/50 dark:ring-white/5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.35)]";
+
 export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -81,6 +88,7 @@ export default function Nav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<DropdownId | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   // Protected feature modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -118,6 +126,14 @@ export default function Nav() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Deepen the glass once the page leaves the very top.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -228,10 +244,11 @@ export default function Nav() {
       <Link
         href={href}
         onClick={onClick || closeAll}
-        className={`block px-4 py-3 md:py-2 text-base md:text-sm font-medium transition-colors rounded-lg md:rounded-md ${
+        aria-current={active ? "page" : undefined}
+        className={`block px-4 py-3 md:py-2 text-base md:text-sm font-medium transition-colors rounded-lg md:rounded-full ${
           active
-            ? "text-primary bg-primary/10"
-            : "text-text hover:text-primary hover:bg-primary/5"
+            ? "text-secondary bg-secondary/10"
+            : "text-text/80 hover:text-secondary hover:bg-secondary/7"
         }`}
       >
         {label}
@@ -251,10 +268,10 @@ export default function Nav() {
         <button
           type="button"
           onClick={() => toggleDropdown(dropdownId)}
-          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-md ${
+          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-full ${
             active || isOpen
-              ? "text-primary bg-primary/10"
-              : "text-text hover:text-primary hover:bg-primary/5"
+              ? "text-secondary bg-secondary/10"
+              : "text-text/80 hover:text-secondary hover:bg-secondary/7"
           }`}
           aria-expanded={isOpen}
           aria-label={label}
@@ -276,7 +293,9 @@ export default function Nav() {
         </button>
 
         {isOpen && (
-          <div className="absolute left-0 mt-1 w-56 bg-background border border-text/10 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+          <div
+            className={`absolute left-0 mt-2 w-56 rounded-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 zoom-in-95 duration-150 ${PANEL_GLASS}`}
+          >
             {dropdown.items.map((item) => {
               const isProtected = "isProtected" in item && item.isProtected;
 
@@ -291,10 +310,10 @@ export default function Nav() {
                       closeAll();
                     }
                   }}
-                  className={`flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                  className={`mx-1.5 flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
                     isActive(item.href)
-                      ? "text-primary bg-primary/10 font-semibold"
-                      : "text-text hover:bg-primary/5 hover:text-primary"
+                      ? "text-secondary bg-secondary/10 font-semibold"
+                      : "text-text/80 hover:bg-secondary/7 hover:text-secondary"
                   }`}
                 >
                   <span>{t(item.en, item.bn)}</span>
@@ -324,10 +343,10 @@ export default function Nav() {
         <button
           type="button"
           onClick={() => toggleDropdown(dropdownId)}
-          className={`flex items-center justify-between w-full px-4 py-3 text-base font-medium transition-colors rounded-lg ${
+          className={`flex items-center justify-between w-full px-4 py-3 text-base font-medium transition-colors rounded-xl ${
             active || isOpen
-              ? "text-primary bg-primary/10"
-              : "text-text hover:text-primary hover:bg-primary/5"
+              ? "text-secondary bg-secondary/10"
+              : "text-text/80 hover:text-secondary hover:bg-secondary/7"
           }`}
           aria-expanded={isOpen}
           aria-label={label}
@@ -349,7 +368,7 @@ export default function Nav() {
         </button>
 
         {isOpen && (
-          <div className="pl-6 pb-2 space-y-1">
+          <div className="pl-4 pb-2 space-y-1">
             {dropdown.items.map((item) => {
               const isProtected = "isProtected" in item && item.isProtected;
 
@@ -366,8 +385,8 @@ export default function Nav() {
                   }}
                   className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-lg ${
                     isActive(item.href)
-                      ? "text-primary bg-primary/10 font-semibold"
-                      : "text-text/80 hover:text-primary hover:bg-primary/5"
+                      ? "text-secondary bg-secondary/10 font-semibold"
+                      : "text-text/70 hover:text-secondary hover:bg-secondary/7"
                   }`}
                 >
                   <span>{t(item.en, item.bn)}</span>
@@ -389,28 +408,34 @@ export default function Nav() {
     <>
       <nav
         ref={navRef}
-        className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-text/10"
+        className="fixed inset-x-0 top-0 z-40"
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
+          <div
+            className={`mt-2 sm:mt-3 flex items-center justify-between gap-2 rounded-2xl px-2.5 sm:px-4 transition-all duration-300 ${
+              scrolled
+                ? "h-14 sm:h-16 border border-text/10 bg-background/70 backdrop-blur-xl ring-1 ring-white/50 dark:ring-white/5 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.28)]"
+                : "h-14 sm:h-17 border border-text/5 bg-background/40 backdrop-blur-md ring-1 ring-white/30 dark:ring-white/3 shadow-[0_10px_30px_-16px_rgba(0,0,0,0.18)]"
+            }`}
+          >
             {/* Logo */}
             <Link
               href="/"
               onClick={closeAll}
-              className="shrink-0 flex items-center gap-2"
+              className="shrink-0 flex items-center gap-2 rounded-full px-1.5 py-1"
             >
               <Image
                 src="/assets/logo.png"
-                alt="Logo"
-                width={40}
-                height={40}
-                className="h-8 w-auto"
+                alt="Learn Chinese — The Easy Way"
+                width={232}
+                height={100}
+                className="h-8 w-auto sm:h-9"
                 priority
               />
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex md:items-center md:space-x-1">
+            <div className="hidden md:flex md:items-center md:gap-0.5">
               {MAIN_LINKS.map((link) => (
                 <div key={link.id}>
                   {renderLink(link.href, t(link.en, link.bn))}
@@ -421,25 +446,48 @@ export default function Nav() {
                 <div key={id}>{renderDesktopDropdown(id as DropdownId)}</div>
               ))}
 
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="ml-2 flex items-center gap-1.5 border-l border-text/10 pl-3">
                 <button
                   type="button"
                   onClick={toggleLanguage}
-                  className="px-3 py-2 text-sm font-medium text-text hover:text-primary hover:bg-primary/5 rounded-md transition-colors"
+                  className="px-3 py-2 text-sm font-medium text-text/80 hover:text-secondary hover:bg-secondary/7 rounded-full transition-colors"
                   aria-label="Toggle language"
                 >
                   {language === "en" ? "বাংলা" : "English"}
                 </button>
                 <ThemeButton />
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeAll}
+                  className="ml-1 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-secondary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                >
+                  {t("Join live class", "লাইভ ক্লাসে যোগ দিন")}
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </a>
               </div>
             </div>
 
             {/* Mobile Controls */}
-            <div className="md:hidden flex items-center space-x-2">
+            <div className="md:hidden flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={toggleLanguage}
-                className="px-3 py-2 text-sm font-medium text-text hover:text-primary hover:bg-primary/5 rounded-md transition-colors"
+                className="px-2.5 py-2 text-sm font-medium text-text/80 hover:text-secondary hover:bg-secondary/7 rounded-full transition-colors"
                 aria-label="Toggle language"
               >
                 {language === "en" ? "বাংলা" : "English"}
@@ -448,7 +496,7 @@ export default function Nav() {
               <button
                 type="button"
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-md text-text hover:text-primary hover:bg-primary/5 transition-colors"
+                className="p-2 rounded-full text-text/80 hover:text-secondary hover:bg-secondary/7 transition-colors"
                 aria-label={t("Toggle navigation menu", "নেভিগেশন মেনু টগল করুন")}
                 aria-expanded={isMobileMenuOpen}
               >
@@ -482,9 +530,9 @@ export default function Nav() {
           {isMobile && isMobileMenuOpen && (
             <div
               ref={mobileMenuRef}
-              className="md:hidden bg-background border-t border-text/10 py-4 px-2"
+              className={`md:hidden mt-2 rounded-2xl py-3 px-2 animate-in fade-in slide-in-from-top-2 duration-150 ${PANEL_GLASS}`}
             >
-              <div className="flex flex-col space-y-1 max-w-sm mx-auto">
+              <div className="flex flex-col space-y-1">
                 {MAIN_LINKS.map((link) => (
                   <div key={link.id}>
                     {renderLink(link.href, t(link.en, link.bn))}
@@ -494,6 +542,30 @@ export default function Nav() {
                 {Object.keys(DROPDOWNS).map((id) => (
                   <div key={id}>{renderMobileDropdown(id as DropdownId)}</div>
                 ))}
+
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeAll}
+                  className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3.5 text-base font-semibold text-white shadow-sm shadow-secondary/25 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                >
+                  {t("Join live class", "লাইভ ক্লাসে যোগ দিন")}
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </a>
               </div>
             </div>
           )}
@@ -527,7 +599,7 @@ export default function Nav() {
               </h2>
               <p className="text-xs sm:text-sm text-text/70 leading-relaxed max-w-lg mx-auto">
                 {t(
-                  "পূর্বে সাবস্ক্রিপশন থাকলে পাসওয়ার্ড দিয়ে সরাসরি আনলক করুন, অথবা নিচে বিকাশ পেমেন্ট ফর্ম পূরণ করে এখনই অ্যাক্সেস নিন।",
+                  "পূর্বে সাবস্ক্রিপশন থাকলে পাসওয়ার্ড দিয়ে সরাসরি আনলক করুন, অথবা নিচে বিকাশ পেমেন্ট ফর্ম পূরণ করে এখনই অ্যাক্সেস নিন।",
                   "If you already have a subscription, enter your password to unlock. Otherwise, complete the bKash payment form below to get instant access."
                 )}
               </p>
