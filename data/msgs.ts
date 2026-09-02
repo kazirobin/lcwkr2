@@ -46,12 +46,12 @@ export const snippets: Snippet[] = [
         examples: [],
       },
     ],
-  },`,
+  }`,
   },
-    {
+  {
     id: 2,
     title: "core prompt",
-    description: " caracter",
+    description: "Core Character Prompt",
     language: "tsx",
     code: `Act as an expert Chinese language teacher and full-stack developer data assistant. 
 
@@ -86,14 +86,14 @@ I will give you one or multiple Chinese Core Characters. For each character, gen
 
 Strict Rules:
 1. Provide 3 to 6 common/practical relatedWords for each core character.
-2. Provide at least 1 or 2 high-quality example sentences with Pinyin, English, and Bangla translation for the main related words. Empty array `[]` is allowed for secondary words.
+2. Provide at least 1 or 2 high-quality example sentences with Pinyin, English, and Bangla translation for the main related words. Empty array \`[]\` is allowed for secondary words.
 3. Accurate Bangla translation is mandatory for every meaning and sentence.
 4. Output ONLY the valid JavaScript/JSON array or objects so I can copy-paste directly into my code. Do not include markdown introductions or chit-chat.
 
 Here are the Core Characters:
 [এখানে আপনার ক্যারেক্টারগুলো লিখুন, যেমন: 看, 说, 吃, 喝]`,
   },
-{
+  {
     id: 3,
     title: "(5.00pm class)Chinese special for beginner",
     description: "Activity Form Link",
@@ -121,7 +121,6 @@ Here are the Core Characters:
     language: "tsx",
     code: `https://forms.gle/Mimne7cTpheXVd1r8`,
   },
-
   {
     id: 7,
     title: "(Class 10.10pm daily)Hsk 3 Intermediate",
@@ -129,15 +128,14 @@ Here are the Core Characters:
     language: "tsx",
     code: `https://forms.gle/NPvhLaxmh6rQaurS6`,
   },
-
   {
     id: 8,
     title: "Quiz LCWKR",
-    description: "Max width container",
+    description: "Quiz Form Link",
     language: "tsx",
     code: `https://forms.gle/D47rbPPGH1A2v4bD6`,
   },
-{
+  {
     id: 9,
     title: "Word List Prompt",
     description: "for get words list",
@@ -151,7 +149,7 @@ Here are the Core Characters:
 শব্দগুলি হলো (পিনয়িনে):
 tiānqì, zhèlǐ, tiān, xiàyǔ, le, yǔ, yǒudiǎnr, juéde, lěng`,
   },
-{
+  {
     id: 10,
     title: "August 2026 New Members",
     description: "Registration Form Link",
@@ -161,7 +159,7 @@ tiānqì, zhèlǐ, tiān, xiàyǔ, le, yǔ, yǒudiǎnr, juéde, lěng`,
   {
     id: 11,
     title: "August 2026 New Members",
-    description: "Max width container",
+    description: "Welcome Instructions",
     language: "tsx",
     code: `Learn Chinese with Kazi Robin-এ আপনাকে স্বাগতম! 🌸
 
@@ -181,8 +179,6 @@ https://www.cognitoforms.com/KaziRobin1/NewMembersAugust2026
 
 ✅ আপনার ভয়েস রেকর্ডিং শুনে সবকিছু ঠিক থাকলে আপনাকে আমাদের WhatsApp গ্রুপে অ্যাড করে দেওয়া হবে। এরপর আপনার ভয়েসটি গ্রুপে আপনার নাম উল্লেখ করে শেয়ার করা হবে, যাতে আমাদের মেন্টররা আপনার উচ্চারণ যাচাই করে প্রয়োজনীয় পরামর্শ দিতে পারেন।
 
-📚 এরপর থেকেই আপনি আমাদের HSK 1 ব্যাচে`,
+📚 এরপর থেকেই আপনি আমাদের HSK 1 ব্যাচে যুক্ত হয়ে নিয়মিত ক্লাস শুরু করতে পারবেন।`,
   },
-
-
 ];
