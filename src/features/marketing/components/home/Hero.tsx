@@ -82,6 +82,9 @@ export function Hero({ photoSrc }: Props) {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         {/* warm rice-paper ground so the art blends seamlessly in light mode */}
         <div className="absolute inset-0 bg-[#f8f3ea] in-[.dark]:hidden" />
+        {/* Light: ink-wash landscape. Dark: a dedicated night version. The
+            theme class is set before first paint, so only the matching image
+            is displayed; the hidden one (lazy) is never fetched. */}
         <Image
           src="/assets/ink-landscape.jpg"
           alt=""
@@ -89,7 +92,19 @@ export function Hero({ photoSrc }: Props) {
           height={941}
           priority
           sizes="100vw"
-          className="absolute inset-x-0 top-0 w-full [mask-image:linear-gradient(to_bottom,black_50%,transparent_92%)] in-[.dark]:opacity-20"
+          className="absolute inset-x-0 top-0 w-full [mask-image:linear-gradient(to_bottom,black_50%,transparent_92%)] in-[.dark]:hidden"
+          style={{
+            transform:
+              "translate3d(calc(var(--px) * -10px), calc(var(--py) * -6px), 0)",
+          }}
+        />
+        <Image
+          src="/assets/dark-hero.png"
+          alt=""
+          width={1672}
+          height={941}
+          sizes="100vw"
+          className="absolute inset-x-0 top-0 hidden w-full [mask-image:linear-gradient(to_bottom,black_58%,transparent_94%)] in-[.dark]:block"
           style={{
             transform:
               "translate3d(calc(var(--px) * -10px), calc(var(--py) * -6px), 0)",

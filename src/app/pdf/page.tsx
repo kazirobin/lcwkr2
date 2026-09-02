@@ -1,504 +1,315 @@
-// src/components/hsk/PDF.tsx
 "use client";
 
-import { useState, useMemo } from "react";
-import {
-  BookOpen,
-  Headphones,
-  FileText,
-  ClipboardList,
-  Download,
-  Sparkles,
-  Layers,
-  CheckCircle,
-  ExternalLink,
-  FolderOpen,
-  ChevronRight,
-} from "lucide-react";
+import { useState } from "react";
+
 import { useLanguage } from "@/i18n";
+import { useReveal } from "@/lib/useReveal";
+import {
+  hskLevels,
+  completeCollection,
+  resourceLabels,
+  type HSKLevel,
+} from "@/features/marketing/data/hskResources";
 
-// ============================================
-// TYPES & DATA
-// ============================================
+/**
+ * `/pdf` — the HSK library: PDF books, audio, mock tests and vocabulary for
+ * all six levels, each linking out to a Google Drive folder.
+ *
+ * Same technical register as `/apps` ([[AppsExplorer]]): a mono spec sheet
+ * over a rice-paper header (kept light so the fixed nav stays readable),
+ * then a dark console listing each level as a record — one dot-leader row
+ * per resource type. Missing resources (none today) read "soon", not 404.
+ */
 
-export interface HSKLevel {
-  id: string;
-  level: string;
-  title: string;
-  description: string;
-  icon: string;
-  resources: {
-    all: boolean;
-    books: boolean;
-    audio: boolean;
-    mockTest: boolean;
-    vocabulary: boolean;
-  };
-  driveLinks?: {
-    all?: string;
-    books?: string;
-    audio?: string;
-    mockTest?: string;
-    vocabulary?: string;
-  };
-}
+const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+const toBn = (n: number) => String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
 
-export interface ResourceItem {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  link: string;
-}
+const pad2 = (n: number, isBn: boolean) =>
+  isBn ? toBn(n) : String(n).padStart(2, "0");
 
-export const hskLevels: HSKLevel[] = [
-  {
-    id: "hsk-1",
-    level: "HSK Level 1",
-    title: "Beginner",
-    description: "Start your Chinese journey with basic vocabulary.",
-    icon: "🌱",
-    resources: {
-      all: true,
-      books: true,
-      audio: true,
-      mockTest: true,
-      vocabulary: true,
-    },
-    driveLinks: {
-      all: "https://drive.google.com/drive/folders/1cuhnbILUvxFKlMCmkgRaDP0SiLpiCbgM?usp=drive_link",
-      books:
-        "https://drive.google.com/drive/folders/1GFvFiWDtFa5blOe26a-kKOwCACGY_eCK?usp=drive_link",
-      audio:
-        "https://drive.google.com/drive/folders/1X8bv142wtkENNHZWd30c5t1Dvrl6NeQU?usp=drive_link",
-      mockTest:
-        "https://drive.google.com/drive/folders/1s7SXAqakvPpEKHnZP3-TC9F4NTjR10vu?usp=drive_link",
-      vocabulary:
-        "https://drive.google.com/file/d/1k6gwM5t4PwwW7Cc-mlHfC6oCt0oXqlQt/view?usp=drive_link",
-    },
-  },
-  {
-    id: "hsk-2",
-    level: "HSK Level 2",
-    title: "Elementary",
-    description: "Build foundation with everyday conversations.",
-    icon: "📘",
-    resources: {
-      all: true,
-      books: true,
-      audio: true,
-      mockTest: true,
-      vocabulary: true,
-    },
-    driveLinks: {
-      all: "https://drive.google.com/drive/folders/1kvKuD1100jX2Wgbljuwr443v3LrXOvs_?usp=drive_link",
-      books:
-        "https://drive.google.com/drive/folders/1uyTpWA-cpmc0oMv7mmdDd-Xy1yjoHBOa?usp=drive_link",
-      audio:
-        "https://drive.google.com/drive/folders/1F-hJc2XVYcp6diXP7tuQnf4uFfPBNMH9?usp=drive_link",
-      mockTest:
-        "https://drive.google.com/drive/folders/1W78AO00XWiwslWvOZHHK-fu_dtqMGA26?usp=drive_link",
-      vocabulary:
-        "https://drive.google.com/file/d/1GVndWJG1bY9M_mqh1XhkQqGXijnxO2YO/view?usp=drive_link",
-    },
-  },
-  {
-    id: "hsk-3",
-    level: "HSK Level 3",
-    title: "Pre-Intermediate",
-    description: "Communicate confidently in daily situations.",
-    icon: "📗",
-    resources: {
-      all: true,
-      books: true,
-      audio: true,
-      mockTest: true,
-      vocabulary: true,
-    },
-    driveLinks: {
-      all: "https://drive.google.com/drive/folders/1WoJPqChhwMwVJ1C3KAyp3CyVzGKVmbws?usp=drive_link",
-      books:
-        "https://drive.google.com/drive/folders/1_OXK_Iuee5iuryPMDR76Ea8hiOHVux25?usp=drive_link",
-      audio:
-        "https://drive.google.com/drive/folders/1Sp9QQtlfdEc37uSgVTQYyhS8cQ7dBoGu?usp=drive_link",
-      mockTest:
-        "https://drive.google.com/drive/folders/1sUz0twM8nkmP3z6ENb0K8Pt_l2-85KlJ?usp=drive_link",
-      vocabulary:
-        "https://drive.google.com/file/d/1TCFTv128jQMbGI9NZUNUD1sJXWUX9ibv/view?usp=drive_link",
-    },
-  },
-  {
-    id: "hsk-4",
-    level: "HSK Level 4",
-    title: "Intermediate",
-    description: "Express complex ideas and understand native content.",
-    icon: "📕",
-    resources: {
-      all: true,
-      books: true,
-      audio: true,
-      mockTest: true,
-      vocabulary: true,
-    },
-    driveLinks: {
-      all: "https://drive.google.com/drive/folders/1R80teEvyvy3upZ9hJtHMro5S1BfOVQsG?usp=drive_link",
-      books:
-        "https://drive.google.com/drive/folders/1J3Dr7JFql5IKQxcBMeSu2YmizQ8HVihg?usp=drive_link",
-      audio:
-        "https://drive.google.com/drive/folders/17thaoXjYhT-SCuuaLN-WUqLWVgrO2jjV?usp=drive_link",
-      mockTest:
-        "https://drive.google.com/drive/folders/1uqPrzOaGjo0jeJghSD1BOH0ZGNENB9mv?usp=drive_link",
-      vocabulary:
-        "https://drive.google.com/file/d/1Q8uDOg2i88CQoQWq-wcvPB-Eyor2gjb9/view?usp=drive_link",
-    },
-  },
-  {
-    id: "hsk-5",
-    level: "HSK Level 5",
-    title: "Advanced",
-    description: "Master advanced vocabulary and complex reading.",
-    icon: "📙",
-    resources: {
-      all: true,
-      books: true,
-      audio: true,
-      mockTest: true,
-      vocabulary: true,
-    },
-    driveLinks: {
-      all: "https://drive.google.com/drive/folders/1_kgn35rulKQkLoTqshyK4f1fa2t0ydM4?usp=drive_link",
-      books:
-        "https://drive.google.com/drive/folders/16FImlIM8fd_Cx76xxQGVqyCMhEGpUAEk?usp=drive_link",
-      audio:
-        "https://drive.google.com/drive/folders/1qKG7mGdM-CKdSMxKGwWpS3GEiAFvhb_p?usp=drive_link",
-      mockTest:
-        "https://drive.google.com/drive/folders/1uoLtBYNROdAcmJzSIfho-0B2a7EV7Nm1?usp=drive_link",
-      vocabulary:
-        "https://drive.google.com/file/d/1M3VYLjf7sEolzoIaNjbhXOotl3Dmb2bC/view?usp=drive_link",
-    },
-  },
-  {
-    id: "hsk-6",
-    level: "HSK Level 6",
-    title: "Proficient",
-    description: "Achieve professional-level Chinese fluency.",
-    icon: "📚",
-    resources: {
-      all: true,
-      books: true,
-      audio: true,
-      mockTest: true,
-      vocabulary: true,
-    },
-    driveLinks: {
-      all: "https://drive.google.com/drive/folders/13pW9pOFAFkSe-NXbvP611RjW8F16tbYo?usp=drive_link",
-      books:
-        "https://drive.google.com/drive/folders/18sx8UmwzK93fZea7l28wI_PJFRFaNaEr?usp=drive_link",
-      audio:
-        "https://drive.google.com/drive/folders/1zUQ45S_XeUHWUVglTrzR5B9rxksAeiaQ?usp=drive_link",
-      mockTest:
-        "https://drive.google.com/drive/folders/1hWlp_SAcMyNPr2zDT5KVbg9YFxay_fHE?usp=drive_link",
-      vocabulary:
-        "https://drive.google.com/file/d/1LziYNVQzFa7YQMUqEP_7-XW2j9gZ8HZl/view?usp=drive_link",
-    },
-  },
-];
-
-export const allResources: ResourceItem[] = [
-  {
-    id: "all-books",
-    title: "All Resources",
-    description: "Complete collection",
-    icon: "📖",
-    link: "https://drive.google.com/drive/folders/13EV97xZHlKU-uUeHElDnHuBu5sCIJj0m?usp=drive_link",
-  },
-];
-
-// ============================================
-// HOOKS
-// ============================================
-
-const useTranslation = () => {
-  const { language } = useLanguage();
-  return (bn: string, en: string) => (language === "bn" ? bn : en);
-};
-
-// ============================================
-// COMPONENTS
-// ============================================
-
-interface ResourceLinkProps {
-  label: string;
-  icon: React.ElementType;
-  link?: string;
-  available: boolean;
-  description?: string;
-}
-
-const ResourceLink: React.FC<ResourceLinkProps> = ({
+function FilterChip({
+  active,
+  onClick,
   label,
-  icon: Icon,
-  link,
-  available,
-  description,
-}) => {
-  if (!available || !link) return null;
-
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
   return (
-    <a
-      href={link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center justify-between rounded-lg border border-secondary bg-background p-3 transition-all hover:border-primary hover:bg-primary/5 hover:shadow-sm"
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`border px-2.5 py-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fa7d4e] ${
+        active
+          ? "border-[#fa7d4e] bg-[#fa7d4e]/12 text-[#fa7d4e]"
+          : "border-white/15 text-white/55 hover:border-white/35 hover:text-white/85"
+      }`}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 font-bold">
-            <span className="text-sm font-medium text-text">{label}</span>
-            <span className="inline-flex items-center gap-0.5 text-primary">
-              <ExternalLink className="h-2.5 w-2.5" />
-              <span>Click Drive Link</span>
-            </span>
-          </div>
-          {description && (
-            <p className="text-xs text-text/40 truncate">{description}</p>
-          )}
-        </div>
-      </div>
-      <ChevronRight className="h-4 w-4 text-text/20 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
-    </a>
+      [&nbsp;{label}&nbsp;]
+    </button>
   );
-};
-
-interface HSKLevelCardProps {
-  level: HSKLevel;
 }
 
-const HSKLevelCard: React.FC<HSKLevelCardProps> = ({ level }) => {
-  const t = useTranslation();
+// TODO(covers): render a book cover beside each level record once
+// `HSKLevel.coverFileId` / `coverUrl` is populated — see the note in
+// `hskResources.ts`. Covers can't be pulled automatically (the Drive links
+// are folders, and the textbook PDFs inside aren't individually shared).
+function LevelRecord({
+  level,
+  index,
+  isBn,
+}: {
+  level: HSKLevel;
+  index: number;
+  isBn: boolean;
+}) {
+  const ref = useReveal<HTMLDivElement>({ threshold: 0.08 });
+  const t = (bn: string, en: string) => (isBn ? bn : en);
+  const n = Number(level.id.split("-")[1]);
 
-  const resourceDescriptions: Record<string, string> = {
-    books: t("পিডিএফ টেক্সটবুক ও ওয়ার্কবুক", "PDF textbooks & workbooks"),
-    audio: t("এমপি৩ অডিও ফাইল", "MP3 listening files"),
-    mockTest: t("প্র্যাকটিস পরীক্ষার পেপার", "Practice exam papers"),
-    vocabulary: t("শব্দ তালিকা ও ফ্ল্যাশকার্ড", "Word lists & flashcards"),
-  };
+  const rows = resourceLabels.map(({ key, bn, en }) => ({
+    label: t(bn, en),
+    link: level.driveLinks[key],
+    available: level.resources[key] && Boolean(level.driveLinks[key]),
+  }));
+  const availableCount = rows.filter((r) => r.available).length;
 
   return (
-    <div className="group rounded-xl border border-secondary bg-background p-5 transition-all hover:border-primary hover:shadow-md">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-2xl">{level.icon}</span>
-        <div>
-          <h3 className="font-semibold text-text">{level.title}</h3>
-          <span className="text-xs text-text/40">{level.level}</span>
-        </div>
-      </div>
-
-      <p className="text-sm text-text/60 mb-4">{level.description}</p>
-
-      {/* Resources */}
-      <div className="space-y-2 mb-4">
-        <ResourceLink
-          label={t("PDF বই", "PDF Books")}
-          icon={BookOpen}
-          link={level.driveLinks?.books}
-          available={level.resources.books}
-          description={resourceDescriptions.books}
-        />
-        <ResourceLink
-          label={t("অডিও", "Audio")}
-          icon={Headphones}
-          link={level.driveLinks?.audio}
-          available={level.resources.audio}
-          description={resourceDescriptions.audio}
-        />
-        <ResourceLink
-          label={t("মক টেস্ট", "Mock Tests")}
-          icon={ClipboardList}
-          link={level.driveLinks?.mockTest}
-          available={level.resources.mockTest}
-          description={resourceDescriptions.mockTest}
-        />
-        <ResourceLink
-          label={t("ভোকাবুলারি", "Vocabulary")}
-          icon={FileText}
-          link={level.driveLinks?.vocabulary}
-          available={level.resources.vocabulary}
-          description={resourceDescriptions.vocabulary}
-        />
-      </div>
-
-      {/* Download Button */}
-      <a
-        href={level.driveLinks?.all}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-background transition-all hover:opacity-90 hover:shadow-md"
+    <div ref={ref} className="reveal-group">
+      {/* record header — index · level · title · dot leader · count */}
+      <div
+        data-reveal
+        className="flex items-baseline gap-3 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-white/45"
       >
-        <Download className="h-4 w-4" />
-        {t("সব ম্যাটেরিয়াল ডাউনলোড করুন", "Download All Materials")}
-        <span className="text-[10px] opacity-70">(Google Drive)</span>
-      </a>
+        <span className="text-[#fa7d4e]">{pad2(index, isBn)}</span>
+        <span className="text-white/75">HSK&nbsp;{isBn ? toBn(n) : n}</span>
+        <span className="text-white/40">
+          {isBn ? level.titleBn : level.title}
+        </span>
+        <span
+          aria-hidden="true"
+          className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/15"
+        />
+        <span className="tabular-nums text-white/55">
+          {pad2(availableCount, isBn)}
+        </span>
+      </div>
+
+      <p
+        data-reveal
+        style={{ "--r": 1 } as React.CSSProperties}
+        className="max-w-2xl pb-2 text-[13px] leading-6 text-white/50"
+      >
+        {isBn ? level.descriptionBn : level.description}
+      </p>
+
+      <ul className="border-t border-white/10">
+        {rows.map((row, i) => (
+          <li
+            key={row.label}
+            data-reveal
+            style={{ "--r": i + 2 } as React.CSSProperties}
+          >
+            {row.available ? (
+              <a
+                href={row.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-baseline gap-3 border-b border-white/10 py-3 font-mono text-[12px] transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.05] focus-visible:outline-none"
+              >
+                <span className="uppercase tracking-[0.14em] text-[#e6f0ed]">
+                  {row.label}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/12"
+                />
+                <span className="inline-flex items-center gap-1 uppercase tracking-[0.16em] text-white/50 transition-colors group-hover:text-[#fa7d4e]">
+                  {t("খুলুন", "Open")}
+                  <span className="text-sm leading-none">↗</span>
+                </span>
+              </a>
+            ) : (
+              <div className="flex items-baseline gap-3 border-b border-white/10 py-3 font-mono text-[12px]">
+                <span className="uppercase tracking-[0.14em] text-white/30">
+                  {row.label}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/[0.06]"
+                />
+                <span className="uppercase tracking-[0.16em] text-white/30">
+                  {t("শীঘ্রই", "Soon")}
+                </span>
+              </div>
+            )}
+          </li>
+        ))}
+
+        {level.driveLinks.all && (
+          <li data-reveal style={{ "--r": rows.length + 2 } as React.CSSProperties}>
+            <a
+              href={level.driveLinks.all}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-baseline gap-3 border-b border-white/10 py-3 font-mono text-[12px] transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.05] focus-visible:outline-none"
+            >
+              <span className="uppercase tracking-[0.14em] text-[#fa7d4e]">
+                {t("এই লেভেলের সব", "Whole level")}
+              </span>
+              <span
+                aria-hidden="true"
+                className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-[#fa7d4e]/25"
+              />
+              <span className="inline-flex items-center gap-1 uppercase tracking-[0.16em] text-[#fa7d4e]">
+                {t("খুলুন", "Open")}
+                <span className="text-sm leading-none">↗</span>
+              </span>
+            </a>
+          </li>
+        )}
+      </ul>
     </div>
   );
-};
-
-interface AllResourcesCardProps {
-  resource: ResourceItem;
 }
 
-const AllResourcesCard: React.FC<AllResourcesCardProps> = ({ resource }) => {
-  const t = useTranslation();
+export default function PdfPage() {
+  const { language } = useLanguage();
+  const isBn = language === "bn";
+  const t = (bn: string, en: string) => (isBn ? bn : en);
+  const num = (n: number) => (isBn ? toBn(n) : String(n));
+
+  const [active, setActive] = useState<string | "all">("all");
+  const visible =
+    active === "all" ? hskLevels : hskLevels.filter((l) => l.id === active);
+
+  const spec: [string, string][] = [
+    [t("লেভেল", "Levels"), num(hskLevels.length)],
+    [t("টাইপ / লেভেল", "Types / level"), num(resourceLabels.length)],
+    [t("ফরম্যাট", "Format"), "PDF · Audio"],
+    [t("হোস্ট", "Host"), "drive.google.com"],
+    [t("খরচ", "Cost"), t("ফ্রি", "Free")],
+  ];
 
   return (
-    <a
-      href={resource.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group rounded-xl border border-secondary bg-background p-6 text-center transition-all hover:border-primary hover:shadow-md"
-    >
-      <div className="text-4xl mb-2">{resource.icon}</div>
-      <h3 className="font-semibold text-text">{resource.title}</h3>
-      <p className="text-sm text-text/50 mt-0.5">{resource.description}</p>
-      <div className="mt-3 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-        {t("এখনই অ্যাক্সেস করুন", "Access Now")} →
-      </div>
-    </a>
-  );
-};
+    <div className={isBn ? "font-bn" : "font-en"}>
+      {/* ===================== SPEC HEADER (rice paper) ===================== */}
+      <section className="relative isolate -mt-16 overflow-hidden bg-paper text-text sm:-mt-20">
+        <span
+          aria-hidden="true"
+          lang="zh"
+          className="pointer-events-none absolute -top-20 right-[3%] hidden select-none text-[20rem] leading-none font-bold text-text/[0.04] lg:block"
+        >
+          书
+        </span>
 
-// ============================================
-// MAIN COMPONENT
-// ============================================
+        <div className="relative z-10 mx-auto grid max-w-6xl gap-12 px-5 pt-28 pb-14 sm:px-6 md:grid-cols-[1fr_auto] md:pt-32 md:pb-18 lg:px-8">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.2em] text-text/55">
+              <span
+                lang="zh"
+                aria-hidden="true"
+                className="flex size-6 items-center justify-center rounded bg-text text-[10px] font-bold text-background"
+              >
+                书
+              </span>
+              {t("রিসোর্স · এইচএসকে লাইব্রেরি", "Resources · HSK library")}
+            </div>
 
-export default function PDF() {
-  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const t = useTranslation();
+            <h1 className="mt-6 text-[2.4rem] leading-[1.1] font-bold tracking-tight sm:text-5xl">
+              {t("এইচএসকে লাইব্রেরি", "The HSK library")}
+            </h1>
 
-  const filteredLevels = useMemo(
-    () =>
-      selectedLevel
-        ? hskLevels.filter((level) => level.id === selectedLevel)
-        : hskLevels,
-    [selectedLevel],
-  );
-
-  return (
-    <div className="min-h-screen bg-background text-text">
-      {/* Single Banner - Solid Color */}
-      <section className="relative -mt-16 overflow-hidden bg-primary pt-28 pb-16 sm:-mt-20 sm:pt-32 sm:pb-20">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-background rounded-full mix-blend-multiply filter blur-xl animate-pulse" />
-          <div className="absolute bottom-0 -right-4 w-72 h-72 bg-background/50 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000" />
-        </div>
-
-        <div className="relative max-w-4xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 bg-background/20 backdrop-blur-sm px-4 py-1.5 rounded-full mb-4">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium text-background">
-              HSK {t("রিসোর্স হাব", "Resource Hub")}
-            </span>
+            <p className="mt-5 max-w-[50ch] text-base leading-[1.75] text-text/70">
+              {t(
+                "ছয়টি লেভেলের PDF বই, অডিও, মক টেস্ট আর ভোকাবুলারি — গুগল ড্রাইভে লেভেল ধরে সাজানো, সম্পূর্ণ ফ্রি। প্রতিটি সারি সরাসরি ড্রাইভ ফোল্ডারে যায়।",
+                "PDF books, audio, mock tests and vocabulary for all six levels — organised level by level on Google Drive, completely free. Every row resolves straight to a Drive folder.",
+              )}
+            </p>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-background tracking-tight">
-            {t("HSK বই ও স্টাডি ম্যাটেরিয়াল", "HSK Books & Materials")}
-          </h1>
-
-          <p className="mt-3 text-background/80 text-base sm:text-lg max-w-2xl mx-auto">
-            {t(
-              "সকল লেভেলের PDF, অডিও, টেস্ট ও ভোকাবুলারি",
-              "All levels PDF, Audio, Tests & Vocabulary",
-            )}
-          </p>
-
-          {/* Level Filter */}
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => setSelectedLevel(null)}
-              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
-                !selectedLevel
-                  ? "bg-background text-primary shadow-lg"
-                  : "bg-background/20 text-background hover:bg-background/30"
-              }`}
-            >
-              {t("সব", "All")}
-            </button>
-            {hskLevels.map((level) => (
-              <button
-                key={level.id}
-                onClick={() => setSelectedLevel(level.id)}
-                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedLevel === level.id
-                    ? "bg-background text-primary shadow-lg"
-                    : "bg-background/20 text-background hover:bg-background/30"
+          {/* spec sheet */}
+          <dl className="min-w-[15rem] self-start border border-text/15 font-mono text-xs">
+            {spec.map(([k, v], i) => (
+              <div
+                key={k}
+                className={`flex items-center justify-between gap-6 px-3.5 py-2.5 ${
+                  i === 0 ? "" : "border-t border-text/12"
                 }`}
               >
-                {level.icon} HSK {level.id.split("-")[1]}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <div className="max-w-7xl mx-auto px-4 -mt-6 relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { value: "6", label: t("লেভেল", "Levels") },
-            { value: "24", label: t("রিসোর্স", "Resources") },
-            { value: "5000+", label: t("শব্দ", "Words") },
-            { value: "100%", label: t("ফ্রি", "Free") },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-secondary bg-background/80 backdrop-blur-sm p-4 text-center shadow-sm"
-            >
-              <div className="text-2xl font-bold text-primary">
-                {stat.value}
+                <dt className="uppercase tracking-[0.14em] text-text/45">{k}</dt>
+                <dd className="tabular-nums text-text">{v}</dd>
               </div>
-              <div className="text-xs text-text/50">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* HSK Levels Grid */}
-      <section className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
-        <div className="flex items-center gap-2 mb-6">
-          <Layers className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-bold text-text">
-            {t("লেভেল অনুযায়ী রিসোর্স", "Resources by Level")}
-          </h2>
-          <span className="text-sm text-text/40 ml-auto">
-            {filteredLevels.length} {t("টি", "")}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredLevels.map((level) => (
-            <HSKLevelCard key={level.id} level={level} />
-          ))}
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* All Resources */}
-      <section className="border-t border-secondary bg-secondary/5 py-8 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center gap-2 mb-6">
-            <FolderOpen className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-bold text-text">
-              {t("সব রিসোর্স একসাথে", "All Resources Together")}
-            </h2>
+      {/* ===================== CONSOLE (dark) ===================== */}
+      <section className="bg-[#0a1512] text-[#e6f0ed]">
+        <div className="mx-auto max-w-6xl px-5 py-12 sm:px-6 md:py-16 lg:px-8">
+          <div
+            className="flex flex-wrap gap-x-1.5 gap-y-2 font-mono text-[11px] uppercase tracking-[0.14em]"
+            role="group"
+            aria-label={t("লেভেল অনুযায়ী ফিল্টার", "Filter by level")}
+          >
+            <FilterChip
+              active={active === "all"}
+              onClick={() => setActive("all")}
+              label={`${t("সব", "all")} · ${num(hskLevels.length)}`}
+            />
+            {hskLevels.map((level) => (
+              <FilterChip
+                key={level.id}
+                active={active === level.id}
+                onClick={() => setActive(level.id)}
+                label={`hsk ${
+                  isBn
+                    ? toBn(Number(level.id.split("-")[1]))
+                    : level.id.split("-")[1]
+                }`}
+              />
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {allResources.map((resource) => (
-              <AllResourcesCard key={resource.id} resource={resource} />
+          <div className="mt-10 space-y-12">
+            {visible.map((level, i) => (
+              <LevelRecord
+                key={level.id}
+                level={level}
+                index={i + 1}
+                isBn={isBn}
+              />
             ))}
+          </div>
+
+          {/* complete collection */}
+          <div className="mt-14 border-t border-white/10 pt-6">
+            <a
+              href={completeCollection.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-baseline gap-3 font-mono text-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fa7d4e]"
+            >
+              <span className="uppercase tracking-[0.14em] text-[#e6f0ed]">
+                {isBn ? completeCollection.titleBn : completeCollection.title}
+              </span>
+              <span
+                aria-hidden="true"
+                className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/15"
+              />
+              <span className="inline-flex items-center gap-1 uppercase tracking-[0.16em] text-white/50 transition-colors group-hover:text-[#fa7d4e]">
+                {t("খুলুন", "Open")}
+                <span className="text-sm leading-none">↗</span>
+              </span>
+            </a>
+            <p className="mt-3 font-mono text-[11px] leading-relaxed text-white/40">
+              {isBn
+                ? completeCollection.descriptionBn
+                : completeCollection.description}
+            </p>
           </div>
         </div>
       </section>

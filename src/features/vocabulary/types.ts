@@ -1,101 +1,116 @@
-// app/types/vocabulary.ts
+// src/features/vocabulary/types.ts
 
-// Character breakdown of a Chinese character
+/** Character-level breakdown of a word. */
 export interface Character {
-  hanzi: string;      // The Chinese character
-  pinyin: string;     // Pronunciation
-  meaning: string;    // Meaning in English
+  hanzi: string; // the component character
+  pinyin: string; // its pronunciation
+  meaning: string; // its meaning in English
 }
 
-// Similar word for comparison
+/** A word offered for comparison / disambiguation. */
 export interface SimilarWord {
-  hanzi: string;      // The similar word
-  pinyin: string;     // Pronunciation
-  english: string;    // English meaning
+  hanzi: string;
+  pinyin: string;
+  english: string;
 }
 
-// Example sentence
+/** An example sentence for a vocabulary item. */
 export interface Example {
-  hanzi: string;      // Chinese sentence
-  pinyin: string;     // Pinyin
-  english: string;    // English translation
-  bangla: string;     // Bengali translation
+  hanzi: string;
+  pinyin: string;
+  english: string;
+  bangla: string;
 }
 
-// Individual vocabulary item
+/** One vocabulary entry. */
 export interface VocabularyItem {
-  hanzi: string;               // The main word
-  pinyin: string;              // Pronunciation
-  english: string;             // English meaning
-  bangla: string;              // Bengali meaning
-  characters: Character[];     // Character breakdown
-  example: Example;           // Example sentence
-  similar: SimilarWord[];     // Similar words
+  hanzi: string; // the word
+  pinyin: string; // pronunciation
+  english: string; // English gloss
+  bangla: string; // Bangla gloss — the primary gloss for this audience
+  characters: Character[]; // per-character breakdown
+  example: Example; // example sentence
+  similar: SimilarWord[]; // words worth contrasting
 }
 
-// Dialogue line
+/** One line of a lesson dialogue. */
 export interface DialogueLine {
-  speaker: string;     // Who is speaking
-  hanzi: string;       // Chinese text
-  pinyin: string;      // Pinyin
-  english: string;     // English translation
+  speaker: string; // speaker key (e.g. "A", "Teacher")
+  hanzi: string;
+  pinyin: string;
+  english: string;
+  bangla?: string; // optional Bangla translation (older data predates this field)
 }
 
-// Dialogue section
+/** The dialogue that opens some texts. */
 export interface Dialogue {
-  title: string;       // Title of the dialogue
-  lines: DialogueLine[]; // All dialogue lines
+  title: string;
+  lines: DialogueLine[];
 }
 
-// Complete vocabulary data for a lesson-text
+/** Everything for one HSK level / lesson / text. */
 export interface VocabularyData {
-  hskLevel: number;      // HSK level (1-6)
-  lesson: number;      // HSK level (1-6)
-  text: number;        // Text number within the lesson
-  dialogue?: Dialogue; // Optional dialogue
-  vocabulary: VocabularyItem[]; // All vocabulary items
+  hskLevel: number; // HSK level, 1–6
+  lesson: number; // lesson number within the level
+  text: number; // text number within the lesson
+  dialogue?: Dialogue;
+  vocabulary: VocabularyItem[];
 }
 
-// Map for all vocabulary data (key: "level-text")
+/** Internal registry shape — `data/hsk{1,2,3}/index.ts` build these. */
 export interface VocabularyDataMap {
   [key: string]: VocabularyData;
 }
 
-// Navigation item for breadcrumbs
-export interface NavItem {
-  label: string;
-  href: string;
-  isActive: boolean;
-}
+// ── Derived summary shapes (built once in `data/index.ts`) ────────────
 
-// Component props
-export interface VocabularyListProps {
-  data: VocabularyData;
-  level: string;
-  text: string;
-}
-
-export interface VocabularyCardProps {
-  vocabulary: VocabularyItem;
-}
-
-export interface DialogueComponentProps {
-  dialogue: Dialogue;
-}
-
-// Utility types
-export type LevelTextKey = `${number}-${number}`; // e.g., "1-1", "2-3"
-
-export interface LevelInfo {
+/** A single HSK level as shown on the `/hsk` picker. */
+export interface LevelSummary {
   level: number;
-  texts: number[];
+  available: boolean; // false for 4–6 until their data lands
+  lessons: number;
+  texts: number;
+  words: number;
 }
 
-export interface NavigationInfo {
-  currentLevel: number;
-  currentText: number;
-  totalLevels: number[];
-  textsInLevel: number[];
-  prevText?: LevelTextKey;
-  nextText?: LevelTextKey;
+/** One text as shown on a lesson picker. */
+export interface TextSummary {
+  text: number;
+  words: number;
+  hasDialogue: boolean;
+  preview: string[]; // first few hanzi, for scent
+}
+
+/** One lesson as shown on a level picker. */
+export interface LessonSummary {
+  lesson: number;
+  texts: number;
+  words: number;
+  hasDialogue: boolean;
+}
+
+/** Full breakdown of one level. */
+export interface LevelDetail {
+  level: number;
+  lessons: LessonSummary[];
+  texts: number;
+  words: number;
+}
+
+/** Full breakdown of one lesson. */
+export interface LessonDetail {
+  level: number;
+  lesson: number;
+  texts: TextSummary[];
+  words: number;
+}
+
+/** Where a text sits in its level, and where to go next. */
+export interface TextNav {
+  indexInLevel: number; // 1-based
+  totalInLevel: number;
+  lessonTexts: number[]; // every text number in the current lesson
+  totalLessons: number;
+  prev: { lesson: number; text: number } | null;
+  next: { lesson: number; text: number } | null;
 }

@@ -1,141 +1,145 @@
 "use client";
 
-import { VocabularyItem } from "@/features/vocabulary/types";
-import { useState } from "react";
+import { useId, useState } from "react";
 
-interface VocabularyCardProps {
-  vocabulary: VocabularyItem;
-}
+import type { VocabularyItem } from "@/features/vocabulary/types";
+import type { VocabularyCopy } from "@/features/vocabulary/i18n";
 
-export default function VocabularyCard({ vocabulary }: VocabularyCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const toggleExpand = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(!isExpanded);
-  };
+/**
+ * One glossary entry in the reader. Everything a learner needs to read is
+ * visible at rest — character, pinyin, Bangla and English meaning. The
+ * character breakdown, example and confusable words sit behind one quiet
+ * toggle (a real <button aria-expanded aria-controls>).
+ */
+export default function VocabularyCard({
+  item,
+  copy,
+}: {
+  item: VocabularyItem;
+  copy: VocabularyCopy;
+}) {
+  const [open, setOpen] = useState(false);
+  const regionId = useId();
+  const hasDetail =
+    item.characters.length > 0 || item.example != null || item.similar.length > 0;
 
   return (
-    <div
-      className="bg-background rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-secondary/20 cursor-pointer"
-      onClick={toggleExpand}
-    >
-      <div className="p-5">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="text-2xl font-bold text-text">
-              {vocabulary.hanzi}
-            </h3>
-            <p className="text-sm text-text/60 mt-1">{vocabulary.pinyin}</p>
-          </div>
-          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium whitespace-nowrap ml-2 border border-primary/20">
-            {vocabulary.english}
-          </span>
-        </div>
-
-        {/* Bengali */}
-        <p className="text-text/70 mt-2 text-sm">{vocabulary.bangla}</p>
-
-        {/* Expanded Content */}
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-secondary/20 space-y-4">
-            {/* Characters */}
-            {vocabulary.characters && vocabulary.characters.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold text-text/60 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                  ✏️ Characters
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {vocabulary.characters.map((char, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-secondary/10 px-3 py-1.5 rounded-lg border border-secondary/10"
-                    >
-                      <span className="font-medium text-text">
-                        {char.hanzi}
-                      </span>
-                      <span className="text-xs text-text/60 ml-2">
-                        {char.pinyin}
-                      </span>
-                      <span className="text-xs text-text/60 ml-1">
-                        ({char.meaning})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Example */}
-            {vocabulary.example && (
-              <div>
-                <h4 className="text-xs font-semibold text-text/60 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                  💬 Example
-                </h4>
-                <div className="bg-secondary/5 p-4 rounded-lg border border-secondary/10 space-y-1.5">
-                  <p className="text-text font-medium">
-                    {vocabulary.example.hanzi}
-                  </p>
-                  <p className="text-sm text-text/60">
-                    {vocabulary.example.pinyin}
-                  </p>
-                  <p className="text-sm text-text/70 pt-1 border-t border-secondary/10">
-                    {vocabulary.example.english}
-                  </p>
-                  <p className="text-sm text-text/70">
-                    {vocabulary.example.bangla}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Similar Words */}
-            {vocabulary.similar && vocabulary.similar.length > 0 && (
-              <div>
-                <h4 className="text-xs font-semibold text-text/60 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                  🔄 Similar
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {vocabulary.similar.map((sim, idx) => (
-                    <div
-                      key={idx}
-                      className="px-3 py-1.5 bg-accent/10 rounded-full border border-accent/20"
-                    >
-                      <span className="text-sm text-text">{sim.hanzi}</span>
-                      <span className="text-xs text-text/60 ml-1.5">
-                        ({sim.pinyin})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Toggle Button */}
-        <button
-          className="mt-4 text-sm text-primary hover:text-primary/80 transition-colors font-medium flex items-center gap-1"
-          onClick={toggleExpand}
+    <li className="grid gap-x-6 gap-y-2.5 border-b border-text/10 py-7 sm:grid-cols-[9.5rem_1fr]">
+      {/* headword */}
+      <div className="sm:pt-1">
+        <p lang="zh" className="text-[2rem] font-normal leading-none text-text">
+          {item.hanzi}
+        </p>
+        <p
+          lang="zh-Latn-pinyin"
+          className="mt-2 text-[15px] tracking-wide text-text/55"
         >
-          {isExpanded ? (
-            <>
-              Show less
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-            </>
-          ) : (
-            <>
-              Show more
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </>
-          )}
-        </button>
+          {item.pinyin}
+        </p>
       </div>
-    </div>
+
+      {/* meaning */}
+      <div>
+        <p className="text-base leading-7 text-text">{item.bangla}</p>
+        <p className="mt-0.5 text-sm leading-6 text-text/55">{item.english}</p>
+
+        {hasDetail && (
+          <>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls={regionId}
+              className="mt-3 inline-flex items-center gap-2 rounded-md py-1 text-[13px] font-medium text-text/60 transition-colors hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+            >
+              <span
+                aria-hidden="true"
+                className={`inline-block text-[10px] transition-transform ${
+                  open ? "rotate-90" : ""
+                } motion-reduce:transition-none`}
+              >
+                ▸
+              </span>
+              {open ? copy.showLess : copy.showMore}
+            </button>
+
+            <div
+              id={regionId}
+              hidden={!open}
+              className="mt-4 space-y-5 border-l-2 border-primary/30 pl-4"
+            >
+              {item.characters.length > 0 && (
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text/45">
+                    {copy.characters}
+                  </h4>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {item.characters.map((ch, i) => (
+                      <li
+                        key={i}
+                        className="border border-text/12 bg-card/50 px-2.5 py-1.5 text-sm"
+                      >
+                        <span lang="zh" className="font-medium text-text">
+                          {ch.hanzi}
+                        </span>
+                        <span className="ml-1.5 text-text/55">{ch.pinyin}</span>
+                        <span className="ml-1 text-text/45">· {ch.meaning}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {item.example && (
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text/45">
+                    {copy.example}
+                  </h4>
+                  <p
+                    lang="zh"
+                    className="mt-2 text-[17px] leading-relaxed text-text"
+                  >
+                    {item.example.hanzi}
+                  </p>
+                  <p
+                    lang="zh-Latn-pinyin"
+                    className="mt-0.5 text-sm text-text/55"
+                  >
+                    {item.example.pinyin}
+                  </p>
+                  <p className="mt-1.5 text-sm leading-6 text-text/70">
+                    {item.example.english}
+                  </p>
+                  {item.example.bangla && (
+                    <p className="mt-0.5 text-sm leading-6 text-text/70">
+                      {item.example.bangla}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {item.similar.length > 0 && (
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text/45">
+                    {copy.similar}
+                  </h4>
+                  <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
+                    {item.similar.map((s, i) => (
+                      <li key={i} className="text-sm">
+                        <span lang="zh" className="text-text">
+                          {s.hanzi}
+                        </span>
+                        <span className="ml-1.5 text-text/55">{s.pinyin}</span>
+                        <span className="ml-1 text-text/45">· {s.english}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </li>
   );
 }
