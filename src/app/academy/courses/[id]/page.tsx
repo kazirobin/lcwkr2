@@ -330,6 +330,22 @@ export default function CourseDetailsPage({ params }: Props) {
                 {course.classes.map((cls, i) => {
                   const present = (cls.presentStudents ?? []).map((r) => String(r).trim());
                   const absent = (cls.absentStudents ?? []).map((r) => String(r).trim());
+                  const total = present.length + absent.length;
+                  const rate = total > 0 ? Math.round((present.length / total) * 100) : null;
+                  // name-first, alphabetical; students no longer on the roster sink to the bottom by roll
+                  const roster = (rolls: string[]) =>
+                    rolls
+                      .map((r) => ({ roll: r, name: nameByRoll.get(r) ?? null }))
+                      .sort((a, b) => {
+                        if (a.name && b.name) return a.name.localeCompare(b.name);
+                        if (a.name) return -1;
+                        if (b.name) return 1;
+                        return Number(a.roll) - Number(b.roll);
+                      });
+                  const groups = [
+                    { key: "present", label: t("উপস্থিত", "Present"), rows: roster(present), rule: "border-ok/40", ink: "text-ok" },
+                    { key: "absent", label: t("অনুপস্থিত", "Absent"), rows: roster(absent), rule: "border-danger/40", ink: "text-danger" },
+                  ];
                   return (
                     <li key={cls._id ? String(cls._id) : `${cls.classId}-${i}`}>
                       <Card className="p-5">
@@ -364,41 +380,49 @@ export default function CourseDetailsPage({ params }: Props) {
                           )}
                         </div>
 
-                        <div className="mt-3 flex items-center gap-4 border-t border-text/10 pt-3 text-xs">
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-text/10 pt-3 text-xs">
                           <StatusMark tone="done">
                             {t("উপস্থিত", "Present")} <span className="tabular-nums">{present.length}</span>
                           </StatusMark>
                           <StatusMark tone="closed">
                             {t("অনুপস্থিত", "Absent")} <span className="tabular-nums">{absent.length}</span>
                           </StatusMark>
+                          {rate !== null && (
+                            <span className="ml-auto tabular-nums text-text/45">
+                              {rate}% {t("উপস্থিতি", "attendance")}
+                            </span>
+                          )}
                         </div>
 
-                        {(present.length > 0 || absent.length > 0) && (
+                        {total > 0 && (
                           <details className="group mt-2">
-                            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-text/55 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text">
+                            <summary className="-mx-1 flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-md px-1 py-1.5 text-xs font-medium text-text/55 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text">
                               <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-                              {t("রোল কল দেখুন", "Show roll call")}
+                              <span className="group-open:hidden">{t("রোল কল দেখুন", "Show roll call")}</span>
+                              <span className="hidden group-open:inline">{t("রোল কল লুকান", "Hide roll call")}</span>
                             </summary>
-                            <div className="mt-3 space-y-3">
-                              {present.length > 0 && (
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-ok">
-                                    {t("উপস্থিত", "Present")}
-                                  </p>
-                                  <p className="mt-1 text-xs leading-relaxed text-text/70">
-                                    {present.map((r) => nameByRoll.get(r) || `#${r}`).join(", ")}
-                                  </p>
-                                </div>
-                              )}
-                              {absent.length > 0 && (
-                                <div>
-                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-danger">
-                                    {t("অনুপস্থিত", "Absent")}
-                                  </p>
-                                  <p className="mt-1 text-xs leading-relaxed text-text/70">
-                                    {absent.map((r) => nameByRoll.get(r) || `#${r}`).join(", ")}
-                                  </p>
-                                </div>
+                            <div className="mt-3 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                              {groups.map((group) =>
+                                group.rows.length === 0 ? null : (
+                                  <div key={group.key} className={`border-l-2 ${group.rule} pl-3`}>
+                                    <p className={`text-[10px] font-semibold uppercase tracking-wide ${group.ink}`}>
+                                      {group.label}
+                                      <span className="ml-1.5 tabular-nums text-text/40">{group.rows.length}</span>
+                                    </p>
+                                    <ul className="mt-2 space-y-1">
+                                      {group.rows.map((m) => (
+                                        <li key={m.roll} className="flex items-baseline gap-2 text-xs leading-relaxed">
+                                          <span className="w-9 shrink-0 tabular-nums text-[11px] text-text/40">
+                                            #{m.roll}
+                                          </span>
+                                          <span className={m.name ? "text-text/80" : "text-text/45 italic"}>
+                                            {m.name ?? t("অজানা শিক্ষার্থী", "Unknown student")}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ),
                               )}
                             </div>
                           </details>
