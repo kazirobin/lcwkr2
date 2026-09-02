@@ -5,10 +5,10 @@
 }
 
 .font-bn {
-  font-family: var(--font-hind-siliguri), sans-serif;
+  font-family: var(--font-noto-sans-bengali), sans-serif;
 }
 
-/* Bangla (Hind Siliguri) carries taller vowel signs and low-hanging
+/* Bangla carries taller vowel signs and low-hanging
    conjuncts than Latin — tight Tailwind line-heights clip them. On the
    /hsk workbook, give Bangla headings and compact UI text enough
    vertical room. Unlayered so it beats the utility line-heights; scoped
