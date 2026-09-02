@@ -21,6 +21,14 @@ export interface SuggestedApp {
   url: string;
 }
 
+/** A {@link SuggestedApp} after `server/appIcons.ts` resolves its Play Store icon. */
+export interface AppWithIcon extends SuggestedApp {
+  /** `id` query param of the Play Store URL, e.g. `com.pleco.chinesesystem`. */
+  packageId: string | null;
+  /** Square PNG on `play-lh.googleusercontent.com`, or `null` if unresolved. */
+  iconUrl: string | null;
+}
+
 /** One Hanzi + bilingual label per category — reads as the section's idea. */
 export const categoryMeta: Record<
   AppCategory,
