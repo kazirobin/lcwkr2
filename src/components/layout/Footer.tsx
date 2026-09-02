@@ -52,6 +52,7 @@ export const footer = {
         links: [
           { label: "Community Hub", href: "/community" },
           { label: "Community rules", href: "/community" },
+          { label: "Support the platform", href: "/donate" },
           { label: "WhatsApp Group", href: WHATSAPP_COMMUNITY, external: true },
           { label: "Lesson Drive", href: DRIVE_FOLDER, external: true },
         ],
@@ -97,6 +98,7 @@ export const footer = {
         links: [
           { label: "কমিউনিটি হাব", href: "/community" },
           { label: "কমিউনিটির নিয়ম", href: "/community" },
+          { label: "প্ল্যাটফর্মকে সহযোগিতা", href: "/donate" },
           { label: "WhatsApp গ্রুপ", href: WHATSAPP_COMMUNITY, external: true },
           { label: "লেসন ড্রাইভ", href: DRIVE_FOLDER, external: true },
         ],
