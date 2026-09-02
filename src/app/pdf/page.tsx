@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight } from "lucide-react";
 
 import { useLanguage } from "@/i18n";
 import { useReveal } from "@/lib/useReveal";
@@ -13,116 +12,161 @@ import {
 } from "@/features/marketing/data/hskResources";
 
 /**
- * `/pdf` — the HSK resource hub: PDF books, audio, mock tests and vocabulary
- * for all six levels, each linking out to a Google Drive folder.
+ * `/pdf` — the HSK library: PDF books, audio, mock tests and vocabulary for
+ * all six levels, each linking out to a Google Drive folder.
  *
- * Built in the home / `/intro` / `/community` sumi-e register: rice-paper
- * hero under the fixed nav, one oversized Hanzi watermark, the `[seal]
- * SMALL-CAPS · detail` eyebrow, and a hairline-separated level list instead
- * of a card grid. The level filter narrows the list; missing resources (none
- * today) would read "soon" rather than 404.
+ * Same technical register as `/apps` ([[AppsExplorer]]): a mono spec sheet
+ * over a rice-paper header (kept light so the fixed nav stays readable),
+ * then a dark console listing each level as a record — one dot-leader row
+ * per resource type. Missing resources (none today) read "soon", not 404.
  */
 
 const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-const toBn = (n: number) =>
-  String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
+const toBn = (n: number) => String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
 
-const LINK_CLS =
-  "inline-flex items-center gap-1.5 text-sm font-medium text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-text";
+const pad2 = (n: number, isBn: boolean) =>
+  isBn ? toBn(n) : String(n).padStart(2, "0");
 
-function FilterButton({
+function FilterChip({
   active,
   onClick,
-  children,
+  label,
 }: {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  label: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+      className={`border px-2.5 py-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fa7d4e] ${
         active
-          ? "border-text bg-text text-background"
-          : "border-text/15 text-text/70 hover:border-text/40 hover:text-text"
+          ? "border-[#fa7d4e] bg-[#fa7d4e]/12 text-[#fa7d4e]"
+          : "border-white/15 text-white/55 hover:border-white/35 hover:text-white/85"
       }`}
     >
-      {children}
+      [&nbsp;{label}&nbsp;]
     </button>
   );
 }
 
-function LevelBlock({ level, isBn }: { level: HSKLevel; isBn: boolean }) {
-  const ref = useReveal<HTMLDivElement>({ threshold: 0.12 });
+function LevelRecord({
+  level,
+  index,
+  isBn,
+}: {
+  level: HSKLevel;
+  index: number;
+  isBn: boolean;
+}) {
+  const ref = useReveal<HTMLDivElement>({ threshold: 0.08 });
   const t = (bn: string, en: string) => (isBn ? bn : en);
   const n = Number(level.id.split("-")[1]);
 
+  const rows = resourceLabels.map(({ key, bn, en }) => ({
+    label: t(bn, en),
+    link: level.driveLinks[key],
+    available: level.resources[key] && Boolean(level.driveLinks[key]),
+  }));
+  const availableCount = rows.filter((r) => r.available).length;
+
   return (
     <div ref={ref} className="reveal-group">
-      <div data-reveal className="border-b border-text/15 pb-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="text-lg font-semibold tracking-tight text-text">
-            HSK {isBn ? toBn(n) : n}
-          </h3>
-          <span className="text-[11px] font-medium uppercase tracking-wide text-text/45">
-            {isBn ? level.titleBn : level.title}
-          </span>
-        </div>
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-text/65">
-          {isBn ? level.descriptionBn : level.description}
-        </p>
-      </div>
-
+      {/* record header — index · level · title · dot leader · count */}
       <div
         data-reveal
-        style={{ "--r": 1 } as React.CSSProperties}
-        className="flex flex-wrap gap-x-8 gap-y-3 py-6"
+        className="flex items-baseline gap-3 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-white/45"
       >
-        {resourceLabels.map(({ key, bn, en }) => {
-          const link = level.driveLinks[key];
-          const available = level.resources[key] && Boolean(link);
-
-          if (!available) {
-            return (
-              <span
-                key={key}
-                className="inline-flex items-center gap-1.5 text-sm text-text/30"
-              >
-                {t(bn, en)}
-                <span className="text-xs">· {t("শীঘ্রই", "soon")}</span>
-              </span>
-            );
-          }
-
-          return (
-            <a
-              key={key}
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={LINK_CLS}
-            >
-              {t(bn, en)}
-              <ArrowUpRight className="size-3.5" aria-hidden="true" />
-            </a>
-          );
-        })}
+        <span className="text-[#fa7d4e]">{pad2(index, isBn)}</span>
+        <span className="text-white/75">HSK&nbsp;{isBn ? toBn(n) : n}</span>
+        <span className="text-white/40">
+          {isBn ? level.titleBn : level.title}
+        </span>
+        <span
+          aria-hidden="true"
+          className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/15"
+        />
+        <span className="tabular-nums text-white/55">
+          {pad2(availableCount, isBn)}
+        </span>
       </div>
 
-      {level.driveLinks.all && (
-        <a
-          href={level.driveLinks.all}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-1 inline-flex items-center gap-1.5 text-sm font-semibold text-text underline decoration-text/40 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-text"
-        >
-          {t("এই লেভেলের সব ম্যাটেরিয়াল", "All materials for this level")}
-          <ArrowUpRight className="size-3.5" aria-hidden="true" />
-        </a>
-      )}
+      <p
+        data-reveal
+        style={{ "--r": 1 } as React.CSSProperties}
+        className="max-w-2xl pb-2 text-[13px] leading-6 text-white/50"
+      >
+        {isBn ? level.descriptionBn : level.description}
+      </p>
+
+      <ul className="border-t border-white/10">
+        {rows.map((row, i) => (
+          <li
+            key={row.label}
+            data-reveal
+            style={{ "--r": i + 2 } as React.CSSProperties}
+          >
+            {row.available ? (
+              <a
+                href={row.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-baseline gap-3 border-b border-white/10 py-3 font-mono text-[12px] transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.05] focus-visible:outline-none"
+              >
+                <span className="uppercase tracking-[0.14em] text-[#e6f0ed]">
+                  {row.label}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/12"
+                />
+                <span className="inline-flex items-center gap-1 uppercase tracking-[0.16em] text-white/50 transition-colors group-hover:text-[#fa7d4e]">
+                  {t("খুলুন", "Open")}
+                  <span className="text-sm leading-none">↗</span>
+                </span>
+              </a>
+            ) : (
+              <div className="flex items-baseline gap-3 border-b border-white/10 py-3 font-mono text-[12px]">
+                <span className="uppercase tracking-[0.14em] text-white/30">
+                  {row.label}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/[0.06]"
+                />
+                <span className="uppercase tracking-[0.16em] text-white/30">
+                  {t("শীঘ্রই", "Soon")}
+                </span>
+              </div>
+            )}
+          </li>
+        ))}
+
+        {level.driveLinks.all && (
+          <li data-reveal style={{ "--r": rows.length + 2 } as React.CSSProperties}>
+            <a
+              href={level.driveLinks.all}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-baseline gap-3 border-b border-white/10 py-3 font-mono text-[12px] transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.05] focus-visible:outline-none"
+            >
+              <span className="uppercase tracking-[0.14em] text-[#fa7d4e]">
+                {t("এই লেভেলের সব", "Whole level")}
+              </span>
+              <span
+                aria-hidden="true"
+                className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-[#fa7d4e]/25"
+              />
+              <span className="inline-flex items-center gap-1 uppercase tracking-[0.16em] text-[#fa7d4e]">
+                {t("খুলুন", "Open")}
+                <span className="text-sm leading-none">↗</span>
+              </span>
+            </a>
+          </li>
+        )}
+      </ul>
     </div>
   );
 }
@@ -131,119 +175,137 @@ export default function PdfPage() {
   const { language } = useLanguage();
   const isBn = language === "bn";
   const t = (bn: string, en: string) => (isBn ? bn : en);
+  const num = (n: number) => (isBn ? toBn(n) : String(n));
 
   const [active, setActive] = useState<string | "all">("all");
   const visible =
     active === "all" ? hskLevels : hskLevels.filter((l) => l.id === active);
 
+  const spec: [string, string][] = [
+    [t("লেভেল", "Levels"), num(hskLevels.length)],
+    [t("টাইপ / লেভেল", "Types / level"), num(resourceLabels.length)],
+    [t("ফরম্যাট", "Format"), "PDF · Audio"],
+    [t("হোস্ট", "Host"), "drive.google.com"],
+    [t("খরচ", "Cost"), t("ফ্রি", "Free")],
+  ];
+
   return (
-    <div className={`bg-background text-text ${isBn ? "font-bn" : "font-en"}`}>
-      {/* ============================ HERO ============================ */}
-      <section className="relative isolate -mt-16 overflow-hidden bg-[#f8f3ea] in-[.dark]:bg-background sm:-mt-20">
+    <div className={isBn ? "font-bn" : "font-en"}>
+      {/* ===================== SPEC HEADER (rice paper) ===================== */}
+      <section className="relative isolate -mt-16 overflow-hidden bg-paper text-text sm:-mt-20">
         <span
           aria-hidden="true"
           lang="zh"
-          className="pointer-events-none absolute -top-16 right-[4%] hidden select-none text-[22rem] leading-none font-bold text-text/[0.04] lg:block"
+          className="pointer-events-none absolute -top-20 right-[3%] hidden select-none text-[20rem] leading-none font-bold text-text/[0.04] lg:block"
         >
           书
         </span>
 
-        <div className="relative z-10 mx-auto max-w-6xl px-3 pt-28 pb-16 sm:px-6 md:pt-32 md:pb-20 lg:px-8">
-          <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <div className="relative z-10 mx-auto grid max-w-6xl gap-12 px-5 pt-28 pb-14 sm:px-6 md:grid-cols-[1fr_auto] md:pt-32 md:pb-18 lg:px-8">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.2em] text-text/55">
               <span
                 lang="zh"
                 aria-hidden="true"
-                className="flex size-7 items-center justify-center rounded-md bg-text text-[11px] font-bold text-background"
+                className="flex size-6 items-center justify-center rounded bg-text text-[10px] font-bold text-background"
               >
                 书
               </span>
-              <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text/60">
-                {t("রিসোর্স · এইচএসকে ম্যাটেরিয়াল", "Resources · HSK materials")}
-              </span>
+              {t("রিসোর্স · এইচএসকে লাইব্রেরি", "Resources · HSK library")}
             </div>
 
-            <h1 className="mt-7 text-[2.5rem] leading-[1.12] font-bold tracking-tight sm:text-5xl lg:text-[3.5rem]">
-              <span className="block">
-                {t("এইচএসকে বই ও", "HSK books &")}
-              </span>
-              <span className="mt-1 block text-secondary">
-                {t("স্টাডি ম্যাটেরিয়াল", "study material")}
-              </span>
+            <h1 className="mt-6 text-[2.4rem] leading-[1.1] font-bold tracking-tight sm:text-5xl">
+              {t("এইচএসকে লাইব্রেরি", "The HSK library")}
             </h1>
 
-            <p className="mt-6 max-w-[52ch] text-base leading-[1.8] text-text/70 sm:text-lg">
+            <p className="mt-5 max-w-[50ch] text-base leading-[1.75] text-text/70">
               {t(
-                "ছয়টি লেভেলের PDF বই, অডিও, মক টেস্ট আর ভোকাবুলারি — গুগল ড্রাইভে লেভেল ধরে সাজানো, সম্পূর্ণ ফ্রি।",
-                "PDF books, audio, mock tests and vocabulary for all six levels — organised level by level on Google Drive, completely free.",
+                "ছয়টি লেভেলের PDF বই, অডিও, মক টেস্ট আর ভোকাবুলারি — গুগল ড্রাইভে লেভেল ধরে সাজানো, সম্পূর্ণ ফ্রি। প্রতিটি সারি সরাসরি ড্রাইভ ফোল্ডারে যায়।",
+                "PDF books, audio, mock tests and vocabulary for all six levels — organised level by level on Google Drive, completely free. Every row resolves straight to a Drive folder.",
               )}
             </p>
-
-            <p className="mt-9 flex flex-wrap gap-x-8 gap-y-2 border-t border-text/10 pt-6 text-sm text-text/55">
-              <span>
-                <span className="font-semibold tabular-nums text-text">
-                  {isBn ? toBn(6) : 6}
-                </span>{" "}
-                {t("লেভেল", "levels")}
-              </span>
-              <span>
-                <span className="font-semibold tabular-nums text-text">
-                  {isBn ? toBn(4) : 4}
-                </span>{" "}
-                {t("রিসোর্স টাইপ", "resource types each")}
-              </span>
-              <span>{t("সম্পূর্ণ ফ্রি", "Free")}</span>
-            </p>
           </div>
+
+          {/* spec sheet */}
+          <dl className="min-w-[15rem] self-start border border-text/15 font-mono text-xs">
+            {spec.map(([k, v], i) => (
+              <div
+                key={k}
+                className={`flex items-center justify-between gap-6 px-3.5 py-2.5 ${
+                  i === 0 ? "" : "border-t border-text/12"
+                }`}
+              >
+                <dt className="uppercase tracking-[0.14em] text-text/45">{k}</dt>
+                <dd className="tabular-nums text-text">{v}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* =========================== LEVELS =========================== */}
-      <section className="border-t border-text/10 bg-background py-16 md:py-24">
-        <div className="mx-auto max-w-6xl px-6">
+      {/* ===================== CONSOLE (dark) ===================== */}
+      <section className="bg-[#0a1512] text-[#e6f0ed]">
+        <div className="mx-auto max-w-6xl px-5 py-12 sm:px-6 md:py-16 lg:px-8">
           <div
-            className="flex flex-wrap gap-2"
+            className="flex flex-wrap gap-x-1.5 gap-y-2 font-mono text-[11px] uppercase tracking-[0.14em]"
             role="group"
             aria-label={t("লেভেল অনুযায়ী ফিল্টার", "Filter by level")}
           >
-            <FilterButton
+            <FilterChip
               active={active === "all"}
               onClick={() => setActive("all")}
-            >
-              {t("সব", "All")}
-            </FilterButton>
+              label={`${t("সব", "all")} · ${num(hskLevels.length)}`}
+            />
             {hskLevels.map((level) => (
-              <FilterButton
+              <FilterChip
                 key={level.id}
                 active={active === level.id}
                 onClick={() => setActive(level.id)}
-              >
-                HSK {isBn ? toBn(Number(level.id.split("-")[1])) : level.id.split("-")[1]}
-              </FilterButton>
+                label={`hsk ${
+                  isBn
+                    ? toBn(Number(level.id.split("-")[1]))
+                    : level.id.split("-")[1]
+                }`}
+              />
             ))}
           </div>
 
-          <div className="mt-14 space-y-16">
-            {visible.map((level) => (
-              <LevelBlock key={level.id} level={level} isBn={isBn} />
+          <div className="mt-10 space-y-12">
+            {visible.map((level, i) => (
+              <LevelRecord
+                key={level.id}
+                level={level}
+                index={i + 1}
+                isBn={isBn}
+              />
             ))}
           </div>
 
-          <div className="mt-16 border-t border-text/15 pt-6">
-            <p className="text-sm text-text/60">
-              {isBn
-                ? completeCollection.descriptionBn
-                : completeCollection.description}
-            </p>
+          {/* complete collection */}
+          <div className="mt-14 border-t border-white/10 pt-6">
             <a
               href={completeCollection.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-text underline decoration-text/40 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-text"
+              className="group flex items-baseline gap-3 font-mono text-[12px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fa7d4e]"
             >
-              {isBn ? completeCollection.titleBn : completeCollection.title}
-              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+              <span className="uppercase tracking-[0.14em] text-[#e6f0ed]">
+                {isBn ? completeCollection.titleBn : completeCollection.title}
+              </span>
+              <span
+                aria-hidden="true"
+                className="min-w-6 flex-1 translate-y-[-3px] border-b border-dotted border-white/15"
+              />
+              <span className="inline-flex items-center gap-1 uppercase tracking-[0.16em] text-white/50 transition-colors group-hover:text-[#fa7d4e]">
+                {t("খুলুন", "Open")}
+                <span className="text-sm leading-none">↗</span>
+              </span>
             </a>
+            <p className="mt-3 font-mono text-[11px] leading-relaxed text-white/40">
+              {isBn
+                ? completeCollection.descriptionBn
+                : completeCollection.description}
+            </p>
           </div>
         </div>
       </section>
