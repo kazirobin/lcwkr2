@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Hind_Siliguri, Lora } from "next/font/google";
+import { Noto_Sans_Bengali, Lora } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
@@ -17,10 +17,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const hindSiliguri = Hind_Siliguri({
-  variable: "--font-hind-siliguri",
+// Bangla face for the whole site. Variable font — no weight list needed.
+const notoSansBengali = Noto_Sans_Bengali({
+  variable: "--font-noto-sans-bengali",
   subsets: ["latin", "bengali"],
-  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 // Reading serif for the HSK workbook surface — structural headings, lesson
@@ -70,7 +71,7 @@ export default function RootLayout({
   return (
     <html
       lang="bn"
-      className={`${geistSans.variable} ${geistMono.variable} ${hindSiliguri.variable} ${lora.variable} font-bn h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansBengali.variable} ${lora.variable} font-bn h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
