@@ -1,28 +1,9 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models";
-import { Student } from "@/features/academy/models";
-import { academyData } from "@/features/academy/data";
+import { seedAcademyFromStaticData } from "@/features/academy/server/sync";
 
 export async function GET() {
   try {
-    await connectDB();
-
-    // পূর্বের ডাটা সিঙ্ক
-    await Course.deleteMany({});
-    await Student.deleteMany({});
-
-    for (const c of academyData.courses) {
-      await Course.create(c);
-    }
-
-    for (const s of academyData.students) {
-      await Student.create({
-        ...s,
-        enrolledCourseId: s.enrolledCourseIds[0] || "HSK-101",
-        registrationStatus: "Approved",
-      });
-    }
+    await seedAcademyFromStaticData();
 
     return NextResponse.json({
       success: true,

@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Todo from "@/features/todos/models";
+import { listTodos, createTodo } from "@/features/todos/server/todos";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await connectDB();
-    const todos = await Todo.find({}).sort({ createdAt: -1 });
+    const todos = await listTodos();
     return NextResponse.json(todos, { status: 200 });
   } catch (error: any) {
     console.error("GET /api/todos error:", error);
@@ -21,8 +19,7 @@ export async function POST(req: Request) {
     if (!title || !title.trim()) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
-    await connectDB();
-    const newTodo = await Todo.create({ title: title.trim() });
+    const newTodo = await createTodo(title);
     return NextResponse.json(newTodo, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/todos error:", error);

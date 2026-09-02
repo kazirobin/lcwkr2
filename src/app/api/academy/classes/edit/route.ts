@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models";
+import { editClass } from "@/features/academy/server/classes";
 
 export async function PUT(req: Request) {
   try {
@@ -28,36 +27,28 @@ export async function PUT(req: Request) {
       );
     }
 
-    await connectDB();
+    const result = await editClass({
+      courseId,
+      classId,
+      date,
+      time,
+      contentCovered,
+      presentStudents,
+      absentStudents,
+    });
 
-    // 👈 রোল নম্বরগুলোকে সুসংগত স্ট্রিং ফরম্যাটে কনভার্ট করা
-    const cleanPresent = (presentStudents || []).map((r: any) => String(r).trim());
-    const cleanAbsent = (absentStudents || []).map((r: any) => String(r).trim());
-
-    const course = await Course.findOne({ courseId });
-    if (!course) {
+    if (result.kind === "course-not-found") {
       return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
     }
 
-    // ক্লাস খুঁজে আপডেট করা
-    const targetClass = course.classes.find((cls: any) => cls.classId === classId);
-    if (!targetClass) {
+    if (result.kind === "class-not-found") {
       return NextResponse.json({ success: false, message: "Class session not found" }, { status: 404 });
     }
-
-    targetClass.date = date;
-    targetClass.time = time;
-    targetClass.contentCovered = contentCovered;
-    targetClass.presentStudents = cleanPresent;
-    targetClass.absentStudents = cleanAbsent;
-
-    course.markModified("classes");
-    await course.save();
 
     return NextResponse.json({
       success: true,
       message: "Class attendance updated live in MongoDB",
-      course,
+      course: result.course,
     });
   } catch (error: any) {
     console.error("Class edit API error:", error);

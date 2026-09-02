@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Student } from "@/features/academy/models";
+import { setStudentGroupJoined } from "@/features/academy/server/students";
 
 export async function POST(req: Request) {
   try {
@@ -10,13 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized Admin PIN" }, { status: 401 });
     }
 
-    await connectDB();
-
-    const student = await Student.findOneAndUpdate(
-      { rollNumber },
-      { isWhatsAppGroupJoined: Boolean(isWhatsAppGroupJoined) },
-      { new: true }
-    );
+    const student = await setStudentGroupJoined(rollNumber, isWhatsAppGroupJoined);
 
     if (!student) {
       return NextResponse.json({ success: false, message: "Student not found" }, { status: 404 });

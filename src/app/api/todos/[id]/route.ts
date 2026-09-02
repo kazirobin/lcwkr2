@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Todo from "@/features/todos/models";
+import { updateTodo, deleteTodo } from "@/features/todos/server/todos";
 
 export const dynamic = "force-dynamic";
 
@@ -11,16 +10,8 @@ export async function PATCH(
   try {
     const { id } = await params;
     const { completed, title } = await req.json();
-    await connectDB();
 
-    const updatedTodo = await Todo.findByIdAndUpdate(
-      id,
-      {
-        ...(completed !== undefined && { completed }),
-        ...(title !== undefined && { title: title.trim() }),
-      },
-      { new: true }
-    );
+    const updatedTodo = await updateTodo(id, { completed, title });
 
     if (!updatedTodo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 });
@@ -39,9 +30,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectDB();
 
-    const deletedTodo = await Todo.findByIdAndDelete(id);
+    const deletedTodo = await deleteTodo(id);
 
     if (!deletedTodo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 });

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Student } from "@/features/academy/models";
-import { Course } from "@/features/academy/models";
+import { getStudentWithCourses } from "@/features/academy/server/students";
 
 type Props = {
   params: Promise<{ roll: string }>;
@@ -10,20 +8,17 @@ type Props = {
 export async function GET(req: NextRequest, props: Props) {
   try {
     const { roll } = await props.params;
-    await connectDB();
 
-    const rollNum = Number(roll);
-    const student = await Student.findOne({ rollNumber: rollNum });
+    const result = await getStudentWithCourses(roll);
 
-    if (!student) {
+    if (!result) {
       return NextResponse.json(
         { success: false, message: "Student not found" },
         { status: 404 }
       );
     }
 
-    const courses = await Course.find({ courseId: student.enrolledCourseId });
-    return NextResponse.json({ success: true, student, courses });
+    return NextResponse.json({ success: true, ...result });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message },

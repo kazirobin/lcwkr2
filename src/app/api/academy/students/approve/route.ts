@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Student } from "@/features/academy/models";
+import { setStudentApproval } from "@/features/academy/server/students";
 
 export async function POST(req: Request) {
   try {
@@ -10,39 +9,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized Admin PIN" }, { status: 401 });
     }
 
-    await connectDB();
-    const targetRoll = Number(rollNumber);
+    const result = await setStudentApproval(rollNumber, action);
 
-    if (action === "APPROVE") {
-      const student = await Student.findOneAndUpdate(
-        { rollNumber: targetRoll },
-        { registrationStatus: "Approved" },
-        { new: true }
-      );
-      return NextResponse.json({ success: true, student });
-    } 
-    
-    else if (action === "REJECT" || action === "DELETE") {
-      // ১. টার্গেট স্টুডেন্ট খুঁজে ডিলিট করা
-      const deletedStudent = await Student.findOneAndDelete({ rollNumber: targetRoll });
-
-      if (!deletedStudent) {
+    switch (result.kind) {
+      case "approved":
+        return NextResponse.json({ success: true, student: result.student });
+      case "deleted":
+        return NextResponse.json({
+          success: true,
+          message: `Roll ${result.targetRoll} deleted and subsequent rolls automatically re-indexed!`,
+        });
+      case "not-found":
         return NextResponse.json({ success: false, message: "Student not found" }, { status: 404 });
-      }
-
-      // ২. 👈 স্বয়ংক্রিয় সিরিয়াল রিক্যালকুলেশন: ডিলিট হওয়া রোলের চেয়ে বড় সব রোলের মান ১ কমে যাবে
-      await Student.updateMany(
-        { rollNumber: { $gt: targetRoll } },
-        { $inc: { rollNumber: -1 } }
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: `Roll ${targetRoll} deleted and subsequent rolls automatically re-indexed!`,
-      });
+      default:
+        return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 });
     }
-
-    return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

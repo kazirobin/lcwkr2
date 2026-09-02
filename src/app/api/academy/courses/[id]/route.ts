@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models";
+import {
+  getCourseById,
+  updateCourse,
+  deleteCourse,
+} from "@/features/academy/server/courses";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -10,9 +13,8 @@ type Props = {
 export async function GET(req: NextRequest, props: Props) {
   try {
     const { id } = await props.params;
-    await connectDB();
 
-    const course = await Course.findOne({ courseId: id });
+    const course = await getCourseById(id);
     if (!course) {
       return NextResponse.json(
         { success: false, message: "Course not found" },
@@ -33,13 +35,8 @@ export async function PUT(req: NextRequest, props: Props) {
   try {
     const { id } = await props.params;
     const body = await req.json();
-    await connectDB();
 
-    const updatedCourse = await Course.findOneAndUpdate(
-      { courseId: id },
-      { $set: body },
-      { new: true }
-    );
+    const updatedCourse = await updateCourse(id, body);
 
     if (!updatedCourse) {
       return NextResponse.json(
@@ -60,9 +57,8 @@ export async function PUT(req: NextRequest, props: Props) {
 export async function DELETE(req: NextRequest, props: Props) {
   try {
     const { id } = await props.params;
-    await connectDB();
 
-    const deletedCourse = await Course.findOneAndDelete({ courseId: id });
+    const deletedCourse = await deleteCourse(id);
     if (!deletedCourse) {
       return NextResponse.json(
         { success: false, message: "Course not found" },
