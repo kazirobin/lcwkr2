@@ -20,18 +20,20 @@ export default function AdminDashboardPage() {
     pendingClasses: 0,
     courses: 0,
     chineseWords: 0,
+    donations: 0,
   });
   const [loading, setLoading] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [pStu, aStu, logs, crs, words] = await Promise.all([
+      const [pStu, aStu, logs, crs, words, donate] = await Promise.all([
         fetch("/api/academy/students?status=Pending", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/classes/pending", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/chinese-words", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/donations", { cache: "no-store" }).then((r) => r.json()),
       ]);
       setStats({
         pendingStudents: pStu.students?.length || 0,
@@ -39,6 +41,7 @@ export default function AdminDashboardPage() {
         pendingClasses: logs.pendingClasses?.length || 0,
         courses: crs.courses?.length || 0,
         chineseWords: words.data?.length || 0,
+        donations: donate.donations?.length || 0,
       });
     } catch (err) {
       console.error("Failed to load admin stats:", err);
@@ -81,6 +84,12 @@ export default function AdminDashboardPage() {
       desc: t("কোর ক্যারেক্টার ও শব্দ পরিবার যোগ, সম্পাদনা বা মুছুন।", "Add, edit, or remove core characters and word families."),
       count: stats.chineseWords,
       href: "/admin/chinese-words",
+    },
+    {
+      title: t("অনুদান রেকর্ড", "Donation records"),
+      desc: t("অনুদান পরিচালনা করুন, বিকাশ TrxID ট্র্যাক করুন ও দাতার তথ্য হালনাগাদ করুন।", "Manage donations, track bKash TrxIDs, and update contributor details."),
+      count: stats.donations,
+      href: "/admin/donations",
     },
   ];
 

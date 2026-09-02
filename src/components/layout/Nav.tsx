@@ -41,8 +41,9 @@ const DROPDOWNS = {
       { href: "/academy/courses", en: "Mandarin Courses", bn: "কোর্সসমূহ" },
       { href: "/academy/students", en: "Scholars Directory", bn: "শিক্ষার্থী তালিকা" },
       { href: "/community", en: "Community", bn: "কমিউনিটি" },
+      { href: "/donate", en: "Support / Donate", bn: "অনুদান" },
     ],
-    activePrefixes: ["/academy", "/community"],
+    activePrefixes: ["/academy", "/community", "/donate"],
   },
   vocabulary: {
     id: "vocabulary",
