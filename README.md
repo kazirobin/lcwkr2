@@ -28,9 +28,26 @@ https://api.dicebear.com/10.x/adventurer/svg?seed=Aneka
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** Next.js (App Router), React, Tailwind CSS
-* **Backend:** Next.js API Routes / Server Actions
-* **Database & Auth:** Secure Cloud Database & Modern Authentication
+* **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS v4
+* **Backend:** Next.js Route Handlers over a per-feature service layer
+* **Database:** MongoDB (Mongoose)
+
+---
+
+## 🧱 Project Structure
+
+Code lives under `src/`, grouped **by domain** rather than by file type. Each
+domain is a self-contained module in `src/features/<name>/` (components, data,
+models, server logic, types). See [`docs/architecture.md`](docs/architecture.md)
+for the directory map, import rules, and how to add a new feature.
+
+```
+npm run dev      # start the dev server
+npm run build    # production build
+npm run lint     # eslint
+```
+
+Copy `.env.example` to `.env` and fill in the values before running.
 
 ---
 
