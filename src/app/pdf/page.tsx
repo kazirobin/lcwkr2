@@ -52,6 +52,10 @@ function FilterChip({
   );
 }
 
+// TODO(covers): render a book cover beside each level record once
+// `HSKLevel.coverFileId` / `coverUrl` is populated — see the note in
+// `hskResources.ts`. Covers can't be pulled automatically (the Drive links
+// are folders, and the textbook PDFs inside aren't individually shared).
 function LevelRecord({
   level,
   index,

@@ -19,6 +19,20 @@ export interface HSKLevel {
   descriptionBn: string;
   resources: Record<"all" | ResourceKey, boolean>;
   driveLinks: Partial<Record<"all" | ResourceKey, string>>;
+
+  /**
+   * TODO(covers): book cover / thumbnail for the level, rendered by
+   * `app/pdf/page.tsx`. Not wired up — cannot be derived automatically:
+   * `driveLinks` point at Drive *folders* (no thumbnail), and the textbook
+   * PDFs inside are only folder-shared, so `drive.google.com/thumbnail?id=…`
+   * 404s on them. To enable, either:
+   *   a) set each level's textbook PDF to "anyone with link" and put its file
+   *      id here as `coverFileId` — the page can then use
+   *      `https://drive.google.com/thumbnail?id=${coverFileId}&sz=w600`; or
+   *   b) add cover images under `public/assets/hsk/` and set `coverUrl`.
+   */
+  // coverFileId?: string;
+  // coverUrl?: string;
 }
 
 export interface ResourceItem {
