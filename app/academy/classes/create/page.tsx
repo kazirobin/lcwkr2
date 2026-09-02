@@ -1,338 +1,287 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { 
-  ArrowLeft, 
-  Sparkles, 
-  KeyRound,
-  CheckSquare,
-  Square,
-  Users,
-  CheckCircle2,
-  XCircle,
-  Calendar,
-  Clock,
-  Loader2
-} from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Check, Users } from "lucide-react";
 import { ICourse, IStudent } from "@/types/academy";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  Breadcrumb,
+  Button,
+  Card,
+  EmptyState,
+  Eyebrow,
+  Field,
+  LoadingBlock,
+  PageHeader,
+  SectionHanzi,
+  SelectField,
+  useToast,
+} from "@/components/academy/ui";
 
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function TeacherClassLogPage() {
-  // MongoDB লাইভ ডাটা স্টেট
+  const router = useRouter();
+  const toast = useToast();
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [students, setStudents] = useState<IStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [teacherPasscode, setTeacherPasscode] = useState("");
+  const [courseId, setCourseId] = useState("");
+  const [passcode, setPasscode] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00 PM - 10:10 PM");
-
-  const [fromLesson, setFromLesson] = useState(1);
-  const [fromText, setFromText] = useState(1);
-  const [toLesson, setToLesson] = useState(1);
-  const [toText, setToText] = useState(2);
-
+  const [range, setRange] = useState({ fromLesson: 1, fromText: 1, toLesson: 1, toText: 2 });
   const [presentRolls, setPresentRolls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // 👈 MongoDB থেকে লাইভ কোর্স এবং স্টুডেন্ট ফেচ
   useEffect(() => {
-    const fetchLiveData = async () => {
+    (async () => {
       setLoading(true);
       try {
-        const [coursesRes, studentsRes] = await Promise.all([
-          fetch("/api/academy/courses", { cache: "no-store" }),
-          fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
+        const [c, s] = await Promise.all([
+          fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
+          fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         ]);
-
-        const coursesData = await coursesRes.json();
-        const studentsData = await studentsRes.json();
-
-        if (coursesData.success && coursesData.courses?.length > 0) {
-          setCourses(coursesData.courses);
-          setSelectedCourseId(coursesData.courses[0].courseId);
+        if (c.success && c.courses?.length) {
+          setCourses(c.courses);
+          setCourseId(c.courses[0].courseId);
         }
-
-        if (studentsData.success && studentsData.students) {
-          setStudents(studentsData.students);
-        }
-      } catch (err) {
-        console.error("Failed to load live data from MongoDB:", err);
+        if (s.success && s.students) setStudents(s.students);
+      } catch {
+        toast(t("তথ্য লোড করা যায়নি।", "Couldn't load data."), "error");
       } finally {
         setLoading(false);
       }
-    };
+    })();
+  }, [t, toast]);
 
-    fetchLiveData();
-  }, []);
+  const enrolled = useMemo(() => {
+    const code = courseId.toLowerCase();
+    return students.filter((s) => {
+      if (Array.isArray(s.enrolledCourseIds))
+        return s.enrolledCourseIds.some((id) => id.toLowerCase() === code);
+      const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
+      return legacy ? legacy.toLowerCase() === code : false;
+    });
+  }, [students, courseId]);
 
-  // নির্বাচিত কোর্সে এনরোল্ড স্টুডেন্ট ফিল্টার
-  const currentCourseCode = selectedCourseId.toLowerCase();
-  const enrolled = students.filter((s: any) => {
-    if (Array.isArray(s.enrolledCourseIds)) {
-      return s.enrolledCourseIds.some((id: string) => id.toLowerCase() === currentCourseCode);
-    }
-    if (s.enrolledCourseId) {
-      return String(s.enrolledCourseId).toLowerCase() === currentCourseCode;
-    }
-    return false;
-  });
+  const allRolls = useMemo(() => enrolled.map((s) => String(s.rollNumber).trim()), [enrolled]);
+  const allPresent = allRolls.length > 0 && presentRolls.length === allRolls.length;
 
-  const toggleAttendance = (roll: string | number) => {
-    const rollStr = String(roll).trim();
+  const toggle = (roll: string) =>
     setPresentRolls((prev) =>
-      prev.includes(rollStr) ? prev.filter((r) => r !== rollStr) : [...prev, rollStr]
+      prev.includes(roll) ? prev.filter((r) => r !== roll) : [...prev, roll],
     );
-  };
-
-  const isAllSelected = enrolled.length > 0 && presentRolls.length === enrolled.length;
-
-  const handleToggleSelectAll = () => {
-    if (isAllSelected) {
-      setPresentRolls([]);
-    } else {
-      const allRolls = enrolled.map((s) => String(s.rollNumber).trim());
-      setPresentRolls(allRolls);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
-    const allRolls = enrolled.map((s) => String(s.rollNumber).trim());
-    const absentRolls = allRolls.filter((roll) => !presentRolls.includes(roll));
-    const summary = `Lesson ${fromLesson} Text ${fromText} to Lesson ${toLesson} Text ${toText}`;
-
+    const absent = allRolls.filter((r) => !presentRolls.includes(r));
+    const summary = `Lesson ${range.fromLesson} Text ${range.fromText} to Lesson ${range.toLesson} Text ${range.toText}`;
     try {
       const res = await fetch("/api/academy/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          teacherPasscode: teacherPasscode || ADMIN_SECRET_PIN,
-          courseId: selectedCourseId,
+          teacherPasscode: passcode || ADMIN_SECRET_PIN,
+          courseId,
           date,
           time,
-          contentCovered: { summary, fromLesson, fromText, toLesson, toText },
+          contentCovered: { summary, ...range },
           presentStudents: presentRolls,
-          absentStudents: absentRolls,
+          absentStudents: absent,
         }),
       });
-
       const result = await res.json();
-      setSubmitting(false);
-
       if (result.success) {
-        alert("Class session logged successfully to MongoDB!");
-        window.location.href = "/academy";
+        toast(t("ক্লাস লগ জমা হয়েছে — অনুমোদনের অপেক্ষায়।", "Class log submitted for approval."), "success");
+        router.push("/academy");
       } else {
-        alert(result.message || "Failed to submit class log");
+        toast(result.message || t("জমা হয়নি।", "Submission failed."), "error");
       }
-    } catch (err) {
+    } catch {
+      toast(t("সমস্যা হয়েছে, আবার চেষ্টা করুন।", "Something went wrong. Try again."), "error");
+    } finally {
       setSubmitting(false);
-      alert("Error submitting class session. Please try again.");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs font-mono text-text/50">Fetching Live Cohorts from MongoDB...</p>
-        </div>
-      </div>
-    );
-  }
+  const num = (key: keyof typeof range, label: string) => (
+    <Field
+      key={key}
+      type="number"
+      min={1}
+      label={label}
+      value={range[key]}
+      onChange={(e) => setRange((r) => ({ ...r, [key]: Number(e.target.value) }))}
+      className="tabular-nums"
+    />
+  );
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-6 lg:px-8 transition-colors">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1 font-medium">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
-        </Link>
-        
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" /> Teacher Class Logger
-          </h1>
-          <p className="text-xs sm:text-sm text-text/50 mt-1">
-            Log class progress and mark attendance directly for live cohorts. (MongoDB Live)
-          </p>
-        </div>
+    <div className="relative isolate mx-auto max-w-3xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+      <SectionHanzi char="堂" className="-top-10 right-0" />
 
-        <form onSubmit={handleSubmit} className="p-6 sm:p-8 bg-text/5 border border-text/10 rounded-3xl space-y-6 shadow-xl">
-          {/* Passcode */}
-          <div>
-            <label className="text-xs font-bold flex items-center gap-1 mb-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-secondary" /> Teacher / Admin Passcode
-            </label>
-            <input
-              type="password"
-              required
-              value={teacherPasscode}
-              onChange={(e) => setTeacherPasscode(e.target.value)}
-              placeholder="Enter PIN"
-              className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary font-mono tracking-widest"
-            />
-          </div>
+      <Breadcrumb
+        items={[
+          { label: t("একাডেমি", "Academy"), href: "/academy" },
+          { label: t("ক্লাস লগ", "Class log") },
+        ]}
+      />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold block mb-1.5">Course Track</label>
-              <select
-                value={selectedCourseId}
-                onChange={(e) => {
-                  setSelectedCourseId(e.target.value);
-                  setPresentRolls([]);
-                }}
-                className="w-full bg-background border border-text/10 rounded-xl p-3 text-xs font-semibold cursor-pointer"
-              >
-                {courses.map((c) => (
-                  <option key={c.courseId} value={c.courseId}>{c.courseId} - {c.courseName}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-bold block mb-1.5">Class Date</label>
-              <input
-                type="date"
+      <PageHeader
+        className="mt-6"
+        eyebrow={<Eyebrow seal="堂" label={t("শিক্ষক", "Teacher")} detail={t("শুধু স্টাফ", "Staff only")} />}
+        title={t("ক্লাস সেশন লগ করুন", "Log a class session")}
+        lede={t(
+          "লাইভ ব্যাচের অগ্রগতি ও উপস্থিতি রেকর্ড করুন। জমা দেওয়ার পর অ্যাডমিন অনুমোদন করবেন।",
+          "Record progress and attendance for a live cohort. An admin approves it after you submit.",
+        )}
+      />
+
+      <div className="mt-10">
+        {loading ? (
+          <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={2} />
+        ) : courses.length === 0 ? (
+          <EmptyState title={t("কোনো ব্যাচ নেই", "No cohorts")} />
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Card className="space-y-5 p-6">
+              <Field
+                type="password"
+                label={t("শিক্ষক / অ্যাডমিন পাসকোড", "Teacher / admin passcode")}
+                hint={t("এই ফর্মটি শুধু ক্লাস পরিচালনাকারীদের জন্য।", "This form is for whoever runs the class.")}
                 required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-background border border-text/10 rounded-xl p-2.5 text-xs font-mono"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                className="tracking-widest"
+                autoComplete="off"
               />
-            </div>
-          </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <SelectField
+                  label={t("কোর্স ট্র্যাক", "Course track")}
+                  value={courseId}
+                  onChange={(e) => {
+                    setCourseId(e.target.value);
+                    setPresentRolls([]);
+                  }}
+                >
+                  {courses.map((c) => (
+                    <option key={c.courseId} value={c.courseId}>
+                      {c.courseId} — {c.courseName}
+                    </option>
+                  ))}
+                </SelectField>
+                <Field
+                  type="date"
+                  label={t("ক্লাসের তারিখ", "Class date")}
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+              <Field
+                label={t("ক্লাসের সময়", "Class time")}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+            </Card>
 
-          {/* Curriculum Range */}
-          <div className="p-4 bg-background border border-text/10 rounded-2xl space-y-3">
-            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block">Curriculum Progression Range</span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-              <div>
-                <span className="text-[10px] text-text/50 block mb-1 font-medium">From Lesson</span>
-                <input type="number" min={1} value={fromLesson} onChange={(e) => setFromLesson(Number(e.target.value))} className="w-full bg-text/5 border border-text/10 p-2 rounded-xl text-center font-mono font-bold" />
+            <Card className="p-6">
+              <Eyebrow label={t("সিলেবাসের অগ্রগতি", "Syllabus covered")} />
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {num("fromLesson", t("পাঠ থেকে", "From lesson"))}
+                {num("fromText", t("টেক্সট থেকে", "From text"))}
+                {num("toLesson", t("পাঠ পর্যন্ত", "To lesson"))}
+                {num("toText", t("টেক্সট পর্যন্ত", "To text"))}
               </div>
-              <div>
-                <span className="text-[10px] text-text/50 block mb-1 font-medium">From Text</span>
-                <input type="number" min={1} value={fromText} onChange={(e) => setFromText(Number(e.target.value))} className="w-full bg-text/5 border border-text/10 p-2 rounded-xl text-center font-mono font-bold" />
-              </div>
-              <div>
-                <span className="text-[10px] text-text/50 block mb-1 font-medium">To Lesson</span>
-                <input type="number" min={1} value={toLesson} onChange={(e) => setToLesson(Number(e.target.value))} className="w-full bg-text/5 border border-text/10 p-2 rounded-xl text-center font-mono font-bold" />
-              </div>
-              <div>
-                <span className="text-[10px] text-text/50 block mb-1 font-medium">To Text</span>
-                <input type="number" min={1} value={toText} onChange={(e) => setToText(Number(e.target.value))} className="w-full bg-text/5 border border-text/10 p-2 rounded-xl text-center font-mono font-bold" />
-              </div>
-            </div>
-          </div>
+            </Card>
 
-          {/* Attendance Section */}
-          <div className="space-y-4 p-4 sm:p-6 bg-background border border-text/10 rounded-3xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-text/10 pb-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-text">
-                    Mark Present Students
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs mt-0.5">
-                    <span className="text-emerald-500 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Present: <b>{presentRolls.length}</b>
-                    </span>
-                    <span className="text-secondary font-semibold flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5" /> Absent: <b>{enrolled.length - presentRolls.length}</b>
-                    </span>
-                    <span className="text-text/40 font-mono">Total: {enrolled.length}</span>
+            <Card className="p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-text/10 pb-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-text/40" aria-hidden="true" />
+                  <div>
+                    <h2 className="text-sm font-bold text-text">
+                      {t("উপস্থিত শিক্ষার্থী চিহ্নিত করুন", "Mark present students")}
+                    </h2>
+                    <p className="mt-0.5 text-xs tabular-nums text-text/55">
+                      {t(
+                        `উপস্থিত ${presentRolls.length} · অনুপস্থিত ${enrolled.length - presentRolls.length} · মোট ${enrolled.length}`,
+                        `${presentRolls.length} present · ${enrolled.length - presentRolls.length} absent · ${enrolled.length} total`,
+                      )}
+                    </p>
                   </div>
                 </div>
+                {enrolled.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    aria-pressed={allPresent}
+                    onClick={() => setPresentRolls(allPresent ? [] : allRolls)}
+                  >
+                    {allPresent ? t("সব বাদ দিন", "Clear all") : t("সবাইকে উপস্থিত", "Mark all present")}
+                  </Button>
+                )}
               </div>
-              
-              {enrolled.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleToggleSelectAll}
-                  className={`text-xs px-3 py-1.5 rounded-xl font-bold border flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    isAllSelected
-                      ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
-                      : "bg-text/5 text-text/70 border-text/10 hover:text-text hover:bg-text/10"
-                  }`}
-                >
-                  {isAllSelected ? (
-                    <>
-                      <CheckSquare className="w-4 h-4 text-primary" />
-                      <span>Deselect All</span>
-                    </>
-                  ) : (
-                    <>
-                      <Square className="w-4 h-4 text-text/50" />
-                      <span>Select All ({enrolled.length})</span>
-                    </>
-                  )}
-                </button>
+
+              {enrolled.length === 0 ? (
+                <p className="py-8 text-center text-xs text-text/45">
+                  {t("এই ট্র্যাকে এখনও কোনো শিক্ষার্থী নেই।", "No students in this track yet.")}
+                </p>
+              ) : (
+                <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {enrolled.map((s) => {
+                    const roll = String(s.rollNumber).trim();
+                    const present = presentRolls.includes(roll);
+                    return (
+                      <li key={roll}>
+                        <button
+                          type="button"
+                          onClick={() => toggle(roll)}
+                          aria-pressed={present}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                            present
+                              ? "border-ok/40 bg-ok-surface"
+                              : "border-text/12 bg-card hover:border-text/25"
+                          }`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block text-[11px] tabular-nums text-text/45">#{roll}</span>
+                            <span className="block truncate text-sm font-semibold text-text">
+                              {s.nameEnglish}
+                            </span>
+                          </span>
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                              present ? "border-ok bg-ok text-card" : "border-text/25 text-transparent"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </div>
+            </Card>
 
-            {enrolled.length === 0 ? (
-              <p className="text-xs text-text/40 py-8 text-center italic">
-                No students enrolled in this course track yet.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                {enrolled.map((s) => {
-                  const rollStr = String(s.rollNumber).trim();
-                  const isPresent = presentRolls.includes(rollStr);
-
-                  return (
-                    <button
-                      key={rollStr}
-                      type="button"
-                      onClick={() => toggleAttendance(rollStr)}
-                      className={`p-3.5 rounded-2xl border text-left text-xs transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                        isPresent
-                          ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500 font-bold shadow-sm"
-                          : "bg-secondary/5 border-secondary/20 text-secondary hover:border-secondary/40"
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="font-mono text-[11px] block opacity-75 font-bold">
-                          Roll #{rollStr}
-                        </span>
-                        <span className="truncate block font-semibold text-text text-sm mt-0.5">
-                          {s.nameEnglish}
-                        </span>
-                      </div>
-                      
-                      <div className="shrink-0">
-                        {isPresent ? (
-                          <span className="text-[11px] bg-emerald-500 text-white px-2.5 py-1 rounded-full font-bold flex items-center gap-1 shadow-sm">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Present
-                          </span>
-                        ) : (
-                          <span className="text-[11px] bg-secondary/10 text-secondary border border-secondary/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
-                            <XCircle className="w-3.5 h-3.5" /> Absent
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={submitting}
-            className="w-full py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-2xl text-sm sm:text-base shadow-lg shadow-secondary/20 cursor-pointer transition-all disabled:opacity-50"
-          >
-            {submitting ? "Submitting to Database..." : "Submit Class Session"}
-          </button>
-        </form>
+            <Button type="submit" loading={submitting} className="w-full">
+              {submitting ? t("জমা হচ্ছে…", "Submitting…") : t("ক্লাস সেশন জমা দিন", "Submit class session")}
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );

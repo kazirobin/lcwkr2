@@ -1,391 +1,238 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  BookOpen, 
-  Lock, 
-  Unlock, 
-  KeyRound, 
-  X, 
-  Copy, 
-  Check, 
-  MessageSquare, 
-  ChevronLeft, 
-  Loader2, 
-  RefreshCw,
-  Layers,
-  Calendar
-} from "lucide-react";
+import { useParams } from "next/navigation";
+import { ArrowLeft, MapPin, RefreshCw } from "lucide-react";
 import { IStudent, ICourse } from "@/types/academy";
-
-const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  Breadcrumb,
+  ButtonLink,
+  Card,
+  Eyebrow,
+  IconButton,
+  LoadingBlock,
+  PageHeader,
+  ProgressBar,
+  SectionHanzi,
+  StatusMark,
+  StatusPill,
+} from "@/components/academy/ui";
 
 export default function StudentProfilePage() {
-  const router = useRouter();
   const params = useParams();
-  
-  const rawRoll = params?.roll ? (Array.isArray(params.roll) ? params.roll[0] : params.roll) : "";
-  const targetRoll = decodeURIComponent(String(rawRoll)).trim();
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
 
-  // MongoDB লাইভ ডেটা স্টেট
+  const raw = params?.roll
+    ? Array.isArray(params.roll)
+      ? params.roll[0]
+      : params.roll
+    : "";
+  const roll = decodeURIComponent(String(raw)).trim();
+
   const [student, setStudent] = useState<IStudent | null>(null);
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // সিকিউরিটি পিন ও আনলক স্টেট
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [enteredPin, setEnteredPin] = useState("");
-  const [pinError, setPinError] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // সেশন স্টোরেজ থেকে এডমিন স্ট্যাটাস চেক
-  useEffect(() => {
-    const saved = sessionStorage.getItem("academy_admin_unlocked");
-    if (saved === "true") {
-      setIsAdminUnlocked(true);
-    }
-  }, []);
-
-  // সরাসরি MongoDB API থেকে স্টুডেন্ট ও কোর্স লাইভ ফেচ
-  const fetchStudentProfileData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [studentsRes, coursesRes] = await Promise.all([
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
-        fetch("/api/academy/courses", { cache: "no-store" }),
+      const [s, c] = await Promise.all([
+        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
       ]);
-
-      const studentsData = await studentsRes.json();
-      const coursesData = await coursesRes.json();
-
-      if (studentsData.success && Array.isArray(studentsData.students)) {
-        const found = studentsData.students.find(
-          (s: any) => String(s.rollNumber).trim() === targetRoll
-        );
-        setStudent(found || null);
+      if (s.success && Array.isArray(s.students)) {
+        setStudent(s.students.find((x: IStudent) => String(x.rollNumber).trim() === roll) ?? null);
       }
-
-      if (coursesData.success && Array.isArray(coursesData.courses)) {
-        setCourses(coursesData.courses);
-      }
+      if (c.success && Array.isArray(c.courses)) setCourses(c.courses);
     } catch (err) {
-      console.error("Failed to load student profile from MongoDB:", err);
+      console.error("Failed to load profile:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [roll]);
 
   useEffect(() => {
-    if (targetRoll) {
-      fetchStudentProfileData();
-    }
-  }, [targetRoll]);
+    if (roll) fetchData();
+  }, [roll, fetchData]);
 
-  const handleUnlock = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
-      setIsAdminUnlocked(true);
-      sessionStorage.setItem("academy_admin_unlocked", "true");
-      setShowPinModal(false);
-      setEnteredPin("");
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
-  };
-
-  const handleCopyPhone = () => {
-    if (!student?.whatsapp) return;
-    navigator.clipboard.writeText(student.whatsapp);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const maskPhone = (phone: string) => {
-    if (!phone || phone.length < 8) return "••••••••••";
-    const start = phone.slice(0, 6);
-    const end = phone.slice(-3);
-    return `${start} •••• ${end}`;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background text-text flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs font-mono text-text/50">Fetching Student Profile from MongoDB...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!student) {
-    return (
-      <div className="min-h-screen bg-background text-text py-20 px-4 text-center space-y-4">
-        <p className="text-sm font-semibold text-text/70">Student with Roll #{targetRoll} not found in database.</p>
-        <button
-          onClick={() => router.push("/academy/students")}
-          className="text-xs text-primary hover:underline font-bold cursor-pointer"
-        >
-          ← Return to Scholars List
-        </button>
-      </div>
-    );
-  }
-
-  // 👈 Type-Safe Normalization (enrolledCourseIds বা enrolledCourseId যাই থাকুক না কেন সেফলি অ্যারে তৈরি করবে)
-  const normalizedEnrolledCourseIds: string[] = (() => {
-    if (Array.isArray(student.enrolledCourseIds) && student.enrolledCourseIds.length > 0) {
+  const enrolledIds = useMemo(() => {
+    if (!student) return [];
+    if (Array.isArray(student.enrolledCourseIds) && student.enrolledCourseIds.length)
       return student.enrolledCourseIds.map((id) => String(id).trim());
-    }
-    const anyStudent = student as any;
-    if (anyStudent.enrolledCourseId) {
-      return [String(anyStudent.enrolledCourseId).trim()];
-    }
-    return ["HSK-101"];
-  })();
+    const legacy = (student as { enrolledCourseId?: string }).enrolledCourseId;
+    return legacy ? [String(legacy).trim()] : [];
+  }, [student]);
 
-  // শিক্ষার্থীর এনরোল্ড কোর্সগুলোর ফুল অবজেক্ট তালিকা
-  const enrolledCoursesList = courses.filter((c) =>
-    normalizedEnrolledCourseIds.some(
-      (id) => id.toLowerCase() === c.courseId.toLowerCase()
-    )
-  );
+  const tracks = useMemo(() => {
+    if (!student) return [];
+    const target = String(student.rollNumber).trim();
+    return courses
+      .filter((c) => enrolledIds.some((id) => id.toLowerCase() === c.courseId.toLowerCase()))
+      .map((c) => {
+        const sessions = (c.classes ?? []).map((cls) => ({
+          date: cls.date,
+          summary: cls.contentCovered?.summary ?? "",
+          present: (cls.presentStudents ?? []).some((r) => String(r).trim() === target),
+        }));
+        const attended = sessions.filter((s) => s.present).length;
+        return { course: c, sessions, attended, held: sessions.length };
+      });
+  }, [student, courses, enrolledIds]);
 
-  const cleanDigits = student.whatsapp ? student.whatsapp.replace(/[^0-9]/g, "") : "";
+  const overall = useMemo(() => {
+    const held = tracks.reduce((a, x) => a + x.held, 0);
+    const attended = tracks.reduce((a, x) => a + x.attended, 0);
+    return { held, attended, rate: held > 0 ? Math.round((attended / held) * 100) : null };
+  }, [tracks]);
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 transition-colors">
-      <div className="max-w-4xl mx-auto space-y-6">
-        
-        {/* Navigation & Header */}
-        <div className="flex justify-between items-center">
-          <button
-            onClick={() => router.back()}
-            className="text-xs text-text/60 hover:text-text bg-text/5 hover:bg-text/10 border border-text/10 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5 transition-all cursor-pointer font-medium"
-          >
-            <ChevronLeft className="w-4 h-4" /> Back
-          </button>
+    <div className="relative isolate mx-auto max-w-4xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+      <SectionHanzi char="生" className="-top-10 right-0" />
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchStudentProfileData}
-              className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
-              title="Refresh Live Data"
+      <Breadcrumb
+        items={[
+          { label: t("একাডেমি", "Academy"), href: "/academy" },
+          { label: t("শিক্ষার্থী", "Scholars"), href: "/academy/students" },
+          { label: loading || !student ? `#${roll}` : student.nameEnglish },
+        ]}
+      />
+
+      {loading ? (
+        <div className="mt-10">
+          <LoadingBlock label={t("প্রোফাইল লোড হচ্ছে", "Loading profile")} rows={2} />
+        </div>
+      ) : !student ? (
+        <div className="mt-10">
+          <PageHeader
+            title={t(`রোল #${roll} পাওয়া যায়নি`, `Roll #${roll} not found`)}
+            lede={t("এই রোল নম্বরে কোনো অনুমোদিত শিক্ষার্থী নেই।", "No approved scholar has this roll number.")}
+          />
+          <ButtonLink href="/academy/students" variant="secondary" size="sm" className="mt-6" iconLeft={<ArrowLeft className="h-4 w-4" />}>
+            {t("তালিকায় ফিরুন", "Back to scholars")}
+          </ButtonLink>
+        </div>
+      ) : (
+        <>
+          <div className="mt-6 flex items-start justify-between gap-4">
+            <Eyebrow seal="生" label={t("শিক্ষার্থী প্রোফাইল", "Scholar profile")} detail={`#${student.rollNumber}`} />
+            <IconButton
+              label={t("রিফ্রেশ করুন", "Refresh")}
+              size="sm"
+              spinning={loading}
+              onClick={fetchData}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            </button>
+              <RefreshCw className="h-4 w-4" />
+            </IconButton>
+          </div>
 
-            {isAdminUnlocked ? (
-              <span className="text-[11px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                <Unlock className="w-3 h-3" /> Admin Mode Active
-              </span>
+          <Card className="mt-4 flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start sm:p-7">
+            <span className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-text/10 bg-text/5 sm:h-28 sm:w-28">
+              <Image
+                src={
+                  student.avatarUrl ||
+                  `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish || "student")}`
+                }
+                alt=""
+                width={112}
+                height={112}
+                className="h-full w-full object-cover"
+                unoptimized
+              />
+            </span>
+
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-2xl font-bold tracking-tight text-text sm:text-3xl">
+                {student.nameEnglish}
+              </h1>
+              <p className="mt-1.5 flex items-center justify-center gap-1.5 text-sm text-text/55 sm:justify-start">
+                <MapPin className="h-4 w-4 shrink-0 text-text/35" aria-hidden="true" />
+                {student.location || t("অবস্থান নেই", "Location not set")}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <StatusPill tone={student.isWhatsAppGroupJoined ? "done" : "pending"}>
+                  {student.isWhatsAppGroupJoined
+                    ? t("গ্রুপে যুক্ত", "In the class group")
+                    : t("গ্রুপে নেই", "Not in the group")}
+                </StatusPill>
+                {overall.rate !== null && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-text/10 bg-text/5 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-text">
+                    {t("সার্বিক উপস্থিতি", "Overall attendance")} {overall.rate}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <section className="mt-10">
+            <Eyebrow seal="录" label={t("উপস্থিতির রেকর্ড", "Attendance record")} />
+            {tracks.length === 0 ? (
+              <Card className="mt-4 p-6 text-sm text-text/60">
+                {t("এই শিক্ষার্থী এখনও কোনো ট্র্যাকে যুক্ত নন।", "This scholar isn't in any track yet.")}
+              </Card>
             ) : (
-              <button
-                onClick={() => {
-                  setEnteredPin("");
-                  setPinError(false);
-                  setShowPinModal(true);
-                }}
-                className="text-xs text-text/50 hover:text-text bg-text/5 border border-text/10 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition-all"
-              >
-                <Lock className="w-3 h-3 text-primary" /> Unlock Contacts
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Profile Card */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-text/5 border border-text/10 flex flex-col sm:flex-row items-center sm:items-start gap-6 shadow-sm">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-background border border-text/10 shrink-0">
-            <Image
-              src={student.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish || "student")}`}
-              alt={student.nameEnglish || "Student"}
-              width={112}
-              height={112}
-              className="w-full h-full object-cover"
-              unoptimized
-            />
-          </div>
-
-          <div className="space-y-3 text-center sm:text-left flex-1">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-text">{student.nameEnglish}</h1>
-              <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-bold">
-                Roll: #{student.rollNumber}
-              </span>
-              {!student.isWhatsAppGroupJoined ? (
-                <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                  Not in Group
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                  Group Joined
-                </span>
-              )}
-            </div>
-
-            <p className="text-xs sm:text-sm text-text/50 flex items-center justify-center sm:justify-start gap-1.5">
-              <MapPin className="w-4 h-4 text-secondary shrink-0" /> {student.location || "Location not set"}
-            </p>
-
-            {/* Protected Contact View */}
-            <div className="pt-1 flex items-center justify-center sm:justify-start gap-2">
-              {isAdminUnlocked ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <a
-                    href={`https://wa.me/${cleanDigits}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-mono font-bold text-primary hover:underline flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20 shadow-sm"
-                    title="Chat on WhatsApp"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" /> {student.whatsapp}
-                  </a>
-
-                  <button
-                    onClick={handleCopyPhone}
-                    className="p-1.5 text-text/40 hover:text-text rounded-lg hover:bg-text/5 transition-colors cursor-pointer border border-text/10"
-                    title={copied ? "Copied!" : "Copy Number"}
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setEnteredPin("");
-                    setPinError(false);
-                    setShowPinModal(true);
-                  }}
-                  className="text-xs font-mono text-text/40 hover:text-text/70 bg-background border border-text/10 px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
-                  title="Click to enter admin PIN"
-                >
-                  <Lock className="w-3.5 h-3.5 text-primary" />
-                  <span>{maskPhone(student.whatsapp)}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Enrolled Course Tracks Info */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-text/70 uppercase tracking-wider flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-secondary" /> Enrolled Cohorts & Tracks ({normalizedEnrolledCourseIds.length})
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {enrolledCoursesList.length > 0 ? (
-              enrolledCoursesList.map((c) => (
-                <div
-                  key={c.courseId}
-                  className="p-5 rounded-2xl bg-text/5 border border-text/10 space-y-2.5 flex flex-col justify-between"
-                >
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-mono text-xs font-bold text-secondary bg-secondary/10 border border-secondary/20 px-2 py-0.5 rounded-md">
-                        {c.courseId}
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        {c.status}
+              <div className="mt-4 space-y-6">
+                {tracks.map(({ course, sessions, attended, held }) => (
+                  <Card key={course.courseId} className="p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-md border border-text/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-text/70">
+                          {course.courseId}
+                        </span>
+                        <h2 className="text-sm font-bold text-text">{course.courseName}</h2>
+                      </div>
+                      <span className="text-xs font-semibold tabular-nums text-text">
+                        {attended} / {held} {t("ক্লাস", "classes")}
                       </span>
                     </div>
-                    <h4 className="font-bold text-base text-text">{c.courseName}</h4>
-                  </div>
 
-                  <div className="pt-2 border-t border-text/10 text-xs text-text/60 flex justify-between items-center font-mono">
-                    <span>Target: <b>{c.targetLevel}</b></span>
-                    <span>Lessons: <b>{c.totalLessons}</b></span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-5 rounded-2xl bg-text/5 border border-text/10 col-span-full text-xs font-mono text-text/60">
-                Track ID: <b className="text-secondary">{normalizedEnrolledCourseIds.join(", ")}</b>
+                    <div className="mt-3">
+                      <ProgressBar
+                        value={attended}
+                        max={held || 1}
+                        label={t("উপস্থিতি", "Attendance")}
+                      />
+                    </div>
+
+                    {sessions.length > 0 && (
+                      <ul className="mt-4 divide-y divide-text/10 border-t border-text/10">
+                        {sessions.map((s, i) => (
+                          <li key={i} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                            <span className="min-w-0">
+                              <span className="block tabular-nums text-text/50">{s.date}</span>
+                              {s.summary && (
+                                <span className="block truncate text-xs text-text/45">{s.summary}</span>
+                              )}
+                            </span>
+                            <StatusMark tone={s.present ? "done" : "closed"}>
+                              {s.present ? t("উপস্থিত", "Present") : t("অনুপস্থিত", "Absent")}
+                            </StatusMark>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Card>
+                ))}
               </div>
             )}
-          </div>
-        </div>
+          </section>
 
-        {/* Bottom Back Link */}
-        <div className="pt-2">
-          <button
-            onClick={() => router.back()}
-            className="w-full py-3 bg-text/5 hover:bg-text/10 border border-text/10 rounded-2xl text-xs font-semibold text-text/70 hover:text-text flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          <ButtonLink
+            href="/academy/students"
+            variant="secondary"
+            size="sm"
+            className="mt-10"
+            iconLeft={<ArrowLeft className="h-4 w-4" />}
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Return to Scholars List
-          </button>
-        </div>
-
-      </div>
-
-      {/* Admin Passcode Modal */}
-      {showPinModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-xs bg-background border border-text/10 rounded-2xl p-5 space-y-4 shadow-2xl relative">
-            <button
-              onClick={() => setShowPinModal(false)}
-              className="absolute top-3 right-3 text-text/40 hover:text-text p-1 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-2 border-b border-text/10 pb-2.5">
-              <KeyRound className="w-4 h-4 text-primary" />
-              <h3 className="font-bold text-sm">Instructor PIN Required</h3>
-            </div>
-
-            <p className="text-xs text-text/50">
-              Enter Admin passcode to view full WhatsApp contact details.
-            </p>
-
-            <form onSubmit={handleUnlock} className="space-y-3">
-              <input
-                type="password"
-                autoFocus
-                placeholder="Enter Admin PIN"
-                value={enteredPin}
-                onChange={(e) => {
-                  setEnteredPin(e.target.value);
-                  setPinError(false);
-                }}
-                className={`w-full bg-text/5 border ${
-                  pinError ? "border-secondary" : "border-text/10 focus:border-primary"
-                } rounded-xl px-3 py-2 text-xs font-mono text-center tracking-widest focus:outline-none`}
-              />
-
-              {pinError && (
-                <span className="text-[10px] text-secondary block text-center">
-                  Incorrect PIN. Try again.
-                </span>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPinModal(false)}
-                  className="flex-1 py-1.5 bg-text/5 rounded-xl text-xs font-semibold text-text/60 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-1.5 bg-secondary text-white font-bold rounded-xl text-xs cursor-pointer"
-                >
-                  Unlock
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            {t("সব শিক্ষার্থী", "All scholars")}
+          </ButtonLink>
+        </>
       )}
-
     </div>
   );
 }

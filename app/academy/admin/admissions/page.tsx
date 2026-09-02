@@ -1,107 +1,157 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { ArrowLeft, UserCheck, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { RefreshCw } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { AdminShell } from "@/components/academy/admin/AdminShell";
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  LoadingBlock,
+  TableFrame,
+  Td,
+  Th,
+  useConfirm,
+  useToast,
+} from "@/components/academy/ui";
 
-const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+
+type Pending = {
+  rollNumber: number;
+  nameEnglish: string;
+  whatsapp: string;
+  enrolledCourseId?: string;
+  enrolledCourseIds?: string[];
+};
 
 export default function PendingAdmissionsPage() {
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+  const toast = useToast();
+  const confirm = useConfirm();
 
-  const fetchPending = async () => {
+  const [students, setStudents] = useState<Pending[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<number | null>(null);
+
+  const fetchPending = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/academy/students?status=Pending", { cache: "no-store" });
       const data = await res.json();
       if (data.success) setStudents(data.students || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast(t("তালিকা লোড করা যায়নি।", "Couldn't load the list."), "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, toast]);
 
   useEffect(() => {
     fetchPending();
-  }, []);
+  }, [fetchPending]);
 
-  const handleAction = async (rollNumber: number, action: "APPROVE" | "REJECT") => {
+  const act = async (rollNumber: number, action: "APPROVE" | "REJECT", name: string) => {
+    if (action === "REJECT") {
+      const ok = await confirm({
+        title: t("আবেদন প্রত্যাখ্যান?", "Reject application?"),
+        message: t(`${name} (রোল #${rollNumber}) এর আবেদন মুছে যাবে।`, `${name}'s application (roll #${rollNumber}) will be removed.`),
+        confirmLabel: t("প্রত্যাখ্যান", "Reject"),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setBusy(rollNumber);
     try {
       const res = await fetch("/api/academy/students/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber, action, adminPasscode: ADMIN_SECRET_PASSCODE }),
+        body: JSON.stringify({ rollNumber, action, adminPasscode: ADMIN_PASSCODE }),
       });
       const data = await res.json();
-      if (data.success) fetchPending();
-      else alert(data.message || "Failed action");
-    } catch (e) {
-      console.error(e);
+      if (data.success) {
+        toast(
+          action === "APPROVE"
+            ? t("শিক্ষার্থী অনুমোদিত।", "Student approved.")
+            : t("আবেদন প্রত্যাখ্যাত।", "Application rejected."),
+          "success",
+        );
+        fetchPending();
+      } else {
+        toast(data.message || t("কাজটি সম্পন্ন হয়নি।", "Action failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 space-y-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <Link href="/academy/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
-          </Link>
-          <button onClick={fetchPending} className="p-1.5 bg-text/5 border border-text/10 rounded-xl">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <UserCheck className="w-6 h-6 text-primary" /> Pending Student Admissions ({students.length})
-        </h1>
-
-        {students.length === 0 ? (
-          <p className="text-xs text-text/40 p-8 border border-text/10 rounded-3xl text-center bg-text/[0.02]">
-            No pending admissions in database.
-          </p>
-        ) : (
-          <div className="border border-text/10 rounded-3xl overflow-hidden bg-text/[0.01]">
-            <table className="w-full text-left text-xs min-w-[500px]">
-              <thead className="bg-text/5 border-b border-text/10 text-text/60">
-                <tr>
-                  <th className="p-3.5">Candidate Name</th>
-                  <th className="p-3.5">WhatsApp Number</th>
-                  <th className="p-3.5">Target Track</th>
-                  <th className="p-3.5 text-right">Approve / Reject</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-text/10">
-                {students.map((s) => (
-                  <tr key={s.rollNumber} className="hover:bg-text/5">
-                    <td className="p-3.5 font-bold text-text">{s.nameEnglish}</td>
-                    <td className="p-3.5 font-mono text-primary font-bold">{s.whatsapp}</td>
-                    <td className="p-3.5 font-mono text-secondary font-bold">
-                      {s.enrolledCourseId || s.enrolledCourseIds?.[0]}
-                    </td>
-                    <td className="p-3.5 text-right space-x-2">
-                      <button
-                        onClick={() => handleAction(s.rollNumber, "APPROVE")}
-                        className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-xl font-bold"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleAction(s.rollNumber, "REJECT")}
-                        className="px-3 py-1 bg-secondary/10 text-secondary border border-secondary/20 rounded-xl font-bold"
-                      >
-                        Reject
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+    <AdminShell
+      title={t("অপেক্ষমাণ ভর্তি", "Pending admissions")}
+      crumb={t("ভর্তি", "Admissions")}
+      seal="报"
+      lede={t("নতুন শিক্ষার্থীর রেজিস্ট্রেশন অনুরোধ পর্যালোচনা করুন।", "Review new student registration requests.")}
+      actions={
+        <IconButton label={t("রিফ্রেশ", "Refresh")} size="sm" spinning={loading} onClick={fetchPending}>
+          <RefreshCw className="h-4 w-4" />
+        </IconButton>
+      }
+    >
+      {loading ? (
+        <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={2} />
+      ) : students.length === 0 ? (
+        <EmptyState
+          title={t("কোনো অপেক্ষমাণ আবেদন নেই", "No pending applications")}
+          description={t("নতুন আবেদন এলে এখানে দেখা যাবে।", "New requests will appear here.")}
+        />
+      ) : (
+        <TableFrame
+          caption={t("অপেক্ষমাণ ভর্তির তালিকা", "Pending admissions")}
+          minWidth="40rem"
+          head={
+            <>
+              <Th>{t("নাম", "Name")}</Th>
+              <Th>{t("হোয়াটসঅ্যাপ", "WhatsApp")}</Th>
+              <Th>{t("ট্র্যাক", "Track")}</Th>
+              <Th className="text-right">{t("সিদ্ধান্ত", "Decision")}</Th>
+            </>
+          }
+        >
+          {students.map((s) => (
+            <tr key={s.rollNumber}>
+              <Td className="font-semibold text-text">{s.nameEnglish}</Td>
+              <Td className="tabular-nums">{s.whatsapp}</Td>
+              <Td>{s.enrolledCourseId || s.enrolledCourseIds?.[0] || "—"}</Td>
+              <Td className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    size="sm"
+                    loading={busy === s.rollNumber}
+                    onClick={() => act(s.rollNumber, "APPROVE", s.nameEnglish)}
+                  >
+                    {t("অনুমোদন", "Approve")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={busy === s.rollNumber}
+                    onClick={() => act(s.rollNumber, "REJECT", s.nameEnglish)}
+                  >
+                    {t("প্রত্যাখ্যান", "Reject")}
+                  </Button>
+                </div>
+              </Td>
+            </tr>
+          ))}
+        </TableFrame>
+      )}
+    </AdminShell>
   );
 }

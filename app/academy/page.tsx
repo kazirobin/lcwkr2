@@ -1,60 +1,52 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  BookOpen,
-  ArrowUpRight,
-  UserPlus,
-  PlusCircle,
-  AlertCircle,
-  Calendar,
-  Clock,
   ArrowRight,
-  X,
-  Shield,
-  CheckCircle2,
-  Hourglass,
-  Layers,
-  Sparkles,
-  Loader2,
+  ArrowUpRight,
+  CalendarDays,
+  Clock,
   RefreshCw,
-  Trophy,
-  Video,
-  Award,
-  Users,
-  Target,
-  Flame,
-  GraduationCap
 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 import { ICourse, IStudent } from "@/types/academy";
+import {
+  Breadcrumb,
+  ButtonLink,
+  Card,
+  Eyebrow,
+  IconButton,
+  LoadingBlock,
+  PageHeader,
+  ProgressBar,
+  SectionHanzi,
+  StatusPill,
+} from "@/components/academy/ui";
 
-export default function AcademyMainPage() {
-  const router = useRouter();
+const WHATSAPP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
 
-  // MongoDB লাইভ ডেটা স্টেট
+export default function AcademyHubPage() {
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [students, setStudents] = useState<IStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [showModal, setShowModal] = useState(false);
-  const [countdown, setCountdown] = useState(20);
-
-  // সরাসরি MongoDB API থেকে লাইভ ডেটা ফেচ
-  const fetchLiveAcademyData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [coursesRes, studentsRes] = await Promise.all([
         fetch("/api/academy/courses", { cache: "no-store" }),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
       ]);
-
       const coursesData = await coursesRes.json();
       const studentsData = await studentsRes.json();
-
       if (coursesData.success && Array.isArray(coursesData.courses)) {
         setCourses(coursesData.courses);
       }
@@ -62,494 +54,328 @@ export default function AcademyMainPage() {
         setStudents(studentsData.students);
       }
     } catch (err) {
-      console.error("Failed to fetch live academy data from MongoDB:", err);
+      console.error("Failed to load academy data:", err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchLiveAcademyData();
   }, []);
 
-  const hasComingSoon = courses.some((c) => c.status === "Coming Soon");
-
-  const handleRegister = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (hasComingSoon) {
-      router.push("/academy/admission");
-    } else {
-      setShowModal(true);
-      setCountdown(20);
-    }
-  };
-
   useEffect(() => {
-    if (!showModal) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push("/");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [showModal, router]);
+    fetchData();
+  }, [fetchData]);
 
-  // পরিসংখ্যান ক্যালকুলেশন
-  const runningCourses = courses.filter((c) => c.status === "Running");
-  const totalClassesDone = courses.reduce(
-    (acc, c) => acc + (c.completedClassesCount ?? c.classes?.length ?? 0),
-    0
+  const openBatch = useMemo(
+    () => courses.find((c) => c.status === "Coming Soon"),
+    [courses],
   );
 
-  const totalClassesPlanned = courses.reduce(
-    (acc, c) => acc + (c.totalClassesPlanned || 24),
-    0
-  );
+  const stats = useMemo(() => {
+    const running = courses.filter((c) => c.status === "Running").length;
+    const held = courses.reduce(
+      (acc, c) => acc + (c.completedClassesCount ?? c.classes?.length ?? 0),
+      0,
+    );
+    return { batches: courses.length, running, held, scholars: students.length };
+  }, [courses, students]);
 
-  const overallBatchProgress = totalClassesPlanned > 0 
-    ? Math.min(100, Math.round((totalClassesDone / totalClassesPlanned) * 100)) 
-    : 0;
+  const nextIntake =
+    openBatch?.nextBatchRegistrationDate ||
+    courses.find((c) => c.nextBatchRegistrationDate)?.nextBatchRegistrationDate ||
+    t("শীঘ্রই ঘোষণা করা হবে", "To be announced");
 
-  // 👈 সেরা নিয়মিত শিক্ষার্থী (Top Attendance & Regular Attendance Scholars) ক্যালকুলেশন
-  const topRegularScholars = useMemo(() => {
-    if (students.length === 0 || courses.length === 0) return [];
-
-    return students.map((stu) => {
-      const stuRoll = String(stu.rollNumber).trim();
-      const enrolledTrackIds = Array.isArray(stu.enrolledCourseIds) && stu.enrolledCourseIds.length > 0
-        ? stu.enrolledCourseIds
-        : (stu as any).enrolledCourseId ? [(stu as any).enrolledCourseId] : [];
-
-      let totalHeld = 0;
-      let totalAttended = 0;
-
-      courses.forEach((crs) => {
-        const isEnrolled = enrolledTrackIds.some(
-          (id: string) => id.toLowerCase() === crs.courseId.toLowerCase()
-        );
-        if (isEnrolled) {
-          const sessions = crs.classes ?? [];
-          totalHeld += sessions.length;
-          totalAttended += sessions.filter((cls) =>
-            cls.presentStudents?.some((r) => String(r).trim() === stuRoll)
-          ).length;
-        }
-      });
-
-      const numericRate = totalHeld > 0 ? (totalAttended / totalHeld) * 100 : 100;
-
-      return {
-        ...stu,
-        totalHeld,
-        totalAttended,
-        numericRate: Math.round(numericRate),
-      };
-    })
-    .filter((s) => s.totalHeld > 0)
-    .sort((a, b) => b.numericRate - a.numericRate || b.totalAttended - a.totalAttended)
-    .slice(0, 6);
+  const topScholars = useMemo(() => {
+    if (!students.length || !courses.length) return [];
+    return students
+      .map((stu) => {
+        const roll = String(stu.rollNumber).trim();
+        const enrolled = Array.isArray(stu.enrolledCourseIds) && stu.enrolledCourseIds.length
+          ? stu.enrolledCourseIds
+          : (stu as { enrolledCourseId?: string }).enrolledCourseId
+            ? [(stu as { enrolledCourseId?: string }).enrolledCourseId as string]
+            : [];
+        let held = 0;
+        let attended = 0;
+        courses.forEach((crs) => {
+          if (enrolled.some((id) => id.toLowerCase() === crs.courseId.toLowerCase())) {
+            const sessions = crs.classes ?? [];
+            held += sessions.length;
+            attended += sessions.filter((cls) =>
+              cls.presentStudents?.some((r) => String(r).trim() === roll),
+            ).length;
+          }
+        });
+        return {
+          roll: stu.rollNumber,
+          name: stu.nameEnglish,
+          avatarUrl: stu.avatarUrl,
+          rate: held > 0 ? Math.round((attended / held) * 100) : 100,
+          held,
+        };
+      })
+      .filter((s) => s.held > 0)
+      .sort((a, b) => b.rate - a.rate)
+      .slice(0, 6);
   }, [students, courses]);
 
-  // পরবর্তী ব্যাচের সম্ভাব্য তারিখ
-  const nextBatchDate =
-    courses.find((c) => c.nextBatchRegistrationDate)?.nextBatchRegistrationDate ||
-    "September 15, 2026";
-
   return (
-    <div className="min-h-screen bg-background text-text py-8 px-4 sm:px-6 lg:px-8 transition-colors">
-      <div className="max-w-6xl mx-auto space-y-10">
-        
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-5">
-          <div>
-            <span className="text-xs font-mono text-secondary font-bold uppercase tracking-wider">
-              Learn Chinese with Kazi Robin • Global Academy
-            </span>
-            <h1 className="text-2xl font-bold text-text flex items-center gap-2 mt-1">
-              <LayoutDashboard className="w-5 h-5 text-secondary" /> Academy Cohorts & Batches
-            </h1>
-          </div>
+    <div className="relative isolate mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+      <SectionHanzi char="院" className="-top-10 right-0" />
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={fetchLiveAcademyData}
-              className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
-              title="Refresh Live Data from MongoDB"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            </button>
-            <Link
-              href="/academy/admin"
-              className="px-3 py-1.5 bg-secondary/10 border border-secondary/30 text-secondary font-bold text-xs rounded-lg flex items-center gap-1.5 hover:bg-secondary/20 transition-all"
-            >
-              <Shield className="w-3.5 h-3.5" /> Admin Console
-            </Link>
-            <Link
-              href="/academy/classes/create"
-              className="px-3 py-1.5 bg-secondary text-white font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90"
-            >
-              <PlusCircle className="w-3.5 h-3.5" /> Log Class
-            </Link>
-            <button
-              onClick={handleRegister}
-              className="px-3.5 py-1.5 bg-primary text-background font-bold text-xs rounded-lg flex items-center gap-1.5 hover:opacity-90 cursor-pointer shadow-sm shadow-primary/20"
-            >
-              <UserPlus className="w-3.5 h-3.5" /> Register Now
-            </button>
-            <Link
-              href="/academy/students"
-              className="px-3 py-1.5 bg-text/5 border border-text/10 rounded-lg text-xs hover:bg-text/10"
-            >
-              Students Directory ({students.length})
-            </Link>
-          </div>
-        </div>
+      <Breadcrumb items={[{ label: t("হোম", "Home"), href: "/" }, { label: t("একাডেমি", "Academy") }]} />
 
-        {/* Overview Stats Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
-            <span className="text-[10px] text-text/50 uppercase font-mono">Active Batches</span>
-            <p className="text-xl font-bold text-primary mt-1">{courses.length}</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
-            <span className="text-[10px] text-text/50 uppercase font-mono">Running Batches</span>
-            <p className="text-xl font-bold text-emerald-500 mt-1">{runningCourses.length}</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
-            <span className="text-[10px] text-text/50 uppercase font-mono">Classes Completed</span>
-            <p className="text-xl font-bold text-secondary mt-1">{totalClassesDone} / {totalClassesPlanned}</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-text/5 border border-text/10">
-            <span className="text-[10px] text-text/50 uppercase font-mono">Total Enrolled</span>
-            <p className="text-xl font-bold text-text mt-1">{students.length} Scholars</p>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs font-mono text-text/50">Fetching Live Cohorts from MongoDB...</p>
-          </div>
-        ) : (
+      <PageHeader
+        className="mt-6"
+        eyebrow={
+          <Eyebrow seal="院" label={t("একাডেমি", "Academy")} detail="Kazi Robin" />
+        }
+        title={t("ব্যাচ ও ক্লাস রেকর্ড", "Cohorts & class records")}
+        lede={t(
+          "চলমান ব্যাচ, সিলেবাসের অগ্রগতি ও নিয়মিত শিক্ষার্থীদের এক নজরে দেখুন।",
+          "Every running cohort, its syllabus progress, and the scholars keeping pace — at a glance.",
+        )}
+        actions={
           <>
-            {/* 1. All Running & Available Course Cards */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-secondary" /> Mandarin Tracks & Course Status
-                </h2>
-              </div>
-
-              {courses.length === 0 ? (
-                <div className="p-12 text-center rounded-3xl bg-text/5 border border-text/10 space-y-2">
-                  <p className="text-sm font-semibold text-text/70">No course tracks found in MongoDB.</p>
-                  <p className="text-xs text-text/40">Create a course from the Admin Console to get started.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {courses.map((course) => {
-                    const completedCount = course.classes?.length ?? course.completedClassesCount ?? 0;
-                    const totalPlanned = course.totalClassesPlanned || 24;
-                    const progressPct = Math.min(100, Math.round((completedCount / totalPlanned) * 100) || 0);
-                    
-                    const enrolledCount = students.filter((s: any) => {
-                      const cId = course.courseId.toLowerCase();
-                      if (Array.isArray(s.enrolledCourseIds)) {
-                        return s.enrolledCourseIds.some((id: string) => id.toLowerCase() === cId);
-                      }
-                      if (s.enrolledCourseId) {
-                        return String(s.enrolledCourseId).toLowerCase() === cId;
-                      }
-                      return false;
-                    }).length;
-
-                    const isRunning = course.status === "Running";
-                    const classTime = course.classes?.[0]?.time || "09:00 PM - 10:10 PM";
-
-                    return (
-                      <div
-                        key={course._id ? String(course._id) : course.courseId}
-                        className="p-6 rounded-3xl bg-text/5 border border-text/10 space-y-5 flex flex-col justify-between hover:border-text/20 transition-all shadow-sm"
-                      >
-                        <div className="space-y-4">
-                          {/* Top Badges */}
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono text-xs font-bold text-secondary bg-secondary/10 border border-secondary/20 px-2.5 py-1 rounded-xl">
-                                {course.courseId}
-                              </span>
-                              <span className="text-xs px-2.5 py-1 rounded-xl bg-text/5 border border-text/10">
-                                {course.targetLevel}
-                              </span>
-                            </div>
-
-                            <span
-                              className={`text-xs px-3 py-1 rounded-full font-bold border flex items-center gap-1.5 ${
-                                isRunning
-                                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                  : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                              }`}
-                            >
-                              <span className={`w-2 h-2 rounded-full ${isRunning ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
-                              {course.status}
-                            </span>
-                          </div>
-
-                          {/* Course Title */}
-                          <div>
-                            <h3 className="text-lg font-bold text-text">{course.courseName}</h3>
-                            <p className="text-xs text-text/50 mt-0.5">
-                              Total Lessons: <b>{course.totalLessons} Lessons</b> • Enrolled: <b>{enrolledCount} Students</b>
-                            </p>
-                          </div>
-
-                          {/* Class Time & Schedule Details */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-background p-3.5 rounded-2xl border border-text/10">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-primary shrink-0" />
-                              <div>
-                                <span className="text-text/40 block text-[10px]">Class Routine Time</span>
-                                <span className="font-semibold text-text">{classTime}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-secondary shrink-0" />
-                              <div>
-                                <span className="text-text/40 block text-[10px]">Batch Start Date</span>
-                                <span className="font-semibold text-text">{course.startDate || "Active Batch"}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Progress Bar */}
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between items-center text-xs font-mono">
-                              <span className="text-text/60">Class Completion Status:</span>
-                              <span className="font-bold text-text">
-                                {completedCount} / {totalPlanned} Classes ({progressPct}%)
-                              </span>
-                            </div>
-                            <div className="w-full h-2 rounded-full bg-text/10 overflow-hidden">
-                              <div
-                                className="h-full bg-secondary rounded-full transition-all duration-500"
-                                style={{ width: `${progressPct}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Details Link */}
-                        <div className="pt-2 border-t border-text/10 flex justify-between items-center">
-                          <span className="text-[11px] text-text/40 font-mono">
-                            {isRunning ? "Live Sessions Ongoing" : "Upcoming Admission Cohort"}
-                          </span>
-                          <Link
-                            href={`/academy/courses/${course.courseId}`}
-                            className="text-xs font-bold text-secondary hover:underline inline-flex items-center gap-1"
-                          >
-                            View Curriculum & Logs <ArrowUpRight className="w-3.5 h-3.5" />
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 🌟 2. ACADEMY VALUE & FEATURES IN-DEPTH SECTION (নতুন যুক্ত করা হয়েছে) */}
-            <div className="p-6 sm:p-10 rounded-3xl bg-gradient-to-br from-text/[0.04] via-background to-text/[0.02] border border-text/10 space-y-8 shadow-sm">
-              <div className="text-center max-w-2xl mx-auto space-y-2">
-                <span className="text-xs font-mono text-primary font-bold uppercase tracking-widest bg-primary/10 border border-primary/20 px-3 py-1 rounded-full inline-block">
-                  Why Learn Chinese with Kazi Robin?
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-text">
-                  আমাদের অ্যাকাডেমির বিশেষ বৈশিষ্ট্য ও সুবিধা
-                </h2>
-                <p className="text-xs sm:text-sm text-text/60 leading-relaxed">
-                  আন্তর্জাতিক মানসম্পন্ন HSK কারিকুলাম, শতভাগ লাইভ ইন্টারেক্টিভ ক্লাস এবং সম্পূর্ণ ডিজিটাল উপস্থিতি ট্র্যাকিং সিস্টেম।
-                </p>
-              </div>
-
-              {/* Feature Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* Feature 1 */}
-                <div className="p-6 rounded-2xl bg-background border border-text/10 space-y-3 hover:border-primary/30 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <Video className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-base text-text">১০০% লাইভ ইন্টারেক্টিভ ক্লাস</h3>
-                  <p className="text-xs text-text/60 leading-relaxed">
-                    রেকর্ডেড ভিডিওর পরিবর্তে সরাসরি Google Meet-এ রিয়েল-টাইম লাইভ ক্লাস, সঠিক চাইনিজ উচ্চারণ (Pinyin) এবং তাৎক্ষণিক ফিডব্যাক সুবিধা।
-                  </p>
-                </div>
-
-                {/* Feature 2 */}
-                <div className="p-6 rounded-2xl bg-background border border-text/10 space-y-3 hover:border-secondary/30 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
-                    <Target className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-base text-text">HSK এক্সাম ও সিলেবাস ফোকাস্ড</h3>
-                  <p className="text-xs text-text/60 leading-relaxed">
-                    Lesson ও Text ভিত্তিক পাঠ পরিকল্পনা, HSK 1 ও HSK 2 এর নতুন শব্দভাণ্ডার, ব্যাকরণ নিয়মাবলী এবং সাপ্তাহিক প্র্যাকটিস টেস্ট।
-                  </p>
-                </div>
-
-                {/* Feature 3 */}
-                <div className="p-6 rounded-2xl bg-background border border-text/10 space-y-3 hover:border-emerald-500/30 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-base text-text">রিয়েল-টাইম উপস্থিতি ট্র্যাকার</h3>
-                  <p className="text-xs text-text/60 leading-relaxed">
-                    প্রতিটি ক্লাসে শিক্ষার্থীর উপস্থিতি স্বয়ংক্রিয়ভাবে রেকর্ড হয়। প্রোফাইলে গিয়ে যেকোনো সময় ব্যক্তিগত ক্লাসের হিস্টোরি ও অগ্রগতি দেখা যায়।
-                  </p>
-                </div>
-              </div>
-
-              {/* 🏆 3. REGULAR & TOP ATTENDANCE SCHOLARS SPOTLIGHT */}
-              {topRegularScholars.length > 0 && (
-                <div className="pt-6 border-t border-text/10 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <h3 className="text-base font-bold flex items-center gap-2">
-                        <Flame className="w-5 h-5 text-amber-500" /> Regular & Dedicated Scholars Spotlight
-                      </h3>
-                      <p className="text-xs text-text/50">
-                        যেসব শিক্ষার্থী প্রতিটি ক্লাসে নিয়মিত উপস্থিত থেকে সেরা অগ্রগতি অর্জন করছেন
-                      </p>
-                    </div>
-
-                    <Link
-                      href="/academy/students"
-                      className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      View All Scholars ({students.length}) <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {topRegularScholars.map((s) => (
-                      <div
-                        key={String(s.rollNumber)}
-                        className="p-3.5 rounded-2xl bg-background border border-text/10 text-center space-y-2 hover:border-primary/30 transition-all"
-                      >
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-text/5 mx-auto border border-text/10">
-                          <Image
-                            src={s.avatarUrl || `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(s.nameEnglish || "student")}`}
-                            alt={s.nameEnglish || "Student"}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                            unoptimized
-                          />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-xs truncate text-text">{s.nameEnglish}</h4>
-                          <span className="text-[10px] font-mono text-text/50 block">Roll: #{s.rollNumber}</span>
-                        </div>
-                        <div className="pt-1.5 border-t border-text/10 flex items-center justify-center gap-1 text-[11px] font-bold text-emerald-500 font-mono">
-                          <CheckCircle2 className="w-3 h-3" /> {s.numericRate}%
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Call To Action Banner */}
-              <div className="p-6 rounded-2xl bg-secondary text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg shadow-secondary/20">
-                <div className="space-y-1 text-center sm:text-left">
-                  <h3 className="text-lg font-bold flex items-center justify-center sm:justify-start gap-2">
-                    <GraduationCap className="w-5 h-5" /> চাইনিজ ভাষা শিখে এগিয়ে থাকুন বিশ্বমঞ্চে
-                  </h3>
-                  <p className="text-xs opacity-90">
-                    স্কলারশিপ, ক্যারিয়ার ও উচ্চশিক্ষার জন্য এখনই আপনার পছন্দের ব্যাচে যুক্ত হন।
-                  </p>
-                </div>
-                <button
-                  onClick={handleRegister}
-                  className="px-5 py-2.5 bg-white text-secondary font-bold text-xs rounded-xl shadow-md hover:bg-white/95 transition-all cursor-pointer shrink-0"
-                >
-                  Join Next Batch
-                </button>
-              </div>
-            </div>
-
-            {/* 4. পরবর্তী ব্যাচের নোটিশ বক্স */}
-            {!hasComingSoon && (
-              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-secondary/10 via-text/5 to-primary/10 border border-secondary/20 space-y-4 text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-6">
-                <div className="space-y-2">
-                  <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[11px] font-bold inline-flex items-center gap-1.5">
-                    <Hourglass className="w-3.5 h-3.5" /> Admission Notice
-                  </span>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-text">
-                    সবগুলো ব্যাচে ক্লাস চলমান রয়েছে!
-                  </h3>
-                  <p className="text-xs sm:text-sm text-text/70 max-w-xl">
-                    বর্তমানে কোনো ওপেন সিট নেই। নতুন শিক্ষার্থী ভর্তির জন্য অনুগ্রহ করে পরবর্তী ব্যাচের রেজিস্ট্রেশন শুরু হওয়া পর্যন্ত অপেক্ষা করুন।
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-background border border-text/10 shrink-0 text-center space-y-1">
-                  <span className="text-[10px] text-primary uppercase font-mono font-bold block">
-                    Next Batch Registration
-                  </span>
-                  <p className="text-sm sm:text-base font-extrabold font-mono text-text">
-                    {nextBatchDate}
-                  </p>
-                </div>
-              </div>
+            {openBatch ? (
+              <ButtonLink href="/academy/admission" size="sm" iconRight={<ArrowRight className="h-4 w-4" />}>
+                {t("ভর্তির আবেদন", "Apply for admission")}
+              </ButtonLink>
+            ) : (
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-text px-3.5 py-2 text-[13px] font-semibold text-background transition-transform duration-200 hover:-translate-y-0.5 motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+              >
+                {t("লাইভ ক্লাসে যোগ দিন", "Join live class")}
+                <ArrowRight className="h-4 w-4" />
+              </a>
             )}
+            <IconButton
+              label={t("তথ্য রিফ্রেশ করুন", "Refresh data")}
+              size="sm"
+              spinning={loading}
+              onClick={fetchData}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </IconButton>
           </>
+        }
+      />
+
+      {/* Stat row — hairline divided, ink figures, never a placeholder zero */}
+      <dl className="mt-10 grid grid-cols-2 divide-text/10 rounded-2xl border border-text/10 bg-card sm:grid-cols-4 sm:divide-x">
+        {(
+          [
+            [t("সক্রিয় ব্যাচ", "Active cohorts"), stats.batches],
+            [t("চলমান এখন", "Running now"), stats.running],
+            [t("ক্লাস সম্পন্ন", "Classes held"), stats.held],
+            [t("মোট শিক্ষার্থী", "Scholars enrolled"), stats.scholars],
+          ] as const
+        ).map(([label, value]) => (
+          <div key={label} className="px-5 py-5">
+            <dt className="text-xs font-medium uppercase tracking-wide text-text/50">{label}</dt>
+            <dd className="mt-1.5 text-2xl font-bold tabular-nums text-text">
+              {loading ? <span className="text-text/30">—</span> : value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* Tracks */}
+      <section className="mt-16">
+        <Eyebrow seal="径" label={t("ম্যান্ডারিন ট্র্যাক", "Mandarin tracks")} />
+        <h2 className="mt-3 text-2xl font-bold tracking-tight text-text sm:text-3xl">
+          {t("কোর্স ও ব্যাচের অবস্থা", "Courses & cohort status")}
+        </h2>
+
+        {loading ? (
+          <div className="mt-6">
+            <LoadingBlock label={t("কোর্স লোড হচ্ছে", "Loading courses")} rows={2} />
+          </div>
+        ) : courses.length === 0 ? (
+          <Card className="mt-6 p-10 text-center">
+            <p className="text-sm font-semibold text-text/70">
+              {t("এখনও কোনো কোর্স ট্র্যাক নেই।", "No course tracks yet.")}
+            </p>
+          </Card>
+        ) : (
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+            {courses.map((course) => {
+              const done = course.classes?.length ?? course.completedClassesCount ?? 0;
+              const planned = course.totalClassesPlanned || 24;
+              const running = course.status === "Running";
+              const time = course.classes?.[0]?.time || "9:00 PM – 10:10 PM";
+              const enrolled = students.filter((s) => {
+                const cid = course.courseId.toLowerCase();
+                if (Array.isArray(s.enrolledCourseIds))
+                  return s.enrolledCourseIds.some((id) => id.toLowerCase() === cid);
+                const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
+                return legacy ? legacy.toLowerCase() === cid : false;
+              }).length;
+
+              return (
+                <Card key={course._id ? String(course._id) : course.courseId} className="flex flex-col p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-md border border-text/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-text/70">
+                        {course.courseId}
+                      </span>
+                      <span className="text-xs text-text/50">{course.targetLevel}</span>
+                    </div>
+                    <StatusPill tone={running ? "done" : "pending"}>
+                      {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
+                    </StatusPill>
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-bold text-text">{course.courseName}</h3>
+                  <p className="mt-1 text-xs text-text/55">
+                    {t(
+                      `${course.totalLessons} পাঠ · ${enrolled} জন ভর্তি`,
+                      `${course.totalLessons} lessons · ${enrolled} enrolled`,
+                    )}
+                  </p>
+
+                  <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-text/10 bg-text/3 p-3.5 text-xs">
+                    <div className="flex items-start gap-2">
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-text/40" aria-hidden="true" />
+                      <div>
+                        <dt className="text-[10px] uppercase tracking-wide text-text/40">
+                          {t("ক্লাসের সময়", "Class time")}
+                        </dt>
+                        <dd className="font-semibold text-text">{time}</dd>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-text/40" aria-hidden="true" />
+                      <div>
+                        <dt className="text-[10px] uppercase tracking-wide text-text/40">
+                          {t("শুরুর তারিখ", "Start date")}
+                        </dt>
+                        <dd className="font-semibold text-text">
+                          {course.startDate || t("চলমান ব্যাচ", "Active cohort")}
+                        </dd>
+                      </div>
+                    </div>
+                  </dl>
+
+                  <div className="mt-4 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-text/55">{t("ক্লাস সম্পন্ন", "Classes completed")}</span>
+                      <span className="font-semibold tabular-nums text-text">
+                        {done} / {planned}
+                      </span>
+                    </div>
+                    <ProgressBar value={done} max={planned} label={t("ক্লাস সম্পন্ন", "Classes completed")} />
+                  </div>
+
+                  <Link
+                    href={`/academy/courses/${course.courseId}`}
+                    className="mt-5 inline-flex items-center gap-1 self-start border-t border-text/10 pt-4 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                  >
+                    {t("সিলেবাস ও ক্লাস লগ", "Curriculum & class logs")}
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </Card>
+              );
+            })}
+          </div>
         )}
 
-      </div>
-
-      {/* Admission Closed Popup Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-background border border-text/10 rounded-2xl p-6 text-center space-y-4 relative">
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-3 right-3 text-text/40 hover:text-text p-1 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <AlertCircle className="w-10 h-10 text-secondary mx-auto" />
+        {/* Admission notice — calm, no countdown, no forced redirect */}
+        {!loading && (
+          <Card className="mt-6 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-lg font-bold text-text">Admission Closed!</h3>
-              <p className="text-xs text-text/60 mt-1">
-                চলমান ব্যাচের ক্লাস শুরু হয়ে গেছে। অনুগ্রহ করে পরবর্তী ব্যাচের জন্য অপেক্ষা করুন।
+              <p className="text-sm font-bold text-text">
+                {openBatch
+                  ? t("নতুন ব্যাচের ভর্তি চলছে", "Admission is open for the next cohort")
+                  : t("সব ব্যাচে ক্লাস চলছে", "All cohorts are currently running")}
+              </p>
+              <p className="mt-1 text-sm text-text/60">
+                {openBatch
+                  ? t(
+                      `${openBatch.courseName} — এখনই আসন সংরক্ষণ করুন।`,
+                      `${openBatch.courseName} — reserve a seat now.`,
+                    )
+                  : t(
+                      `পরবর্তী ভর্তি: ${nextIntake}`,
+                      `Next intake: ${nextIntake}`,
+                    )}
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-text/5 border border-text/10 text-left text-xs">
-              <span className="text-primary font-semibold flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" /> Next Batch Registration Starts:
-              </span>
-              <p className="font-mono font-bold text-text mt-1 pl-4.5">{nextBatchDate}</p>
+            {openBatch && (
+              <ButtonLink href="/academy/admission" size="sm" iconRight={<ArrowRight className="h-4 w-4" />}>
+                {t("আবেদন করুন", "Apply now")}
+              </ButtonLink>
+            )}
+          </Card>
+        )}
+      </section>
+
+      {/* Regular scholars */}
+      {!loading && topScholars.length > 0 && (
+        <section className="mt-16">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <Eyebrow seal="勤" label={t("নিয়মিত শিক্ষার্থী", "Regular scholars")} />
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-text sm:text-3xl">
+                {t("সবচেয়ে নিয়মিত যাঁরা", "Keeping pace, class after class")}
+              </h2>
             </div>
-            <div className="space-y-2 pt-1 text-xs">
-              <p className="text-text/40 flex items-center justify-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> Redirecting home in <b className="text-secondary">{countdown}s</b>
-              </p>
-              <button
-                onClick={() => router.push("/")}
-                className="w-full py-2 bg-secondary text-white rounded-lg font-bold flex items-center justify-center gap-1 hover:opacity-90 cursor-pointer"
-              >
-                Go Home <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <Link
+              href="/academy/students"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+            >
+              {t("সব শিক্ষার্থী দেখুন", "All scholars")}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
-        </div>
+
+          <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {topScholars.map((s) => (
+              <li key={String(s.roll)}>
+                <Card className="flex h-full flex-col items-center gap-2 p-3.5 text-center">
+                  <span className="h-12 w-12 overflow-hidden rounded-xl border border-text/10 bg-text/5">
+                    <Image
+                      src={
+                        s.avatarUrl ||
+                        `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(s.name || "student")}`
+                      }
+                      alt=""
+                      width={48}
+                      height={48}
+                      className="h-full w-full object-cover"
+                      unoptimized
+                    />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-bold text-text">{s.name}</span>
+                    <span className="block text-[10px] tabular-nums text-text/45">#{s.roll}</span>
+                  </span>
+                  <span className="mt-auto inline-flex items-center gap-1 border-t border-text/10 pt-1.5 text-[11px] font-semibold tabular-nums text-ok">
+                    {s.rate}% {t("উপস্থিতি", "present")}
+                  </span>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
+
+      {/* New here → intro */}
+      <Link
+        href="/intro"
+        className="group mt-16 flex items-center justify-between gap-4 rounded-2xl border border-text/10 bg-card px-6 py-5 transition-colors hover:border-text/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+      >
+        <span>
+          <span className="block text-sm font-bold text-text">
+            {t("নতুন এসেছেন?", "New here?")}
+          </span>
+          <span className="mt-0.5 block text-sm text-text/60">
+            {t("ক্লাস কীভাবে চলে, ধাপে ধাপে দেখুন।", "See how the class works, step by step.")}
+          </span>
+        </span>
+        <ArrowRight className="h-5 w-5 shrink-0 text-text/40 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
+      </Link>
     </div>
   );
 }

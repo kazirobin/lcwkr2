@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import { useLanguage } from "@/context/LanguageContext";
 import ThemeButton from "./ThemeButton";
@@ -103,21 +103,38 @@ export default function Nav() {
     [language]
   );
 
+  // Resolve the current route to exactly ONE nav destination: the longest href
+  // the pathname matches. Without this, a plain prefix test lights every
+  // ancestor too — "/hsk/2" would mark both "HSK 2" and its parent "HSK
+  // Vocabulary" (/hsk) active, and every "/academy/*" route would re-light
+  // "Academy Hub". Leaf routes still keep their nearest item lit
+  // ("/academy/courses/abc" → "Mandarin Courses").
+  const activeHref = useMemo(() => {
+    const hrefs = [
+      ...MAIN_LINKS.map((l) => l.href),
+      ...Object.values(DROPDOWNS).flatMap((d) => d.items.map((i) => i.href)),
+    ];
+    const matches = hrefs.filter((href) =>
+      href === "/"
+        ? pathname === "/"
+        : pathname === href || pathname.startsWith(`${href}/`)
+    );
+    return matches.sort((a, b) => b.length - a.length)[0] ?? null;
+  }, [pathname]);
+
   const isActive = useCallback(
-    (href: string) => {
-      if (href === "/") return pathname === href;
-      return pathname === href || pathname.startsWith(`${href}/`);
-    },
-    [pathname]
+    (href: string) => href === activeHref,
+    [activeHref]
   );
 
+  // Section-level: is the pathname anywhere inside this dropdown's territory?
+  // Drives the trigger's "you are here" state, independent of whether the
+  // dropdown happens to be open.
   const isDropdownActive = useCallback(
-    (dropdownId: DropdownId) => {
-      const dropdown = DROPDOWNS[dropdownId];
-      return dropdown.activePrefixes.some(
+    (dropdownId: DropdownId) =>
+      DROPDOWNS[dropdownId].activePrefixes.some(
         (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-      );
-    },
+      ),
     [pathname]
   );
 
@@ -269,11 +286,14 @@ export default function Nav() {
           type="button"
           onClick={() => toggleDropdown(dropdownId)}
           className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-full ${
-            active || isOpen
+            active
               ? "text-secondary bg-secondary/10"
-              : "text-text/80 hover:text-secondary hover:bg-secondary/7"
+              : isOpen
+                ? "text-secondary bg-secondary/6"
+                : "text-text/80 hover:text-secondary hover:bg-secondary/7"
           }`}
           aria-expanded={isOpen}
+          aria-current={active ? "location" : undefined}
           aria-label={label}
         >
           {label}
@@ -344,11 +364,14 @@ export default function Nav() {
           type="button"
           onClick={() => toggleDropdown(dropdownId)}
           className={`flex items-center justify-between w-full px-4 py-3 text-base font-medium transition-colors rounded-xl ${
-            active || isOpen
+            active
               ? "text-secondary bg-secondary/10"
-              : "text-text/80 hover:text-secondary hover:bg-secondary/7"
+              : isOpen
+                ? "text-secondary bg-secondary/6"
+                : "text-text/80 hover:text-secondary hover:bg-secondary/7"
           }`}
           aria-expanded={isOpen}
+          aria-current={active ? "location" : undefined}
           aria-label={label}
         >
           <span>{label}</span>

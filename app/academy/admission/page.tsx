@@ -1,34 +1,51 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Sparkles, 
-  AlertCircle, 
-  MessageSquare, 
-  User, 
-  Phone, 
-  MapPin, 
-  BookOpen,
-  Loader2,
-  RefreshCw
-} from "lucide-react";
+import { ArrowRight, MessageSquare, RefreshCw } from "lucide-react";
 import { ICourse } from "@/types/academy";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  Breadcrumb,
+  Button,
+  Dialog,
+  EmptyState,
+  Eyebrow,
+  Field,
+  IconButton,
+  LoadingBlock,
+  PageHeader,
+  SectionHanzi,
+  SelectField,
+  useToast,
+} from "@/components/academy/ui";
 
 const COUNTRY_CODES = [
-  { code: "+880", country: "Bangladesh", flag: "🇧🇩", minDigits: 10 },
-  { code: "+86", country: "China", flag: "🇨🇳", minDigits: 11 },
-  { code: "+91", country: "India", flag: "🇮🇳", minDigits: 10 },
-  { code: "+1", country: "USA / Canada", flag: "🇺🇸", minDigits: 10 },
+  { code: "+880", country: "Bangladesh", flag: "🇧🇩" },
+  { code: "+86", country: "China", flag: "🇨🇳" },
+  { code: "+91", country: "India", flag: "🇮🇳" },
+  { code: "+1", country: "USA / Canada", flag: "🇺🇸" },
 ];
 
 const ADMIN_WHATSAPP = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || "+8801787881334";
 
+type Registered = {
+  nameEnglish: string;
+  whatsapp: string;
+  location: string;
+  enrolledCourseId: string;
+  rollNumber: string | number;
+};
+
 export default function StudentAdmissionPage() {
   const router = useRouter();
-  
+  const toast = useToast();
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
 
@@ -36,51 +53,58 @@ export default function StudentAdmissionPage() {
   const [countryCode, setCountryCode] = useState("+880");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
-  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [courseId, setCourseId] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // পোস্ট-রেজিস্ট্রেশন পপআপ স্টেট
-  const [showJoinModal, setShowJoinModal] = useState(false);
-  const [registeredData, setRegisteredData] = useState<any>(null);
+  const [registered, setRegistered] = useState<Registered | null>(null);
 
-  // MongoDB থেকে লাইভ ওপেন কোর্স লোড
-  const fetchLiveCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setLoadingCourses(true);
     try {
       const res = await fetch("/api/academy/courses", { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.courses)) {
-        // যদি Coming Soon থাকে সেগুলো দেখাবে, নতুবা সকল ওপেন কোর্স
-        const openCourses = data.courses.filter((c: ICourse) => c.status === "Coming Soon" || c.status === "Running");
-        setCourses(openCourses);
-        if (openCourses.length > 0) {
-          setSelectedCourseId(openCourses[0].courseId);
-        }
+        const open = data.courses.filter(
+          (c: ICourse) => c.status === "Coming Soon" || c.status === "Running",
+        );
+        setCourses(open);
+        if (open.length > 0) setCourseId(open[0].courseId);
       }
-    } catch (err) {
-      console.error("Failed to load courses from MongoDB:", err);
+    } catch {
+      toast(t("কোর্স লোড করা যায়নি।", "Couldn't load courses."), "error");
     } finally {
       setLoadingCourses(false);
     }
-  };
+  }, [t, toast]);
 
   useEffect(() => {
-    fetchLiveCourses();
-  }, []);
+    fetchCourses();
+  }, [fetchCourses]);
+
+  const validate = () => {
+    const next: Record<string, string> = {};
+    if (!name.trim()) next.name = t("নাম লিখুন।", "Enter your full name.");
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 8) next.phone = t("সঠিক নম্বর দিন।", "Enter a valid number.");
+    if (!location.trim()) next.location = t("অবস্থান লিখুন।", "Enter your location.");
+    if (!courseId) next.courseId = t("একটি ট্র্যাক বেছে নিন।", "Choose a track.");
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setSubmitting(true);
 
     let clean = phone.replace(/\D/g, "");
     if (countryCode === "+880" && clean.startsWith("0")) clean = clean.slice(1);
-    const fullPhone = `${countryCode}${clean}`;
-
     const payload = {
       nameEnglish: name.trim(),
-      whatsapp: fullPhone,
+      whatsapp: `${countryCode}${clean}`,
       location: location.trim(),
-      enrolledCourseId: selectedCourseId,
+      enrolledCourseId: courseId,
     };
 
     try {
@@ -89,213 +113,190 @@ export default function StudentAdmissionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const result = await res.json();
-      setSubmitting(false);
-
       if (result.success) {
-        setRegisteredData({
-          ...payload,
-          rollNumber: result.student?.rollNumber || "Pending",
-        });
-        setShowJoinModal(true);
+        setRegistered({ ...payload, rollNumber: result.student?.rollNumber ?? "—" });
       } else {
-        alert(result.message || "Admission registration failed");
+        toast(result.message || t("আবেদন জমা হয়নি।", "Registration failed."), "error");
       }
-    } catch (err) {
+    } catch {
+      toast(t("সমস্যা হয়েছে, আবার চেষ্টা করুন।", "Something went wrong. Try again."), "error");
+    } finally {
       setSubmitting(false);
-      alert("Error submitting registration. Please try again.");
     }
   };
 
-  const handleSendJoinRequest = () => {
-    if (!registeredData) return;
-
-    const message = `*🔔 WhatsApp Group Join Request*\n\n` +
-      `Assalamu Alaikum / Nǐ hǎo Admin,\nI have registered for the course and need to join the official WhatsApp group for Google Meet class links.\n\n` +
-      `*Name:* ${registeredData.nameEnglish}\n` +
-      `*Roll:* ${registeredData.rollNumber}\n` +
-      `*Phone/WhatsApp:* ${registeredData.whatsapp}\n` +
-      `*Location:* ${registeredData.location}\n` +
-      `*Course Track:* ${registeredData.enrolledCourseId}\n\n` +
-      `Please verify and add me to the group.`;
-
-    const cleanAdminNum = ADMIN_WHATSAPP.replace(/[^0-9]/g, "");
-    const whatsappUrl = `https://wa.me/${cleanAdminNum}?text=${encodeURIComponent(message)}`;
-    
-    window.open(whatsappUrl, "_blank");
+  const sendJoinRequest = () => {
+    if (!registered) return;
+    const message =
+      `*WhatsApp group join request*\n\n` +
+      `Assalamu Alaikum / Nǐ hǎo Admin,\nI have registered and need to join the class group for the Google Meet links.\n\n` +
+      `*Name:* ${registered.nameEnglish}\n*Roll:* ${registered.rollNumber}\n` +
+      `*WhatsApp:* ${registered.whatsapp}\n*Location:* ${registered.location}\n` +
+      `*Track:* ${registered.enrolledCourseId}\n\nPlease verify and add me.`;
+    const num = ADMIN_WHATSAPP.replace(/[^0-9]/g, "");
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(message)}`, "_blank");
     router.push("/academy");
   };
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 transition-colors">
-      <div className="max-w-xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <Link href="/academy" className="text-xs text-text/50 hover:underline flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
-          </Link>
+    <div className="relative isolate mx-auto max-w-xl px-4 pt-28 pb-20 sm:px-6">
+      <SectionHanzi char="报" className="-top-10 -right-4 text-[12rem]" />
 
-          <button
-            type="button"
-            onClick={fetchLiveCourses}
-            className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
-            title="Refresh Available Courses from MongoDB"
+      <Breadcrumb
+        items={[
+          { label: t("একাডেমি", "Academy"), href: "/academy" },
+          { label: t("ভর্তি", "Admission") },
+        ]}
+      />
+
+      <PageHeader
+        className="mt-6"
+        eyebrow={<Eyebrow seal="报" label={t("ভর্তি", "Admission")} />}
+        title={t("শিক্ষার্থী ভর্তির আবেদন", "Apply for admission")}
+        lede={t(
+          "ফর্মটি পূরণ করুন — এরপর ক্লাসের হোয়াটসঅ্যাপ গ্রুপে যুক্ত হওয়ার জন্য অ্যাডমিনকে অনুরোধ পাঠাবেন।",
+          "Fill this in, then send the admin a request to be added to the class WhatsApp group.",
+        )}
+        actions={
+          <IconButton
+            label={t("কোর্স রিফ্রেশ করুন", "Refresh courses")}
+            size="sm"
+            spinning={loadingCourses}
+            onClick={fetchCourses}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loadingCourses ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-        
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" /> Scholar Admission
-          </h1>
-          <p className="text-xs text-text/50 mt-1 font-mono">
-            Direct Online Admission (MongoDB Live)
-          </p>
-        </div>
+            <RefreshCw className="h-4 w-4" />
+          </IconButton>
+        }
+      />
 
+      <div className="mt-10">
         {loadingCourses ? (
-          <div className="p-12 border border-text/10 rounded-3xl text-center space-y-3 bg-text/5 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs font-mono text-text/50">Fetching Open Batches from MongoDB...</p>
-          </div>
+          <LoadingBlock label={t("কোর্স লোড হচ্ছে", "Loading courses")} rows={1} />
         ) : courses.length === 0 ? (
-          <div className="p-8 border border-text/10 rounded-2xl text-center space-y-3 bg-text/5">
-            <AlertCircle className="w-10 h-10 text-secondary mx-auto" />
-            <h3 className="text-lg font-bold">All Batches Currently Running!</h3>
-            <p className="text-xs text-text/60">No upcoming courses are open for admission in MongoDB at this moment.</p>
-          </div>
+          <EmptyState
+            title={t("সব ব্যাচে ক্লাস চলছে", "All cohorts are running")}
+            description={t(
+              "এই মুহূর্তে নতুন ভর্তির জন্য কোনো ব্যাচ খোলা নেই। পরবর্তী ব্যাচের জন্য অপেক্ষা করুন।",
+              "No cohort is open for new admission right now. Watch the hub for the next intake.",
+            )}
+          />
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 rounded-3xl bg-text/5 border border-text/10 space-y-4 shadow-xl">
-            {/* Name */}
-            <div>
-              <label className="text-xs font-bold flex items-center gap-1 mb-1">
-                <User className="w-3.5 h-3.5 text-primary" /> Full Name (English)
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Md Shazzad Hossain"
-                className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
-              />
-            </div>
+          <form onSubmit={handleSubmit} noValidate className="space-y-5 rounded-2xl border border-text/10 bg-card p-6 sm:p-7">
+            <Field
+              label={t("পূর্ণ নাম (ইংরেজিতে)", "Full name (English)")}
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={validate}
+              error={errors.name}
+              placeholder="Md Shazzad Hossain"
+              autoComplete="name"
+            />
 
-            {/* WhatsApp */}
-            <div>
-              <label className="text-xs font-bold flex items-center gap-1 mb-1">
-                <Phone className="w-3.5 h-3.5 text-primary" /> WhatsApp Number
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="wa-num" className="text-[13px] font-semibold text-text">
+                {t("হোয়াটসঅ্যাপ নম্বর", "WhatsApp number")}
+                <span className="ml-1 text-danger" aria-hidden="true">*</span>
               </label>
               <div className="flex gap-2">
+                <label className="sr-only" htmlFor="wa-cc">
+                  {t("দেশের কোড", "Country code")}
+                </label>
                 <select
+                  id="wa-cc"
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className="bg-background border border-text/10 rounded-xl px-3 py-3 text-xs font-bold"
+                  className="rounded-xl border border-text/15 bg-card px-2.5 py-3 text-sm text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
                 >
                   {COUNTRY_CODES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.code}
+                    </option>
                   ))}
                 </select>
                 <input
+                  id="wa-num"
                   type="tel"
+                  inputMode="numeric"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="WhatsApp Number"
-                  className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary font-mono"
+                  onBlur={validate}
+                  aria-invalid={errors.phone ? true : undefined}
+                  aria-describedby={errors.phone ? "wa-err" : undefined}
+                  placeholder="1XXXXXXXXX"
+                  className="w-full rounded-xl border border-text/15 bg-card px-3.5 py-3 text-sm tabular-nums text-text placeholder:text-text/40 focus:border-text/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text aria-invalid:border-danger"
                 />
               </div>
+              {errors.phone && (
+                <p id="wa-err" role="alert" className="text-xs font-medium text-danger">
+                  {errors.phone}
+                </p>
+              )}
             </div>
 
-            {/* Location */}
-            <div>
-              <label className="text-xs font-bold flex items-center gap-1 mb-1">
-                <MapPin className="w-3.5 h-3.5 text-primary" /> Current Location
-              </label>
-              <input
-                type="text"
-                required
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Dhanmondi, Dhaka"
-                className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
-              />
-            </div>
+            <Field
+              label={t("বর্তমান অবস্থান", "Current location")}
+              required
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onBlur={validate}
+              error={errors.location}
+              placeholder={t("ধানমন্ডি, ঢাকা", "Dhanmondi, Dhaka")}
+            />
 
-            {/* Course Track Select */}
-            <div>
-              <label className="text-xs font-bold flex items-center gap-1 mb-1">
-                <BookOpen className="w-3.5 h-3.5 text-primary" /> Select Track
-              </label>
-              <select
-                value={selectedCourseId}
-                onChange={(e) => setSelectedCourseId(e.target.value)}
-                className="w-full bg-background border border-text/10 rounded-xl p-3 text-sm font-semibold cursor-pointer"
-              >
-                {courses.map((c) => (
-                  <option key={c.courseId} value={c.courseId}>
-                    {c.courseId} - {c.courseName} ({c.status})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3.5 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-2xl text-sm shadow-md shadow-secondary/20 cursor-pointer transition-all disabled:opacity-50"
+            <SelectField
+              label={t("ট্র্যাক নির্বাচন করুন", "Choose a track")}
+              required
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              error={errors.courseId}
             >
-              {submitting ? "Submitting to MongoDB..." : "Submit Registration"}
-            </button>
+              {courses.map((c) => (
+                <option key={c.courseId} value={c.courseId}>
+                  {c.courseId} — {c.courseName}
+                </option>
+              ))}
+            </SelectField>
+
+            <Button type="submit" loading={submitting} className="w-full" iconRight={<ArrowRight className="h-4 w-4" />}>
+              {submitting ? t("জমা হচ্ছে…", "Submitting…") : t("আবেদন জমা দিন", "Submit application")}
+            </Button>
           </form>
         )}
       </div>
 
-      {/* WhatsApp Verification Modal */}
-      {showJoinModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-background border border-text/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-center relative animate-in fade-in zoom-in-95">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
-              <MessageSquare className="w-8 h-8" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-500 font-bold px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 inline-block">
-                Step 2: WhatsApp Group Access
-              </span>
-              <h3 className="text-xl font-extrabold text-text">
-                Join Class WhatsApp Group
-              </h3>
-              <p className="text-xs sm:text-sm text-text/70 leading-relaxed">
-                ক্লাসের <strong>Google Meet লিংক ও লেকচার শিট</strong> পেতে আমাদের অফিসিয়াল হোয়াটসঅ্যাপ গ্রুপে যুক্ত হওয়া আবশ্যক। নিচে ক্লিক করে এডমিনকে ভেরিফিকেশন মেসেজ পাঠান।
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-text/5 border border-text/10 space-y-1.5 text-left text-xs font-mono">
-              <div className="flex justify-between">
-                <span className="text-text/50">Scholar:</span>
-                <span className="font-bold text-text">{registeredData?.nameEnglish}</span>
+      <Dialog
+        open={registered !== null}
+        onClose={() => setRegistered(null)}
+        title={t("গ্রুপে যুক্ত হোন", "Join the class group")}
+        description={t(
+          "গুগল মিট লিংক ও লেকচার শিট গ্রুপেই দেওয়া হয়। অ্যাডমিনকে ভেরিফিকেশন মেসেজ পাঠান।",
+          "Meet links and lecture sheets go out in the group. Send the admin a verification message.",
+        )}
+        footer={
+          <Button onClick={sendJoinRequest} iconLeft={<MessageSquare className="h-4 w-4" />}>
+            {t("অ্যাডমিনকে অনুরোধ পাঠান", "Send request to admin")}
+          </Button>
+        }
+      >
+        {registered && (
+          <dl className="space-y-2 rounded-xl border border-text/10 bg-text/3 p-4 text-sm">
+            {[
+              [t("নাম", "Name"), registered.nameEnglish],
+              [t("রোল", "Roll"), `#${registered.rollNumber}`],
+              [t("হোয়াটসঅ্যাপ", "WhatsApp"), registered.whatsapp],
+              [t("ট্র্যাক", "Track"), registered.enrolledCourseId],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4">
+                <dt className="text-text/50">{k}</dt>
+                <dd className="font-semibold text-text">{v}</dd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-text/50">WhatsApp:</span>
-                <span className="font-bold text-primary">{registeredData?.whatsapp}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text/50">Location:</span>
-                <span className="font-bold text-text">{registeredData?.location}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSendJoinRequest}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
-            >
-              <MessageSquare className="w-4 h-4" /> Send Request to Admin on WhatsApp
-            </button>
-          </div>
-        </div>
-      )}
+            ))}
+          </dl>
+        )}
+      </Dialog>
     </div>
   );
 }

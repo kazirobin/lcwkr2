@@ -1,244 +1,292 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
-import { 
-  ArrowLeft, 
-  MessageSquare, 
-  RefreshCw, 
-  XCircle, 
-  CheckCircle2, 
-  ArrowRightLeft, 
-  Trash2,
-  X 
-} from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { ArrowRightLeft, RefreshCw, Trash2 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { AdminShell } from "@/components/academy/admin/AdminShell";
+import {
+  Button,
+  Dialog,
+  EmptyState,
+  IconButton,
+  InlineSelect,
+  LoadingBlock,
+  SelectField,
+  StatusMark,
+  TableFrame,
+  Td,
+  Th,
+  useConfirm,
+  useToast,
+} from "@/components/academy/ui";
 
-const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
-export default function AdminStudentsControlPage() {
-  const [students, setStudents] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
+type Student = {
+  rollNumber: number;
+  nameEnglish: string;
+  whatsapp: string;
+  isWhatsAppGroupJoined: boolean;
+  enrolledCourseId?: string;
+  enrolledCourseIds?: string[];
+};
+type Course = { courseId: string; courseName: string };
+
+export default function AdminStudentsPage() {
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [groupFilter, setGroupFilter] = useState<"all" | "joined" | "pending">("all");
+  const [filter, setFilter] = useState<"all" | "joined" | "pending">("all");
 
-  const [changingStudent, setChangingStudent] = useState<any | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [updating, setUpdating] = useState(false);
+  const [transferring, setTransferring] = useState<Student | null>(null);
+  const [newTrack, setNewTrack] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState<number | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [stuRes, crsRes] = await Promise.all([
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
-        fetch("/api/academy/courses", { cache: "no-store" }),
+      const [s, c] = await Promise.all([
+        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
       ]);
-      const stuData = await stuRes.json();
-      const crsData = await crsRes.json();
-
-      if (stuData.success) setStudents(stuData.students || []);
-      if (crsData.success) setCourses(crsData.courses || []);
-    } catch (e) {
-      console.error(e);
+      if (s.success) setStudents(s.students || []);
+      if (c.success) setCourses(c.courses || []);
+    } catch {
+      toast(t("তথ্য লোড করা যায়নি।", "Couldn't load data."), "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, toast]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const handleToggleGroup = async (rollNumber: number, currentStatus: boolean) => {
+  const trackOf = (s: Student) => s.enrolledCourseId || s.enrolledCourseIds?.[0] || "—";
+
+  const rows = useMemo(
+    () =>
+      students.filter((s) =>
+        filter === "joined"
+          ? s.isWhatsAppGroupJoined
+          : filter === "pending"
+            ? !s.isWhatsAppGroupJoined
+            : true,
+      ),
+    [students, filter],
+  );
+
+  const toggleGroup = async (s: Student) => {
+    setBusy(s.rollNumber);
     try {
       const res = await fetch("/api/academy/students/toggle-group", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          rollNumber,
-          isWhatsAppGroupJoined: !currentStatus,
-          adminPasscode: ADMIN_SECRET_PASSCODE,
+          rollNumber: s.rollNumber,
+          isWhatsAppGroupJoined: !s.isWhatsAppGroupJoined,
+          adminPasscode: ADMIN_PASSCODE,
         }),
       });
-      if (res.ok) fetchData();
-    } catch (e) {
-      console.error(e);
+      const data = await res.json();
+      if (data.success ?? res.ok) fetchData();
+      else toast(data.message || t("আপডেট হয়নি।", "Update failed."), "error");
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setBusy(null);
     }
   };
 
-  const handleSaveCourse = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!changingStudent || !selectedCourseId) return;
+  const removeStudent = async (s: Student) => {
+    const ok = await confirm({
+      title: t("শিক্ষার্থী মুছবেন?", "Delete this student?"),
+      message: t(
+        `রোল #${s.rollNumber} (${s.nameEnglish}) স্থায়ীভাবে মুছে যাবে।`,
+        `Roll #${s.rollNumber} (${s.nameEnglish}) will be permanently removed.`,
+      ),
+      confirmLabel: t("মুছুন", "Delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    setBusy(s.rollNumber);
+    try {
+      const res = await fetch("/api/academy/students/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rollNumber: s.rollNumber, action: "DELETE", adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success ?? res.ok) {
+        toast(t("শিক্ষার্থী মুছে ফেলা হয়েছে।", "Student removed."), "success");
+        fetchData();
+      } else {
+        toast(data.message || t("মোছা যায়নি।", "Delete failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setBusy(null);
+    }
+  };
 
-    setUpdating(true);
+  const saveTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferring || !newTrack) return;
+    setSaving(true);
     try {
       const res = await fetch("/api/academy/students/change-course", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          rollNumber: Number(changingStudent.rollNumber),
-          newCourseId: selectedCourseId,
-          adminPasscode: ADMIN_SECRET_PASSCODE,
+          rollNumber: Number(transferring.rollNumber),
+          newCourseId: newTrack,
+          adminPasscode: ADMIN_PASSCODE,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        alert("Course updated!");
-        setChangingStudent(null);
+        toast(t("ট্র্যাক পরিবর্তিত হয়েছে।", "Track updated."), "success");
+        setTransferring(null);
         fetchData();
       } else {
-        alert(data.message || "Failed to update course");
+        toast(data.message || t("পরিবর্তন হয়নি।", "Update failed."), "error");
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
     } finally {
-      setUpdating(false);
+      setSaving(false);
     }
   };
-
-  const handleDelete = async (rollNumber: number, name: string) => {
-    if (!confirm(`Permanently delete Roll #${rollNumber} (${name})?`)) return;
-    try {
-      const res = await fetch("/api/academy/students/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber, action: "DELETE", adminPasscode: ADMIN_SECRET_PASSCODE }),
-      });
-      if (res.ok) fetchData();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const filtered = useMemo(() => {
-    return students.filter((s) => {
-      if (groupFilter === "pending") return !s.isWhatsAppGroupJoined;
-      if (groupFilter === "joined") return s.isWhatsAppGroupJoined;
-      return true;
-    });
-  }, [students, groupFilter]);
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 space-y-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <Link href="/academy/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
-          </Link>
-          <button onClick={fetchData} className="p-1.5 bg-text/5 border border-text/10 rounded-xl">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-emerald-500" /> Student Verification & Tracks ({students.length})
-          </h1>
-
-          <div className="flex gap-1.5 p-1 bg-text/5 border border-text/10 rounded-xl text-xs">
-            <button onClick={() => setGroupFilter("all")} className={`px-3 py-1 rounded-lg font-bold ${groupFilter === "all" ? "bg-background shadow-sm" : ""}`}>
-              All ({students.length})
-            </button>
-            <button onClick={() => setGroupFilter("pending")} className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1 ${groupFilter === "pending" ? "bg-amber-500 text-white" : ""}`}>
-              <XCircle className="w-3.5 h-3.5" /> Not in Group
-            </button>
-            <button onClick={() => setGroupFilter("joined")} className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1 ${groupFilter === "joined" ? "bg-emerald-600 text-white" : ""}`}>
-              <CheckCircle2 className="w-3.5 h-3.5" /> Joined
-            </button>
-          </div>
-        </div>
-
-        <div className="border border-text/10 rounded-3xl overflow-hidden bg-text/[0.01]">
-          <table className="w-full text-left text-xs min-w-[600px]">
-            <thead className="bg-text/5 border-b border-text/10 text-text/60">
-              <tr>
-                <th className="p-3.5 w-16">Roll</th>
-                <th className="p-3.5">Student Name</th>
-                <th className="p-3.5">Course Track</th>
-                <th className="p-3.5">WhatsApp</th>
-                <th className="p-3.5 text-center">Group Status</th>
-                <th className="p-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-text/10">
-              {filtered.map((s) => {
-                const track = s.enrolledCourseId || s.enrolledCourseIds?.[0] || "HSK-101";
-                return (
-                  <tr key={s.rollNumber} className="hover:bg-text/5">
-                    <td className="p-3.5 font-mono font-bold text-secondary">#{s.rollNumber}</td>
-                    <td className="p-3.5 font-bold text-text">{s.nameEnglish}</td>
-                    <td className="p-3.5">
-                      <span className="font-mono px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20">
-                        {track}
-                      </span>
-                    </td>
-                    <td className="p-3.5 font-mono text-primary font-bold">{s.whatsapp}</td>
-                    <td className="p-3.5 text-center">
-                      <button
-                        onClick={() => handleToggleGroup(s.rollNumber, s.isWhatsAppGroupJoined)}
-                        className={`px-3 py-1.5 rounded-xl font-bold ${
-                          s.isWhatsAppGroupJoined ? "bg-text/10 text-text/60" : "bg-emerald-600 text-white"
-                        }`}
-                      >
-                        {s.isWhatsAppGroupJoined ? "Set as Not in Group" : "Mark as Joined"}
-                      </button>
-                    </td>
-                    <td className="p-3.5 text-right space-x-1.5">
-                      <button
-                        onClick={() => {
-                          setChangingStudent(s);
-                          setSelectedCourseId(track);
-                        }}
-                        className="p-1.5 bg-primary/10 text-primary border border-primary/20 rounded-xl"
-                        title="Change Track"
-                      >
-                        <ArrowRightLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s.rollNumber, s.nameEnglish)}
-                        className="p-1.5 bg-secondary/10 text-secondary border border-secondary/20 rounded-xl"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Course Transfer Modal */}
-      {changingStudent && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-background border border-text/10 rounded-3xl p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-text/10 pb-3">
-              <h3 className="font-bold text-sm">Transfer Course Track</h3>
-              <button onClick={() => setChangingStudent(null)}><X className="w-4 h-4 text-text/40" /></button>
-            </div>
-            <form onSubmit={handleSaveCourse} className="space-y-4">
-              <select
-                value={selectedCourseId}
-                onChange={(e) => setSelectedCourseId(e.target.value)}
-                className="w-full bg-text/5 border border-text/10 rounded-xl p-3 text-xs font-semibold"
-              >
-                {courses.map((c) => (
-                  <option key={c.courseId} value={c.courseId}>{c.courseId} - {c.courseName}</option>
-                ))}
-              </select>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setChangingStudent(null)} className="flex-1 py-2 bg-text/5 rounded-xl text-xs">
-                  Cancel
+    <AdminShell
+      title={t("শিক্ষার্থী ও ট্র্যাক", "Students & tracks")}
+      crumb={t("শিক্ষার্থী", "Students")}
+      seal="生"
+      lede={t("গ্রুপ যাচাই, ট্র্যাক পরিবর্তন ও শিক্ষার্থী ব্যবস্থাপনা।", "Verify group status, move tracks, and manage students.")}
+      actions={
+        <>
+          <InlineSelect
+            label={t("গ্রুপ ফিল্টার", "Group filter")}
+            hideLabel
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as typeof filter)}
+          >
+            <option value="all">{t("সব", "All")}</option>
+            <option value="joined">{t("গ্রুপে যুক্ত", "In group")}</option>
+            <option value="pending">{t("গ্রুপে নেই", "Not in group")}</option>
+          </InlineSelect>
+          <IconButton label={t("রিফ্রেশ", "Refresh")} size="sm" spinning={loading} onClick={fetchData}>
+            <RefreshCw className="h-4 w-4" />
+          </IconButton>
+        </>
+      }
+    >
+      {loading ? (
+        <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={3} />
+      ) : rows.length === 0 ? (
+        <EmptyState title={t("কোনো শিক্ষার্থী নেই", "No students")} />
+      ) : (
+        <TableFrame
+          caption={t("অনুমোদিত শিক্ষার্থীর তালিকা", "Approved students")}
+          minWidth="48rem"
+          head={
+            <>
+              <Th className="w-14">{t("রোল", "Roll")}</Th>
+              <Th>{t("নাম", "Name")}</Th>
+              <Th>{t("ট্র্যাক", "Track")}</Th>
+              <Th>{t("হোয়াটসঅ্যাপ", "WhatsApp")}</Th>
+              <Th>{t("গ্রুপ", "Group")}</Th>
+              <Th className="text-right">{t("কাজ", "Actions")}</Th>
+            </>
+          }
+        >
+          {rows.map((s) => (
+            <tr key={s.rollNumber}>
+              <Td className="tabular-nums text-text/60">#{s.rollNumber}</Td>
+              <Td className="font-semibold text-text">{s.nameEnglish}</Td>
+              <Td className="tabular-nums">{trackOf(s)}</Td>
+              <Td className="tabular-nums">{s.whatsapp}</Td>
+              <Td>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(s)}
+                  disabled={busy === s.rollNumber}
+                  className="rounded-md px-1.5 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text disabled:opacity-50"
+                >
+                  <StatusMark tone={s.isWhatsAppGroupJoined ? "done" : "pending"}>
+                    {s.isWhatsAppGroupJoined ? t("যুক্ত", "Joined") : t("যুক্ত নয়", "Not yet")}
+                  </StatusMark>
                 </button>
-                <button type="submit" disabled={updating} className="flex-1 py-2 bg-primary text-background font-bold rounded-xl text-xs">
-                  {updating ? "Saving..." : "Save Track"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              </Td>
+              <Td className="text-right">
+                <div className="flex justify-end gap-1.5">
+                  <IconButton
+                    label={t("ট্র্যাক পরিবর্তন", "Change track")}
+                    size="sm"
+                    onClick={() => {
+                      setTransferring(s);
+                      setNewTrack(trackOf(s) === "—" ? courses[0]?.courseId ?? "" : trackOf(s));
+                    }}
+                  >
+                    <ArrowRightLeft className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    label={t("শিক্ষার্থী মুছুন", "Delete student")}
+                    size="sm"
+                    spinning={busy === s.rollNumber}
+                    onClick={() => removeStudent(s)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconButton>
+                </div>
+              </Td>
+            </tr>
+          ))}
+        </TableFrame>
       )}
-    </div>
+
+      <Dialog
+        open={transferring !== null}
+        onClose={() => setTransferring(null)}
+        title={t("ট্র্যাক পরিবর্তন", "Change track")}
+        description={transferring ? `${transferring.nameEnglish} · #${transferring.rollNumber}` : ""}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setTransferring(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" loading={saving} onClick={saveTransfer}>
+              {t("সংরক্ষণ", "Save")}
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={saveTransfer}>
+          <SelectField
+            label={t("নতুন কোর্স ট্র্যাক", "New course track")}
+            value={newTrack}
+            onChange={(e) => setNewTrack(e.target.value)}
+          >
+            {courses.map((c) => (
+              <option key={c.courseId} value={c.courseId}>
+                {c.courseId} — {c.courseName}
+              </option>
+            ))}
+          </SelectField>
+        </form>
+      </Dialog>
+    </AdminShell>
   );
 }

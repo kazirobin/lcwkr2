@@ -26,6 +26,21 @@
     --border: 165 24% 90%;
     --muted: 165 12% 38%;
     --primary-foreground: 165 70% 6%;
+
+    /* Rice-paper ground for the sumi-e register (matches the #f8f3ea used
+       inline on the home hero / intro). Academy sections use bg-paper. */
+    --paper: 40 44% 95%;
+
+    /* Semantic status — added for the academy reimagine. Ink marks carry
+       status first; these are for the few figures/tints a mark can't. Each
+       clears WCAG AA as text on --paper and --card. --danger reuses
+       --secondary (already text-safe per project notes). */
+    --ok: 158 46% 29%;
+    --ok-surface: 158 40% 92%;
+    --warn: 28 54% 32%;
+    --warn-surface: 34 62% 90%;
+    --danger: 5 74% 44%;
+    --danger-surface: 5 70% 94%;
   }
 
   .dark {
@@ -44,6 +59,16 @@
     --border: 170 18% 16%;
     --muted: 170 14% 65%;
     --primary-foreground: 165 70% 6%;
+
+    /* dark paper falls back to the page background */
+    --paper: 180 40% 2%;
+
+    --ok: 152 44% 62%;
+    --ok-surface: 158 34% 12%;
+    --warn: 36 66% 63%;
+    --warn-surface: 30 42% 12%;
+    --danger: 5 84% 68%;
+    --danger-surface: 5 44% 14%;
   }
 
   /* Page ground — keeps the fixed nav's clearance strip seamless with page content */
@@ -64,6 +89,14 @@
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted));
   --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-paper: hsl(var(--paper));
+  --color-ok: hsl(var(--ok));
+  --color-ok-surface: hsl(var(--ok-surface));
+  --color-warn: hsl(var(--warn));
+  --color-warn-surface: hsl(var(--warn-surface));
+  --color-danger: hsl(var(--danger));
+  --color-danger-surface: hsl(var(--danger-surface));
 
   /* Support for opacity like text-primary/50 */
   --color-text-rgb: var(--text);

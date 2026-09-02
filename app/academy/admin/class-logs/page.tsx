@@ -1,89 +1,147 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { ArrowLeft, BookOpenCheck, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { RefreshCw } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { AdminShell } from "@/components/academy/admin/AdminShell";
+import {
+  Button,
+  Card,
+  EmptyState,
+  IconButton,
+  LoadingBlock,
+  useConfirm,
+  useToast,
+} from "@/components/academy/ui";
 
-const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+
+type Log = {
+  _id: string;
+  courseId: string;
+  classId: string;
+  date: string;
+  time: string;
+  contentCovered?: { summary?: string };
+};
 
 export default function PendingClassLogsPage() {
-  const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+  const toast = useToast();
+  const confirm = useConfirm();
 
-  const fetchLogs = async () => {
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/academy/classes/pending", { cache: "no-store" });
       const data = await res.json();
       if (data.success) setLogs(data.pendingClasses || []);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      toast(t("তালিকা লোড করা যায়নি।", "Couldn't load the list."), "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, toast]);
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [fetchLogs]);
 
-  const handleAction = async (logId: string, action: "APPROVE" | "REJECT") => {
+  const act = async (logId: string, action: "APPROVE" | "REJECT") => {
+    if (action === "REJECT") {
+      const ok = await confirm({
+        title: t("ক্লাস লগ প্রত্যাখ্যান?", "Reject class log?"),
+        message: t("এই লগটি মুছে ফেলা হবে।", "This log will be discarded."),
+        confirmLabel: t("প্রত্যাখ্যান", "Reject"),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setBusy(logId);
     try {
       const res = await fetch("/api/academy/classes/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logId, action, adminPasscode: ADMIN_SECRET_PASSCODE }),
+        body: JSON.stringify({ logId, action, adminPasscode: ADMIN_PASSCODE }),
       });
       const data = await res.json();
-      if (data.success) fetchLogs();
-      else alert(data.message || "Failed to update");
-    } catch (e) {
-      console.error(e);
+      if (data.success) {
+        toast(
+          action === "APPROVE" ? t("লগ অনুমোদিত।", "Log approved.") : t("লগ প্রত্যাখ্যাত।", "Log rejected."),
+          "success",
+        );
+        fetchLogs();
+      } else {
+        toast(data.message || t("কাজটি সম্পন্ন হয়নি।", "Action failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 space-y-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <Link href="/academy/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
-          </Link>
-          <button onClick={fetchLogs} className="p-1.5 bg-text/5 border border-text/10 rounded-xl">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BookOpenCheck className="w-6 h-6 text-secondary" /> Pending Teacher Class Logs ({logs.length})
-        </h1>
-
-        {logs.length === 0 ? (
-          <p className="text-xs text-text/40 p-8 border border-text/10 rounded-3xl text-center bg-text/[0.02]">
-            No pending class logs in database.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {logs.map((log) => (
-              <div key={log._id} className="p-4 rounded-2xl bg-text/5 border border-text/10 flex justify-between items-center">
-                <div className="space-y-1">
-                  <span className="font-mono text-xs font-bold text-secondary">{log.courseId} • {log.classId}</span>
-                  <p className="text-xs font-semibold">{log.contentCovered?.summary}</p>
-                  <span className="text-[11px] text-text/50">{log.date} • {log.time}</span>
+    <AdminShell
+      title={t("ক্লাস লগ অনুমোদন", "Class log approvals")}
+      crumb={t("ক্লাস লগ", "Class logs")}
+      seal="录"
+      lede={t("শিক্ষকের জমা দেওয়া উপস্থিতি সেশন পর্যালোচনা করুন।", "Review the attendance sessions teachers have submitted.")}
+      actions={
+        <IconButton label={t("রিফ্রেশ", "Refresh")} size="sm" spinning={loading} onClick={fetchLogs}>
+          <RefreshCw className="h-4 w-4" />
+        </IconButton>
+      }
+    >
+      {loading ? (
+        <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={2} />
+      ) : logs.length === 0 ? (
+        <EmptyState
+          title={t("কোনো অপেক্ষমাণ লগ নেই", "No pending logs")}
+          description={t("শিক্ষক ক্লাস লগ জমা দিলে এখানে দেখা যাবে।", "Submitted class logs will appear here for approval.")}
+        />
+      ) : (
+        <ul className="space-y-3">
+          {logs.map((log) => (
+            <li key={log._id}>
+              <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold tabular-nums text-text/60">
+                    {log.courseId} · {log.classId}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-text">
+                    {log.contentCovered?.summary || t("নিয়মিত ক্লাস", "Regular session")}
+                  </p>
+                  <p className="mt-0.5 text-xs tabular-nums text-text/55">
+                    {log.date} · {log.time}
+                  </p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleAction(log._id, "APPROVE")} className="px-3 py-1.5 bg-emerald-500 text-white font-bold text-xs rounded-xl">
-                    Approve
-                  </button>
-                  <button onClick={() => handleAction(log._id, "REJECT")} className="px-3 py-1.5 bg-secondary/10 text-secondary font-bold text-xs rounded-xl">
-                    Reject
-                  </button>
+                  <Button size="sm" loading={busy === log._id} onClick={() => act(log._id, "APPROVE")}>
+                    {t("অনুমোদন", "Approve")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={busy === log._id}
+                    onClick={() => act(log._id, "REJECT")}
+                  >
+                    {t("প্রত্যাখ্যান", "Reject")}
+                  </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </AdminShell>
   );
 }

@@ -1,631 +1,283 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowLeft,
-  Users,
-  ArrowUpRight,
-  MapPin,
-  MessageSquare,
-  Lock,
-  Unlock,
-  EyeOff,
-  KeyRound,
-  X,
-  Search,
-  AlertTriangle,
-  ArrowUpDown,
-  Filter,
-  XCircle,
-  Copy,
-  Check,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowUpRight, MapPin, RefreshCw, Search, X } from "lucide-react";
 import { IStudent, ICourse } from "@/types/academy";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  Breadcrumb,
+  Card,
+  EmptyState,
+  Eyebrow,
+  IconButton,
+  InlineSelect,
+  LoadingBlock,
+  PageHeader,
+  SectionHanzi,
+  StatusMark,
+} from "@/components/academy/ui";
 
-const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+export default function ScholarsDirectoryPage() {
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
 
-export default function StudentsListPage() {
-  // MongoDB লাইভ ডেটা স্টেট
   const [students, setStudents] = useState<IStudent[]>([]);
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Admin authentication states
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [enteredPin, setEnteredPin] = useState("");
-  const [pinError, setPinError] = useState(false);
+  const [query, setQuery] = useState("");
+  const [track, setTrack] = useState("all");
+  const [sortBy, setSortBy] = useState<"roll" | "attendance">("roll");
 
-  // Copy state for feedback
-  const [copiedRoll, setCopiedRoll] = useState<string | number | null>(null);
-
-  // Search & Filter states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("all");
-  const [groupFilter, setGroupFilter] = useState<"all" | "joined" | "pending">("all");
-  const [sortBy, setSortBy] = useState<
-    "roll" | "attendance-desc" | "attendance-asc" | "location"
-  >("roll");
-
-  useEffect(() => {
-    const savedAdminStatus = sessionStorage.getItem("academy_admin_unlocked");
-    if (savedAdminStatus === "true") {
-      setIsAdminUnlocked(true);
-    }
-  }, []);
-
-  // সরাসরি MongoDB API থেকে লাইভ স্টুডেন্ট ও কোর্স ডেটা ফেচ
-  const fetchStudentsAndCourses = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [studentsRes, coursesRes] = await Promise.all([
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
-        fetch("/api/academy/courses", { cache: "no-store" }),
+      const [s, c] = await Promise.all([
+        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
       ]);
-
-      const studentsData = await studentsRes.json();
-      const coursesData = await coursesRes.json();
-
-      if (studentsData.success && Array.isArray(studentsData.students)) {
-        setStudents(studentsData.students);
-      }
-      if (coursesData.success && Array.isArray(coursesData.courses)) {
-        setCourses(coursesData.courses);
-      }
+      if (s.success && Array.isArray(s.students)) setStudents(s.students);
+      if (c.success && Array.isArray(c.courses)) setCourses(c.courses);
     } catch (err) {
-      console.error("Failed to load students data from MongoDB:", err);
+      console.error("Failed to load directory:", err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchStudentsAndCourses();
   }, []);
 
-  const handleUnlockAdmin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (enteredPin.trim() === ADMIN_SECRET_PIN.trim()) {
-      setIsAdminUnlocked(true);
-      sessionStorage.setItem("academy_admin_unlocked", "true");
-      setShowAdminModal(false);
-      setEnteredPin("");
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const enrolledIds = (s: IStudent): string[] => {
+    if (Array.isArray(s.enrolledCourseIds) && s.enrolledCourseIds.length)
+      return s.enrolledCourseIds.map((id) => String(id).trim());
+    const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
+    return legacy ? [String(legacy).trim()] : [];
   };
 
-  const handleLockAdmin = () => {
-    setIsAdminUnlocked(false);
-    sessionStorage.removeItem("academy_admin_unlocked");
-  };
+  const attendance = useCallback(
+    (roll: string | number, ids: string[]) => {
+      let held = 0;
+      let attended = 0;
+      const target = String(roll).trim();
+      courses.forEach((c) => {
+        if (ids.some((id) => id.toLowerCase() === c.courseId.toLowerCase())) {
+          const cls = c.classes ?? [];
+          held += cls.length;
+          attended += cls.filter((s) =>
+            s.presentStudents?.some((r) => String(r).trim() === target),
+          ).length;
+        }
+      });
+      return { held, attended, rate: held > 0 ? Math.round((attended / held) * 100) : null };
+    },
+    [courses],
+  );
 
-  const maskPhoneNumber = (phone: string) => {
-    if (!phone || phone.length < 8) return "••••••••••";
-    const start = phone.slice(0, 5);
-    const end = phone.slice(-3);
-    return `${start} •••• ${end}`;
-  };
-
-  const cleanPhone = (phone: string) =>
-    phone ? phone.replace(/[^0-9]/g, "") : "";
-
-  const handleCopyNumber = (phone: string, roll: string | number) => {
-    navigator.clipboard.writeText(phone);
-    setCopiedRoll(roll);
-    setTimeout(() => {
-      setCopiedRoll(null);
-    }, 2000);
-  };
-
-  // 👈 Helper: সেফলি শিক্ষার্থীর কোর্স আইডিগুলোর অ্যারে বের করা
-  const getEnrolledCourseIds = (student: any): string[] => {
-    if (Array.isArray(student?.enrolledCourseIds) && student.enrolledCourseIds.length > 0) {
-      return student.enrolledCourseIds.map((id: any) => String(id).trim());
-    }
-    if (student?.enrolledCourseId) {
-      return [String(student.enrolledCourseId).trim()];
-    }
-    return [];
-  };
-
-  // ডুপ্লিকেট ফোন নম্বর শনাক্তকরণ
-  const duplicatePhoneNumbers = useMemo(() => {
-    const counts: Record<string, number> = {};
-    students.forEach((s) => {
-      const clean = cleanPhone(s.whatsapp);
-      if (clean) {
-        counts[clean] = (counts[clean] || 0) + 1;
-      }
-    });
-    return new Set(Object.keys(counts).filter((p) => counts[p] > 1));
-  }, [students]);
-
-  // ইউনিক লোকেশন তালিকা
-  const uniqueLocations = useMemo(() => {
-    const locs = new Set<string>();
-    students.forEach((s) => {
-      if (s.location) locs.add(s.location.trim());
-    });
-    return Array.from(locs).sort();
-  }, [students]);
-
-  // ডাইনামিক অ্যাটেনডেন্স গণনা
-  const getStudentStats = (
-    rollNumber: string | number,
-    enrolledCourseIds: string[] = []
-  ) => {
-    let totalHeld = 0;
-    let totalAttended = 0;
-    const targetRoll = String(rollNumber).trim();
-
-    courses.forEach((course) => {
-      const isEnrolled = enrolledCourseIds.some(
-        (id) => id.toLowerCase() === course.courseId.toLowerCase()
-      );
-      if (isEnrolled) {
-        const classes = course.classes ?? [];
-        totalHeld += classes.length;
-        totalAttended += classes.filter((cls) =>
-          cls.presentStudents?.some((r) => String(r).trim() === targetRoll)
-        ).length;
-      }
-    });
-
-    const numericRate = totalHeld > 0 ? (totalAttended / totalHeld) * 100 : 100;
-    const attendanceRate = `${numericRate.toFixed(0)}%`;
-
-    return { totalHeld, totalAttended, attendanceRate, numericRate };
-  };
-
-  // সার্চ, ফিল্টার ও সর্টিং
-  const filteredStudents = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    const queryDigits = cleanPhone(searchQuery);
-
+  const rows = useMemo(() => {
+    const q = query.toLowerCase().trim();
     return students
-      .filter((student) => {
-        const nameMatch = (student.nameEnglish || "").toLowerCase().includes(query);
-        const rollMatch = String(student.rollNumber || "").toLowerCase().includes(query);
-        const phoneMatch =
-          cleanPhone(student.whatsapp || "").includes(queryDigits) ||
-          (student.whatsapp || "").toLowerCase().includes(query);
-        const locationTextMatch = (student.location || "").toLowerCase().includes(query);
-
-        const matchesSearch =
-          nameMatch || rollMatch || phoneMatch || locationTextMatch;
-
-        const matchesLocation =
-          selectedLocation === "all" ||
-          (student.location || "").trim().toLowerCase() === selectedLocation.toLowerCase();
-
-        const matchesGroup =
-          groupFilter === "all" ||
-          (groupFilter === "joined" && student.isWhatsAppGroupJoined) ||
-          (groupFilter === "pending" && !student.isWhatsAppGroupJoined);
-
-        return matchesSearch && matchesLocation && matchesGroup;
+      .map((s) => {
+        const ids = enrolledIds(s);
+        return { s, ids, att: attendance(s.rollNumber, ids) };
+      })
+      .filter(({ s, ids }) => {
+        const matchesQ =
+          !q ||
+          (s.nameEnglish || "").toLowerCase().includes(q) ||
+          String(s.rollNumber).includes(q) ||
+          (s.location || "").toLowerCase().includes(q);
+        const matchesTrack =
+          track === "all" || ids.some((id) => id.toLowerCase() === track.toLowerCase());
+        return matchesQ && matchesTrack;
       })
       .sort((a, b) => {
-        const enrolledA = getEnrolledCourseIds(a);
-        const enrolledB = getEnrolledCourseIds(b);
-
-        const statsA = getStudentStats(a.rollNumber, enrolledA);
-        const statsB = getStudentStats(b.rollNumber, enrolledB);
-
-        if (sortBy === "attendance-desc") {
-          return statsB.numericRate - statsA.numericRate;
-        }
-        if (sortBy === "attendance-asc") {
-          return statsA.numericRate - statsB.numericRate;
-        }
-        if (sortBy === "location") {
-          return (a.location || "").localeCompare(b.location || "");
-        }
-        const numA = parseInt(String(a.rollNumber).replace(/\D/g, ""), 10);
-        const numB = parseInt(String(b.rollNumber).replace(/\D/g, ""), 10);
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return numA - numB;
-        }
-        return String(a.rollNumber).localeCompare(String(b.rollNumber));
+        if (sortBy === "attendance") return (b.att.rate ?? -1) - (a.att.rate ?? -1);
+        return Number(a.s.rollNumber) - Number(b.s.rollNumber);
       });
-  }, [students, searchQuery, selectedLocation, groupFilter, sortBy, courses]);
+  }, [students, query, track, sortBy, attendance]);
+
+  const filtersActive = query !== "" || track !== "all" || sortBy !== "roll";
 
   return (
-    <div className="min-h-screen bg-background text-text py-6 sm:py-8 lg:py-10 px-3 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-        
-        {/* Top Header & Admin Toggle Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <Link
-              href="/academy"
-              className="text-xs sm:text-sm font-semibold text-text/60 hover:text-text inline-flex items-center gap-1 mb-2 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Academy Hub
-            </Link>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-text flex items-center gap-2">
-              <Users className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
-              Enrolled Students Directory ({students.length})
-            </h1>
-            <p className="text-xs sm:text-sm text-text/50 mt-1">
-              Search by name/phone, filter WhatsApp group status, location, and attendance (MongoDB Live)
-            </p>
-          </div>
+    <div className="relative isolate mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+      <SectionHanzi char="生" className="-top-10 right-0" />
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+      <Breadcrumb
+        items={[
+          { label: t("একাডেমি", "Academy"), href: "/academy" },
+          { label: t("শিক্ষার্থী", "Scholars") },
+        ]}
+      />
+
+      <PageHeader
+        className="mt-6"
+        eyebrow={<Eyebrow seal="生" label={t("শিক্ষার্থী তালিকা", "Scholars")} detail={`${students.length}`} />}
+        title={t("যাঁরা একসাথে শিখছেন", "The people learning together")}
+        lede={t(
+          "চলমান ব্যাচের শিক্ষার্থী ও তাঁদের ক্লাস উপস্থিতি।",
+          "Everyone in the running cohorts, and how their attendance is going.",
+        )}
+        actions={
+          <IconButton
+            label={t("তালিকা রিফ্রেশ করুন", "Refresh list")}
+            size="sm"
+            spinning={loading}
+            onClick={fetchData}
+          >
+            <RefreshCw className="h-4 w-4" />
+          </IconButton>
+        }
+      />
+
+      {/* Controls */}
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="relative flex-1">
+          <label htmlFor="dir-search" className="sr-only">
+            {t("নাম, রোল বা অবস্থান খুঁজুন", "Search by name, roll, or location")}
+          </label>
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text/40" aria-hidden="true" />
+          <input
+            id="dir-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("নাম, রোল বা অবস্থান…", "Name, roll, or location…")}
+            className="w-full rounded-xl border border-text/15 bg-card py-2.5 pl-9 pr-9 text-sm text-text placeholder:text-text/40 focus:border-text/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+          />
+          {query && (
             <button
-              onClick={fetchStudentsAndCourses}
-              className="p-1.5 rounded-lg bg-text/5 hover:bg-text/10 border border-text/10 text-text/60 hover:text-text transition-colors cursor-pointer"
-              title="Refresh Live Data from MongoDB"
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label={t("সার্চ মুছুন", "Clear search")}
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-text/40 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            </button>
-
-            {isAdminUnlocked ? (
-              <button
-                onClick={handleLockAdmin}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/30 transition-all shadow-sm cursor-pointer"
-              >
-                <Unlock className="w-3.5 h-3.5 text-primary" />
-                <span>Admin Unlocked</span>
-                <EyeOff className="w-3 h-3 ml-1 opacity-70" />
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setEnteredPin("");
-                  setPinError(false);
-                  setShowAdminModal(true);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-text/5 border border-text/10 text-text/50 hover:text-text/70 text-xs font-semibold hover:border-text/20 transition-all cursor-pointer"
-              >
-                <Lock className="w-3.5 h-3.5 text-primary" />
-                <span>Admin Unlock</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search, Filter & Sort Control Bar */}
-        <div className="p-4 rounded-2xl bg-text/5 border border-text/10 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3 transition-colors">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-text/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by name, roll, phone number, or location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-background border border-text/10 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-text focus:outline-none focus:border-primary transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text/40 hover:text-text cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {/* WhatsApp Group Filter */}
-            <div className="relative flex-1 sm:w-40">
-              <select
-                value={groupFilter}
-                onChange={(e) => setGroupFilter(e.target.value as any)}
-                className="w-full bg-background border border-text/10 rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary appearance-none cursor-pointer transition-colors"
-              >
-                <option value="all">Group: All</option>
-                <option value="joined">Group: Joined</option>
-                <option value="pending">Group: Not Joined</option>
-              </select>
-            </div>
-
-            {/* Location Filter */}
-            <div className="relative flex-1 sm:w-40">
-              <Filter className="w-3.5 h-3.5 text-text/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full bg-background border border-text/10 rounded-xl pl-8 pr-7 py-2 text-xs text-text focus:outline-none focus:border-primary appearance-none cursor-pointer transition-colors"
-              >
-                <option value="all">All Locations</option>
-                {uniqueLocations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sorter */}
-            <div className="relative flex-1 sm:w-44">
-              <ArrowUpDown className="w-3.5 h-3.5 text-text/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full bg-background border border-text/10 rounded-xl pl-8 pr-7 py-2 text-xs text-text focus:outline-none focus:border-primary appearance-none cursor-pointer transition-colors"
-              >
-                <option value="roll">Sort by Roll</option>
-                <option value="attendance-desc">Highest Attendance</option>
-                <option value="attendance-asc">Lowest Attendance</option>
-                <option value="location">Group by Location</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Results Counter & Active Filter Strip */}
-        <div className="flex justify-between items-center text-xs text-text/50 px-1">
-          <span>
-            Showing {filteredStudents.length} of {students.length} students
-          </span>
-          {(searchQuery || selectedLocation !== "all" || groupFilter !== "all" || sortBy !== "roll") && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedLocation("all");
-                setGroupFilter("all");
-                setSortBy("roll");
-              }}
-              className="text-secondary hover:underline font-medium cursor-pointer"
-            >
-              Reset Filters
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           )}
         </div>
+        <InlineSelect label={t("ট্র্যাক", "Track")} value={track} onChange={(e) => setTrack(e.target.value)}>
+          <option value="all">{t("সব ট্র্যাক", "All tracks")}</option>
+          {courses.map((c) => (
+            <option key={c.courseId} value={c.courseId}>
+              {c.courseId}
+            </option>
+          ))}
+        </InlineSelect>
+        <InlineSelect
+          label={t("সাজান", "Sort")}
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as "roll" | "attendance")}
+        >
+          <option value="roll">{t("রোল অনুযায়ী", "By roll")}</option>
+          <option value="attendance">{t("উপস্থিতি অনুযায়ী", "By attendance")}</option>
+        </InlineSelect>
+      </div>
 
-        {/* Loading State */}
+      <div className="mt-4 flex items-center justify-between px-1 text-xs text-text/50" aria-live="polite">
+        <span className="tabular-nums">
+          {t(
+            `${students.length} জনের মধ্যে ${rows.length} জন`,
+            `Showing ${rows.length} of ${students.length}`,
+          )}
+        </span>
+        {filtersActive && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setTrack("all");
+              setSortBy("roll");
+            }}
+            className="font-medium text-text underline decoration-text/25 underline-offset-2 hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+          >
+            {t("ফিল্টার বাদ দিন", "Clear filters")}
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6">
         {loading ? (
-          <div className="py-24 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs font-mono text-text/50">Fetching Live Students Directory from MongoDB...</p>
-          </div>
-        ) : filteredStudents.length === 0 ? (
-          <div className="p-12 text-center rounded-2xl bg-text/5 border border-text/10 space-y-2">
-            <p className="text-sm font-semibold text-text">
-              No students found matching your criteria
-            </p>
-            <p className="text-xs text-text/50">
-              Try searching with a different name, phone number, or reset filters.
-            </p>
-          </div>
+          <LoadingBlock label={t("তালিকা লোড হচ্ছে", "Loading directory")} rows={3} />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            title={t("কোনো শিক্ষার্থী পাওয়া যায়নি", "No scholars found")}
+            description={t("অন্য নাম দিয়ে খুঁজুন বা ফিল্টার বাদ দিন।", "Try a different name, or clear the filters.")}
+          />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredStudents.map((student) => {
-              const enrolledCourses = getEnrolledCourseIds(student);
-              const { totalHeld, totalAttended, attendanceRate } = getStudentStats(
-                student.rollNumber,
-                enrolledCourses
-              );
-
-              const isDuplicateNumber = duplicatePhoneNumbers.has(
-                cleanPhone(student.whatsapp)
-              );
-
-              const avatarSrc =
-                student.avatarUrl ||
-                `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(student.nameEnglish || "student")}`;
-
-              const isCopied = copiedRoll === student.rollNumber;
-
-              return (
-                <div
-                  key={String(student.rollNumber)}
-                  className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 flex flex-col justify-between space-y-4 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all relative group"
-                >
-                  {/* Badges Container */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                    {!student.isWhatsAppGroupJoined && (
-                      <span
-                        title="Not in WhatsApp Group"
-                        className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex items-center gap-1 shadow-sm"
-                      >
-                        <XCircle className="w-3 h-3 shrink-0" />
-                        <span>Not in Group</span>
-                      </span>
-                    )}
-
-                    {isDuplicateNumber && (
-                      <span
-                        title="Duplicate WhatsApp phone number shared with another student"
-                        className="px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary text-[10px] font-bold flex items-center gap-1 shadow-sm"
-                      >
-                        <AlertTriangle className="w-3 h-3 shrink-0" />
-                        <span>Same Mobile</span>
-                      </span>
-                    )}
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rows.map(({ s, ids, att }) => (
+              <li key={String(s.rollNumber)}>
+                <Card interactive className="flex h-full flex-col p-5">
+                  <div className="flex items-center gap-3">
+                    <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-text/10 bg-text/5">
+                      <Image
+                        src={
+                          s.avatarUrl ||
+                          `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(s.nameEnglish || "student")}`
+                        }
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="h-full w-full object-cover"
+                        unoptimized
+                      />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-bold text-text">{s.nameEnglish}</h3>
+                      <p className="text-xs tabular-nums text-text/45">
+                        {t("রোল", "Roll")} #{s.rollNumber}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      {/* Avatar Display */}
-                      <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-secondary/20 via-background to-primary/20 p-0.5 border border-text/10 shadow-md shrink-0 overflow-hidden flex items-center justify-center">
-                        <Image
-                          src={avatarSrc}
-                          alt={student.nameEnglish || "Student"}
-                          width={56}
-                          height={56}
-                          className="w-full h-full object-cover rounded-2xl"
-                          unoptimized
-                        />
-                      </div>
+                  <p className="mt-3 flex items-center gap-1.5 text-xs text-text/55">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-text/35" aria-hidden="true" />
+                    <span className="truncate">{s.location || t("অবস্থান নেই", "Location not set")}</span>
+                  </p>
 
-                      <div className="min-w-0 pr-14">
-                        <h4 className="font-bold text-text text-sm truncate">
-                          {student.nameEnglish}
-                        </h4>
-                        <p className="text-xs font-mono text-text/50">
-                          Roll: #{student.rollNumber}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Location & Protected WhatsApp details */}
-                    <div className="space-y-1.5 text-xs text-text/50">
-                      <div className="flex items-center gap-1 text-[11px] truncate">
-                        <MapPin className="w-3 h-3 text-secondary shrink-0" />
-                        <span className="truncate">
-                          {student.location || "Location not set"}
-                        </span>
-                      </div>
-
-                      {/* WhatsApp Row */}
-                      <div className="flex items-center justify-between gap-2">
-                        {isAdminUnlocked ? (
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <a
-                              href={`https://wa.me/${cleanPhone(student.whatsapp)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors font-mono truncate"
-                              title="Click to Chat on WhatsApp"
-                            >
-                              <MessageSquare className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{student.whatsapp}</span>
-                            </a>
-
-                            <button
-                              type="button"
-                              onClick={() => handleCopyNumber(student.whatsapp, student.rollNumber)}
-                              className={`p-1 rounded-md transition-colors cursor-pointer shrink-0 ${
-                                isCopied
-                                  ? "bg-emerald-500/10 text-emerald-500"
-                                  : "text-text/40 hover:text-text hover:bg-text/5"
-                              }`}
-                              title={isCopied ? "Copied!" : "Copy Phone Number"}
-                            >
-                              {isCopied ? (
-                                <Check className="w-3 h-3 text-emerald-500" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
+                  <dl className="mt-4 space-y-2 rounded-xl border border-text/10 bg-text/3 p-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <dt className="text-text/50">{t("উপস্থিতি", "Attendance")}</dt>
+                      <dd>
+                        {att.rate === null ? (
+                          <span className="text-text/45">{t("এখনও নেই", "—")}</span>
                         ) : (
-                          <button
-                            onClick={() => {
-                              setEnteredPin("");
-                              setPinError(false);
-                              setShowAdminModal(true);
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] text-text/30 hover:text-text/50 transition-colors font-mono cursor-pointer"
-                          >
-                            <Lock className="w-3 h-3 text-primary shrink-0" />
-                            <span>{maskPhoneNumber(student.whatsapp)}</span>
-                          </button>
+                          <StatusMark tone={att.rate >= 75 ? "done" : "neutral"}>
+                            <span className="tabular-nums">{att.rate}%</span>
+                          </StatusMark>
                         )}
-                      </div>
+                      </dd>
                     </div>
-
-                    {/* Real-time Attendance Box */}
-                    <div className="p-3 bg-text/5 rounded-xl border border-text/10 space-y-2 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-text/50">Attendance</span>
-                        <span className="font-mono font-bold text-primary">
-                          {attendanceRate}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-text/50">Attended Sessions</span>
-                        <span className="font-mono font-semibold text-text">
-                          {totalAttended} / {totalHeld}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center pt-1 border-t border-text/10">
-                        <span className="text-text/50">Enrolled In</span>
-                        <span className="font-mono text-[11px] text-secondary font-semibold">
-                          {enrolledCourses.length > 0 ? enrolledCourses.join(", ") : "None"}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <dt className="text-text/50">{t("ক্লাসে উপস্থিত", "Sessions attended")}</dt>
+                      <dd className="font-semibold tabular-nums text-text">
+                        {att.attended} / {att.held}
+                      </dd>
                     </div>
-                  </div>
+                    <div className="flex items-center justify-between border-t border-text/10 pt-2">
+                      <dt className="text-text/50">{t("ট্র্যাক", "Track")}</dt>
+                      <dd className="font-semibold text-text">{ids.length ? ids.join(", ") : "—"}</dd>
+                    </div>
+                  </dl>
 
                   <Link
-                    href={`/academy/students/${student.rollNumber}`}
-                    className="flex items-center justify-center gap-1 w-full py-2 bg-text/10 hover:bg-text/20 text-text/70 hover:text-text rounded-lg text-xs font-semibold transition-colors"
+                    href={`/academy/students/${s.rollNumber}`}
+                    className="mt-4 inline-flex items-center gap-1 self-start border-t border-text/10 pt-3 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
                   >
-                    View Profile & Attendance <ArrowUpRight className="w-3.5 h-3.5" />
+                    {t("প্রোফাইল ও উপস্থিতি", "Profile & attendance")}
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Admin Verification Modal */}
-        {showAdminModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-background border border-text/10 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 transition-colors">
-              <div className="flex justify-between items-center border-b border-text/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
-                    <KeyRound className="w-4 h-4" />
-                  </div>
-                  <h3 className="font-bold text-text text-sm sm:text-base">
-                    Admin Verification
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowAdminModal(false)}
-                  className="p-1 text-text/40 hover:text-text rounded-lg transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <p className="text-xs text-text/50">
-                Enter your instructor/admin passkey to reveal all student WhatsApp contact numbers.
-              </p>
-
-              <form onSubmit={handleUnlockAdmin} className="space-y-3">
-                <div>
-                  <input
-                    type="password"
-                    autoFocus
-                    placeholder="Enter Admin Passcode"
-                    value={enteredPin}
-                    onChange={(e) => {
-                      setEnteredPin(e.target.value);
-                      setPinError(false);
-                    }}
-                    className={`w-full bg-text/5 border ${
-                      pinError
-                        ? "border-secondary focus:border-secondary"
-                        : "border-text/10 focus:border-primary"
-                    } rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-text focus:outline-none font-mono text-center tracking-widest transition-colors`}
-                  />
-                  {pinError && (
-                    <span className="text-[11px] text-secondary mt-1.5 block text-center">
-                      Incorrect passcode. Try again.
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdminModal(false)}
-                    className="px-3.5 py-2 bg-text/5 hover:bg-text/10 rounded-xl text-xs font-semibold text-text/60 hover:text-text transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-secondary hover:bg-secondary/90 rounded-xl text-xs font-semibold text-white transition-colors shadow-lg shadow-secondary/25 cursor-pointer"
-                  >
-                    Unlock All
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
