@@ -27,13 +27,16 @@ src/
 │   ├── ui/                   Shared, domain-agnostic primitives (Button, Field, Dialog…).
 │   └── layout/               App chrome: Nav, Footer, Breadcrumb, ThemeButton.
 ├── lib/                      Framework-agnostic helpers. lib/db.ts = Mongo connection.
-├── config/                   Centralised configuration (env, constants).
 └── providers/               React context providers mounted in the root layout.
 ```
 
+Add `src/config/` (centralised env / constants) when the need arises — it does
+not exist yet.
+
 Current features: `academy` (the LMS), `chinese-words` (the paid Core Word
 Builder), `vocabulary` (HSK reader data + components), `todos`, `marketing`
-(home / community / msg content), `hsk` (route-only, reads `vocabulary`).
+(home / community / msg content). The `hsk` section is route-only — it lives
+entirely in `src/app/hsk/` and reads from `@/features/vocabulary/data`.
 
 `public/`, all config files, and `.env*` stay at the repo root.
 
