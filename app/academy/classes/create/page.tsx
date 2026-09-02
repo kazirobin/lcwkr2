@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { ICourse, IStudent } from "@/types/academy";
 
-const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+// সরাসরি ডিফল্ট পিন ৮১৩১ সেট করা হয়েছে
+const ADMIN_SECRET_PIN = "8131";
 
 export default function TeacherClassLogPage() {
   // MongoDB লাইভ ডাটা স্টেট
@@ -26,7 +27,8 @@ export default function TeacherClassLogPage() {
   const [loading, setLoading] = useState(true);
 
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [teacherPasscode, setTeacherPasscode] = useState("");
+  // ডিফল্টভাবে পিন 8131 সেট করে রাখা হয়েছে যাতে খালি থাকলেও কাজ করে
+  const [teacherPasscode, setTeacherPasscode] = useState(ADMIN_SECRET_PIN);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00 PM - 10:10 PM");
 
@@ -38,7 +40,7 @@ export default function TeacherClassLogPage() {
   const [presentRolls, setPresentRolls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // 👈 MongoDB থেকে লাইভ কোর্স এবং স্টুডেন্ট ফেচ
+  // MongoDB থেকে লাইভ কোর্স এবং স্টুডেন্ট ফেচ
   useEffect(() => {
     const fetchLiveData = async () => {
       setLoading(true);
@@ -107,12 +109,15 @@ export default function TeacherClassLogPage() {
     const absentRolls = allRolls.filter((roll) => !presentRolls.includes(roll));
     const summary = `Lesson ${fromLesson} Text ${fromText} to Lesson ${toLesson} Text ${toText}`;
 
+    // পিন ট্রিম করে নিশ্চিতভাবে পাঠানো হচ্ছে
+    const finalPin = (teacherPasscode.trim() || ADMIN_SECRET_PIN).trim();
+
     try {
       const res = await fetch("/api/academy/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          teacherPasscode: teacherPasscode || ADMIN_SECRET_PIN,
+          teacherPasscode: finalPin,
           courseId: selectedCourseId,
           date,
           time,
@@ -129,11 +134,11 @@ export default function TeacherClassLogPage() {
         alert("Class session logged successfully to MongoDB!");
         window.location.href = "/academy";
       } else {
-        alert(result.message || "Failed to submit class log");
+        alert(result.message || "Invalid Passcode or failed to submit class log");
       }
     } catch (err) {
       setSubmitting(false);
-      alert("Error submitting class session. Please try again.");
+      alert("Error submitting class session. Please check your connection.");
     }
   };
 

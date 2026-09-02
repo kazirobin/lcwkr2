@@ -15,7 +15,8 @@ import {
   ArrowRight,
   LogOut,
   Loader2,
-  Languages
+  Languages,
+  HeartHandshake
 } from "lucide-react";
 
 const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
@@ -32,6 +33,7 @@ export default function AdminDashboardPage() {
     pendingClasses: 0,
     courses: 0,
     chineseWords: 0,
+    donations: 0,
   });
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -40,20 +42,29 @@ export default function AdminDashboardPage() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const [pendingStuRes, approvedStuRes, logRes, crsRes, wordsRes] = await Promise.all([
+      const [
+        pendingStuRes, 
+        approvedStuRes, 
+        logRes, 
+        crsRes, 
+        wordsRes, 
+        donateRes
+      ] = await Promise.all([
         fetch("/api/academy/students?status=Pending", { cache: "no-store" }),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }),
         fetch("/api/academy/classes/pending", { cache: "no-store" }),
         fetch("/api/academy/courses", { cache: "no-store" }),
         fetch("/api/chinese-words", { cache: "no-store" }),
+        fetch("/api/donations", { cache: "no-store" }),
       ]);
 
-      const [pStu, aStu, logs, crs, words] = await Promise.all([
+      const [pStu, aStu, logs, crs, words, donate] = await Promise.all([
         pendingStuRes.json(),
         approvedStuRes.json(),
         logRes.json(),
         crsRes.json(),
         wordsRes.json(),
+        donateRes.json(),
       ]);
 
       setStats({
@@ -62,6 +73,7 @@ export default function AdminDashboardPage() {
         pendingClasses: logs.pendingClasses?.length || 0,
         courses: crs.courses?.length || 0,
         chineseWords: words.data?.length || 0,
+        donations: donate.donations?.length || 0,
       });
     } catch (err) {
       console.error("Failed to load admin stats:", err);
@@ -81,7 +93,7 @@ export default function AdminDashboardPage() {
     setCheckingAuth(false);
   }, []);
 
-  // ২. ম্যানুয়াল লগইন এবং localStorage-এ সংরক্ষণ
+  // ২. ম্যানুয়াল লগইন এবং localStorage-এ সংরক্ষণ
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passcode.trim() === ADMIN_SECRET_PASSCODE.trim()) {
@@ -94,7 +106,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // ৩. লগআউট হ্যান্ডলার (localStorage ক্লিয়ার করা)
+  // ৩. লগআউট হ্যান্ডলার (localStorage ক্লিয়ার করা)
   const handleLogout = () => {
     if (confirm("Are you sure you want to log out from Admin Console?")) {
       localStorage.removeItem("academy_admin_pin");
@@ -216,6 +228,15 @@ export default function AdminDashboardPage() {
       color: "text-red-500",
       bg: "bg-red-500/10",
       link: "/admin/chinese-words",
+    },
+    {
+      title: "Donation Records",
+      desc: "Manage donations, track bKash TrxIDs, and update contributor details",
+      count: stats.donations,
+      icon: HeartHandshake,
+      color: "text-rose-500",
+      bg: "bg-rose-500/10",
+      link: "/admin/donations",
     },
   ];
 

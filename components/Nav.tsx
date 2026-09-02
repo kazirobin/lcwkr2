@@ -38,8 +38,9 @@ const DROPDOWNS = {
       { href: "/academy/courses", en: "Mandarin Courses", bn: "কোর্সসমূহ" },
       { href: "/academy/students", en: "Scholars Directory", bn: "শিক্ষার্থী তালিকা" },
       { href: "/community", en: "Community", bn: "কমিউনিটি" },
+      { href: "/donate", en: "Support / Donate", bn: "অনুদান" },
     ],
-    activePrefixes: ["/academy", "/community"],
+    activePrefixes: ["/academy", "/community", "/donate"],
   },
   vocabulary: {
     id: "vocabulary",
@@ -367,7 +368,7 @@ export default function Nav() {
                   className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-lg ${
                     isActive(item.href)
                       ? "text-primary bg-primary/10 font-semibold"
-                      : "text-text/80 hover:text-primary hover:bg-primary/5"
+                      : "text-text hover:text-primary hover:bg-primary/5"
                   }`}
                 >
                   <span>{t(item.en, item.bn)}</span>
@@ -527,7 +528,7 @@ export default function Nav() {
               </h2>
               <p className="text-xs sm:text-sm text-text/70 leading-relaxed max-w-lg mx-auto">
                 {t(
-                  "পূর্বে সাবস্ক্রিপশন থাকলে পাসওয়ার্ড দিয়ে সরাসরি আনলক করুন, অথবা নিচে বিকাশ পেমেন্ট ফর্ম পূরণ করে এখনই অ্যাক্সেস নিন।",
+                  "পূর্বে সাবস্ক্রিপশন থাকলে পাসওয়ার্ড দিয়ে সরাসরি আনলক করুন, অথবা নিচে বিকাশ পেমেন্ট ফর্ম পূরণ করে এখনই অ্যাক্সেস নিন।",
                   "If you already have a subscription, enter your password to unlock. Otherwise, complete the bKash payment form below to get instant access."
                 )}
               </p>
