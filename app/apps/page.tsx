@@ -1,359 +1,225 @@
-// src/components/apps/SuggestedAppsPage.tsx
 "use client";
 
-import Link from "next/link";
-import {
-  Smartphone,
-  BookOpen,
-  Languages,
-  Pencil,
-  Download,
-  ExternalLink,
-  Sparkles,
-  Layers,
-  Search,
-  Headphones,
-  MessageSquare,
-  PenTool,
-  Award,
-} from "lucide-react";
+import { useState } from "react";
+import { ArrowUpRight } from "lucide-react";
+
 import { useLanguage } from "../../context/LanguageContext";
+import { useReveal } from "@/lib/useReveal";
+import {
+  suggestedApps,
+  categoryMeta,
+  categoryOrder,
+  type AppCategory,
+  type SuggestedApp,
+} from "@/data/suggestedApps";
 
-const apps = [
-  {
-    name: "Pinyin Academy",
-    category: "Pinyin",
-    url: "https://play.google.com/store/apps/details?id=pest.games.ChinesePinYin",
-  },
-  {
-    name: "Chinese Pinyin",
-    category: "Pinyin",
-    url: "https://play.google.com/store/apps/details?id=com.xixiantian.chinesepinyin",
-  },
-  {
-    name: "Pinyin Helper",
-    category: "Pinyin",
-    url: "https://play.google.com/store/apps/details?id=com.patgdut.pinyinhelper",
-  },
-  {
-    name: "ChinesePinyin",
-    category: "Pinyin",
-    url: "https://play.google.com/store/apps/details?id=com.aobocorp.chinesepinyin",
-  },
-  {
-    name: "Chinese Pinyin Learning Machine",
-    category: "Pinyin",
-    url: "https://play.google.com/store/apps/details?id=uni.UNI40BB307",
-  },
-  {
-    name: "Chinese Pinyin Keyboard",
-    category: "Pinyin",
-    url: "https://play.google.com/store/apps/details?id=uni.UNI40BB307",
-  },
-  {
-    name: "Chinese Guru",
-    category: "Vocabulary",
-    url: "https://play.google.com/store/apps/details?id=com.xamisoft.chineseexpert",
-  },
-  {
-    name: "Hanping Chinese Dictionary",
-    category: "Dictionary",
-    url: "https://play.google.com/store/apps/details?id=com.embermitre.hanping.app.pro",
-  },
-  {
-    name: "Pleco Chinese Dictionary",
-    category: "Dictionary",
-    url: "https://play.google.com/store/apps/details?id=com.embermitre.hanping.app.pro",
-  },
-  {
-    name: "HelloTalk",
-    category: "Language Exchange",
-    url: "https://play.google.com/store/apps/details?id=com.hellotalk",
-  },
-  {
-    name: "Rednote",
-    category: "Social",
-    url: "https://play.google.com/store/apps/details?id=com.xingin.xhs",
-  },
-  {
-    name: "WeChat",
-    category: "Communication",
-    url: "https://play.google.com/store/apps/details?id=com.tencent.mm",
-  },
-  {
-    name: "Chinesimple HSK 1",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=es.hskfree.ap",
-  },
-  {
-    name: "Chinesimple HSK 2",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=es.aroundpixels.hsk2lite",
-  },
-  {
-    name: "Chinesimple HSK 3",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=es.aroundpixels.hsk3lite",
-  },
-  {
-    name: "Chinesimple HSK 4",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=es.aroundpixels.hsk4lite",
-  },
-  {
-    name: "Chinesimple HSK 5",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=es.aroundpixels.hsk5lite",
-  },
-  {
-    name: "Chinesimple HSK 6",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=es.aroundpixels.hsk6",
-  },
-  {
-    name: "KaoHan",
-    category: "HSK",
-    url: "https://play.google.com/store/apps/details?id=com.kaokao.kaohan_learnchinesehsk",
-  },
-  {
-    name: "Chinese Writer",
-    category: "Writing",
-    url: "https://play.google.com/store/apps/details?id=com.molatra.chinesewriterlite",
-  },
-  {
-    name: "Skritter",
-    category: "Writing",
-    url: "https://play.google.com/store/apps/details?id=com.inkren.skritter.chinese",
-  },
-  {
-    name: "Chinese Strokes Order",
-    category: "Writing",
-    url: "https://play.google.com/store/apps/details?id=com.patgdut.chinesestrokesorder",
-  },
-  {
-    name: "Chinese Stroke Dictionary",
-    category: "Writing",
-    url: "https://play.google.com/store/apps/details?id=com.ansami.hkchinesechar",
-  },
-  {
-    name: "Hanzi Stroke",
-    category: "Writing",
-    url: "https://play.google.com/store/apps/details?id=com.sparkinc.hanzi_stroke",
-  },
-];
+/**
+ * `/apps` — recommended Android apps for Chinese learners.
+ *
+ * Built in the home / `/intro` / `/community` sumi-e register: rice-paper
+ * hero bleeding under the fixed nav, one oversized Hanzi watermark, the
+ * `[seal] SMALL-CAPS · detail` eyebrow, and hairline-separated sections
+ * rather than a card grid. The category filter narrows which sections show;
+ * every out-link opens the Play Store listing in a new tab.
+ */
 
-// Category icons mapping
-const categoryIcons: Record<string, React.ReactNode> = {
-  Dictionary: <BookOpen className="w-5 h-5" />,
-  "Language Exchange": <MessageSquare className="w-5 h-5" />,
-  Social: <Smartphone className="w-5 h-5" />,
-  Communication: <MessageSquare className="w-5 h-5" />,
-  Pinyin: <Headphones className="w-5 h-5" />,
-  HSK: <Award className="w-5 h-5" />,
-  Vocabulary: <BookOpen className="w-5 h-5" />,
-  Writing: <PenTool className="w-5 h-5" />,
-};
+const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+const toBn = (n: number) =>
+  String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
 
-// Category colors - deeper colors for light mode
-const categoryColors: Record<string, string> = {
-  Dictionary:
-    "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
-  "Language Exchange":
-    "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400",
-  Social: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400",
-  Communication:
-    "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400",
-  Pinyin:
-    "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400",
-  HSK: "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400",
-  Vocabulary:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
-  Writing: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400",
-};
-
-// Category labels in Bengali
-const categoryLabels: Record<string, { bn: string; en: string }> = {
-  Dictionary: { bn: "অভিধান", en: "Dictionary" },
-  "Language Exchange": { bn: "ভাষা বিনিময়", en: "Language Exchange" },
-  Social: { bn: "সামাজিক", en: "Social" },
-  Communication: { bn: "যোগাযোগ", en: "Communication" },
-  Pinyin: { bn: "পিনয়িন", en: "Pinyin" },
-  HSK: { bn: "এইচএসকে", en: "HSK" },
-  Vocabulary: { bn: "শব্দভাণ্ডার", en: "Vocabulary" },
-  Writing: { bn: "লেখা", en: "Writing" },
-};
-
-// ============================================
-// HOOKS
-// ============================================
-
-const useTranslation = () => {
-  const { language } = useLanguage();
-  return (bn: string, en: string) => (language === "bn" ? bn : en);
-};
-
-// ============================================
-// COMPONENTS
-// ============================================
-
-interface AppCardProps {
-  name: string;
-  category: string;
-  url: string;
+function FilterButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+        active
+          ? "border-text bg-text text-background"
+          : "border-text/15 text-text/70 hover:border-text/40 hover:text-text"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
-const AppCard: React.FC<AppCardProps> = ({ name, category, url }) => {
-  const t = useTranslation();
-
-  const icon = categoryIcons[category] || <Smartphone className="w-5 h-5" />;
-  const colorClass =
-    categoryColors[category] ||
-    "bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400";
-  const categoryLabel = categoryLabels[category] || {
-    bn: category,
-    en: category,
-  };
+function CategoryBlock({
+  category,
+  apps,
+  isBn,
+}: {
+  category: AppCategory;
+  apps: SuggestedApp[];
+  isBn: boolean;
+}) {
+  const ref = useReveal<HTMLDivElement>({ threshold: 0.12 });
+  const meta = categoryMeta[category];
+  const num = (n: number) => (isBn ? toBn(n) : String(n).padStart(2, "0"));
 
   return (
-    <div className="group rounded-xl border border-secondary bg-background p-5 transition-all hover:border-primary hover:shadow-lg hover:-translate-y-1">
-      <div className="flex items-start gap-3 mb-4">
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${colorClass}`}
+    <div ref={ref} className="reveal-group">
+      <div
+        data-reveal
+        className="flex items-baseline gap-3 border-b border-text/15 pb-3"
+      >
+        <span
+          lang="zh"
+          aria-hidden="true"
+          className="text-sm font-semibold text-text/35"
         >
-          {icon}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-text text-sm leading-tight line-clamp-2">
-            {name}
-          </h3>
-          <span
-            className={`inline-block mt-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${colorClass}`}
-          >
-            {t(categoryLabel.bn, categoryLabel.en)}
-          </span>
-        </div>
+          {meta.seal}
+        </span>
+        <h3 className="text-lg font-semibold tracking-tight text-text">
+          {isBn ? meta.bn : meta.en}
+        </h3>
+        <span className="text-xs tabular-nums text-text/40">
+          {num(apps.length)}
+        </span>
       </div>
 
-      <Link
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-background transition-all hover:bg-primary/80 hover:shadow-md active:scale-95"
-      >
-        <Download className="h-4 w-4" />
-        {t("ইন্সটল করুন", "Install")}
-        <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-      </Link>
+      <ul>
+        {apps.map((app, i) => (
+          <li
+            key={app.name}
+            data-reveal
+            style={{ "--r": i + 1 } as React.CSSProperties}
+            className="flex flex-col gap-2 border-b border-text/10 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+          >
+            <span className="text-[15px] font-medium text-text">{app.name}</span>
+            <a
+              href={app.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1.5 self-start text-sm font-medium text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-text sm:self-center"
+            >
+              {isBn ? "প্লে স্টোরে দেখুন" : "View on Play Store"}
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
-};
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
+}
 
 export default function SuggestedAppsPage() {
-  const t = useTranslation();
+  const { language } = useLanguage();
+  const isBn = language === "bn";
+  const t = (bn: string, en: string) => (isBn ? bn : en);
+  const num = (n: number) => (isBn ? toBn(n) : String(n));
 
-  // Group apps by category
-  const categories = [...new Set(apps.map((app) => app.category))];
+  const [active, setActive] = useState<AppCategory | "all">("all");
 
-  // Count apps per category
-  const categoryCount = categories.reduce(
-    (acc, cat) => {
-      acc[cat] = apps.filter((app) => app.category === cat).length;
-      return acc;
-    },
-    {} as Record<string, number>,
+  const present = categoryOrder.filter((c) =>
+    suggestedApps.some((a) => a.category === c),
   );
+  const visible = active === "all" ? present : present.filter((c) => c === active);
 
   return (
-    <div className="min-h-screen bg-background text-text">
-      {/* Hero Banner */}
-      <section className="relative -mt-16 overflow-hidden bg-primary pt-28 pb-16 sm:-mt-20 sm:pt-32 sm:pb-20">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-background rounded-full mix-blend-multiply filter blur-xl animate-pulse" />
-          <div className="absolute bottom-0 -right-4 w-72 h-72 bg-background/50 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000" />
-        </div>
+    <div className={`bg-background text-text ${isBn ? "font-bn" : "font-en"}`}>
+      {/* ============================ HERO ============================ */}
+      <section className="relative isolate -mt-16 overflow-hidden bg-[#f8f3ea] in-[.dark]:bg-background sm:-mt-20">
+        <span
+          aria-hidden="true"
+          lang="zh"
+          className="pointer-events-none absolute -top-16 right-[4%] hidden select-none text-[22rem] leading-none font-bold text-text/[0.04] lg:block"
+        >
+          具
+        </span>
 
-        <div className="relative max-w-4xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 bg-background/20 backdrop-blur-sm px-4 py-1.5 rounded-full mb-4">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium text-background">
-              {t("সাজেস্টেড অ্যাপস", "Suggested Apps")}
-            </span>
+        <div className="relative z-10 mx-auto max-w-6xl px-3 pt-28 pb-16 sm:px-6 md:pt-32 md:pb-20 lg:px-8">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <span
+                lang="zh"
+                aria-hidden="true"
+                className="flex size-7 items-center justify-center rounded-md bg-text text-[11px] font-bold text-background"
+              >
+                具
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-[0.15em] text-text/60">
+                {t("রিসোর্স · অ্যাপস", "Resources · Apps")}
+              </span>
+            </div>
+
+            <h1 className="mt-7 text-[2.5rem] leading-[1.12] font-bold tracking-tight sm:text-5xl lg:text-[3.5rem]">
+              <span className="block">
+                {t("চীনা শেখার সঙ্গী", "The apps that carry")}
+              </span>
+              <span className="mt-1 block text-secondary">
+                {t("অ্যাপগুলো", "your practice")}
+              </span>
+            </h1>
+
+            <p className="mt-6 max-w-[52ch] text-base leading-[1.8] text-text/70 sm:text-lg">
+              {t(
+                "পিনয়িন, অভিধান, হাতে লেখা আর এইচএসকে প্রস্তুতির জন্য বেছে নেওয়া অ্যাপ — প্রতিটি ফ্রি, গুগল প্লে স্টোরে।",
+                "A hand-picked set for pinyin, dictionaries, handwriting and HSK prep — every one free, on Google Play.",
+              )}
+            </p>
+
+            <p className="mt-9 flex flex-wrap gap-x-8 gap-y-2 border-t border-text/10 pt-6 text-sm text-text/55">
+              <span>
+                <span className="font-semibold tabular-nums text-text">
+                  {num(suggestedApps.length)}
+                </span>{" "}
+                {t("অ্যাপ", "apps")}
+              </span>
+              <span>
+                <span className="font-semibold tabular-nums text-text">
+                  {num(present.length)}
+                </span>{" "}
+                {t("বিভাগ", "categories")}
+              </span>
+            </p>
           </div>
-
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-background tracking-tight">
-            📱 {t("চাইনিজ শেখার অ্যাপস", "Chinese Learning Apps")}
-          </h1>
-
-          <p className="mt-3 text-background/80 text-base sm:text-lg max-w-2xl mx-auto">
-            {t(
-              "এই অ্যাপগুলো ব্যবহার করে আপনার চাইনিজ শোনা, বলা, পড়া, লেখা ও এইচএসকে প্রস্তুতি উন্নত করুন",
-              "Improve your Chinese listening, speaking, reading, writing & HSK preparation",
-            )}
-          </p>
         </div>
       </section>
 
-      {/* Stats */}
-      <div className="max-w-7xl mx-auto px-4 -mt-6 relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { value: apps.length, label: t("মোট অ্যাপ", "Total Apps") },
-            { value: categories.length, label: t("ক্যাটেগরি", "Categories") },
-            { value: "4.5+", label: t("গড় রেটিং", "Avg Rating") },
-            { value: "100%", label: t("ফ্রি", "Free") },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-secondary bg-background p-4 text-center shadow-sm"
+      {/* ============================ LIST ============================ */}
+      <section className="border-t border-text/10 bg-background py-16 md:py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label={t("বিভাগ অনুযায়ী ফিল্টার", "Filter by category")}
+          >
+            <FilterButton
+              active={active === "all"}
+              onClick={() => setActive("all")}
             >
-              <div className="text-2xl font-bold text-primary">
-                {stat.value}
-              </div>
-              <div className="text-xs text-text/50">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Category Filter */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 text-sm text-text/60">
-            <Layers className="h-4 w-4" />
-            <span>{t("ক্যাটেগরি", "Categories")}:</span>
-          </div>
-          {categories.map((category) => {
-            const colorClass =
-              categoryColors[category] ||
-              "bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400";
-            const label = categoryLabels[category] || {
-              bn: category,
-              en: category,
-            };
-            return (
-              <span
-                key={category}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${colorClass}`}
+              {t("সব", "All")}
+            </FilterButton>
+            {present.map((c) => (
+              <FilterButton
+                key={c}
+                active={active === c}
+                onClick={() => setActive(c)}
               >
-                {categoryIcons[category]}
-                {t(label.bn, label.en)}
-                <span className="opacity-50">({categoryCount[category]})</span>
-              </span>
-            );
-          })}
-        </div>
-      </div>
+                {isBn ? categoryMeta[c].bn : categoryMeta[c].en}
+              </FilterButton>
+            ))}
+          </div>
 
-      {/* Apps Grid */}
-      <section className="max-w-7xl mx-auto px-4 pb-12 sm:pb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {apps.map((app, index) => (
-            <AppCard key={index} {...app} />
-          ))}
+          <div className="mt-14 space-y-16">
+            {visible.map((c) => (
+              <CategoryBlock
+                key={c}
+                category={c}
+                isBn={isBn}
+                apps={suggestedApps.filter((a) => a.category === c)}
+              />
+            ))}
+          </div>
         </div>
       </section>
     </div>
