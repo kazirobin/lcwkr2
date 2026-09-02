@@ -2,10 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-"use client";
-
-import { useState, useEffect } from "react";
-import Link from "next/link";
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -15,23 +11,18 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  Calendar,
-  Clock,
   Loader2
 } from "lucide-react";
 import { ICourse, IStudent } from "@/types/academy";
 
-// সরাসরি ডিফল্ট পিন ৮১৩১ সেট করা হয়েছে
 const ADMIN_SECRET_PIN = "8131";
 
 export default function TeacherClassLogPage() {
-  // MongoDB লাইভ ডাটা স্টেট
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [students, setStudents] = useState<IStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  // ডিফল্টভাবে পিন 8131 সেট করে রাখা হয়েছে যাতে খালি থাকলেও কাজ করে
   const [teacherPasscode, setTeacherPasscode] = useState(ADMIN_SECRET_PIN);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00 PM - 10:10 PM");
@@ -44,7 +35,6 @@ export default function TeacherClassLogPage() {
   const [presentRolls, setPresentRolls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // MongoDB থেকে লাইভ কোর্স এবং স্টুডেন্ট ফেচ
   useEffect(() => {
     const fetchLiveData = async () => {
       setLoading(true);
@@ -75,7 +65,6 @@ export default function TeacherClassLogPage() {
     fetchLiveData();
   }, []);
 
-  // নির্বাচিত কোর্সে এনরোল্ড স্টুডেন্ট ফিল্টার
   const currentCourseCode = selectedCourseId.toLowerCase();
   const enrolled = students.filter((s: any) => {
     if (Array.isArray(s.enrolledCourseIds)) {
@@ -112,8 +101,6 @@ export default function TeacherClassLogPage() {
     const allRolls = enrolled.map((s) => String(s.rollNumber).trim());
     const absentRolls = allRolls.filter((roll) => !presentRolls.includes(roll));
     const summary = `Lesson ${fromLesson} Text ${fromText} to Lesson ${toLesson} Text ${toText}`;
-
-    // পিন ট্রিম করে নিশ্চিতভাবে পাঠানো হচ্ছে
     const finalPin = (teacherPasscode.trim() || ADMIN_SECRET_PIN).trim();
 
     try {
@@ -174,7 +161,6 @@ export default function TeacherClassLogPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 bg-text/5 border border-text/10 rounded-3xl space-y-6 shadow-xl">
-          {/* Passcode */}
           <div>
             <label className="text-xs font-bold flex items-center gap-1 mb-1.5">
               <KeyRound className="w-3.5 h-3.5 text-secondary" /> Teacher / Admin Passcode
@@ -217,7 +203,6 @@ export default function TeacherClassLogPage() {
             </div>
           </div>
 
-          {/* Curriculum Range */}
           <div className="p-4 bg-background border border-text/10 rounded-2xl space-y-3">
             <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block">Curriculum Progression Range</span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
@@ -240,15 +225,12 @@ export default function TeacherClassLogPage() {
             </div>
           </div>
 
-          {/* Attendance Section */}
           <div className="space-y-4 p-4 sm:p-6 bg-background border border-text/10 rounded-3xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-text/10 pb-4">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-primary" />
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-text">
-                    Mark Present Students
-                  </h3>
+                  <h3 className="text-sm sm:text-base font-bold text-text">Mark Present Students</h3>
                   <div className="flex items-center gap-3 text-xs mt-0.5">
                     <span className="text-emerald-500 font-semibold flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Present: <b>{presentRolls.length}</b>
@@ -342,89 +324,6 @@ export default function TeacherClassLogPage() {
             {submitting ? "Submitting to Database..." : "Submit Class Session"}
           </button>
         </form>
-      </div>
-    </div>
-  );
-}
-const ADMIN_SECRET_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
-
-export default function PendingClassLogsPage() {
-  const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/academy/classes/pending", { cache: "no-store" });
-      const data = await res.json();
-      if (data.success) setLogs(data.pendingClasses || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  const handleAction = async (logId: string, action: "APPROVE" | "REJECT") => {
-    try {
-      const res = await fetch("/api/academy/classes/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logId, action, adminPasscode: ADMIN_SECRET_PASSCODE }),
-      });
-      const data = await res.json();
-      if (data.success) fetchLogs();
-      else alert(data.message || "Failed to update");
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8 space-y-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <Link href="/admin" className="text-xs text-text/50 hover:underline flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Dashboard
-          </Link>
-          <button onClick={fetchLogs} className="p-1.5 bg-text/5 border border-text/10 rounded-xl">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BookOpenCheck className="w-6 h-6 text-secondary" /> Pending Teacher Class Logs ({logs.length})
-        </h1>
-
-        {logs.length === 0 ? (
-          <p className="text-xs text-text/40 p-8 border border-text/10 rounded-3xl text-center bg-text/[0.02]">
-            No pending class logs in database.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {logs.map((log) => (
-              <div key={log._id} className="p-4 rounded-2xl bg-text/5 border border-text/10 flex justify-between items-center">
-                <div className="space-y-1">
-                  <span className="font-mono text-xs font-bold text-secondary">{log.courseId} • {log.classId}</span>
-                  <p className="text-xs font-semibold">{log.contentCovered?.summary}</p>
-                  <span className="text-[11px] text-text/50">{log.date} • {log.time}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleAction(log._id, "APPROVE")} className="px-3 py-1.5 bg-emerald-500 text-white font-bold text-xs rounded-xl">
-                    Approve
-                  </button>
-                  <button onClick={() => handleAction(log._id, "REJECT")} className="px-3 py-1.5 bg-secondary/10 text-secondary font-bold text-xs rounded-xl">
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
