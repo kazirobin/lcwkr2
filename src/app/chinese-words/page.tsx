@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 export default function ChineseWordBuilderPage() {
   const { language } = useLanguage();

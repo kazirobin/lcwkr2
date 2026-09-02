@@ -68,4 +68,5 @@ const ChineseWordSchema = new Schema<IChineseWord>(
 const ChineseWord: Model<IChineseWord> =
   mongoose.models.ChineseWord || mongoose.model<IChineseWord>('ChineseWord', ChineseWordSchema);
 
+export { ChineseWord };
 export default ChineseWord;

@@ -4,7 +4,7 @@ import { Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
-import { LanguageProvider } from "@/i18n/LanguageContext";
+import { LanguageProvider } from "@/i18n";
 import ThemeProvider from "@/providers/ThemeProvider";
 
 const geistSans = Geist({

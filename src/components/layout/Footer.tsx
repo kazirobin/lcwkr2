@@ -12,7 +12,7 @@ import {
   Send,
 } from "lucide-react";
 
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 const WHATSAPP_COMMUNITY = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
 const WHATSAPP_SUPPORT = "https://wa.me/8801787881334";

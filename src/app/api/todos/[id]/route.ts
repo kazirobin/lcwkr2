@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import Todo from "@/features/todos/models/Todo";
+import Todo from "@/features/todos/models";
 
 export const dynamic = "force-dynamic";
 

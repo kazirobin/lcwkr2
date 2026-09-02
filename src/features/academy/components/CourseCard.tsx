@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { ICourse } from "@/features/academy/types";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 import { Card, ProgressBar, StatusPill } from "@/components/ui";
 
 export default function CourseCard({ course }: { course: ICourse }) {

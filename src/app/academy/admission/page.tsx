@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, MessageSquare, RefreshCw } from "lucide-react";
-import { ICourse } from "@/features/academy/types";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { ICourse } from "@/features/academy";
+import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
   Button,

@@ -33,3 +33,4 @@ const StudentSchema = new Schema<IStudentDoc>(
 );
 
 export const Student = models.Student || model<IStudentDoc>("Student", StudentSchema);
+export default Student;

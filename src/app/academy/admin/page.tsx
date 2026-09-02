@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowRight, RefreshCw } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { AdminShell } from "@/features/academy/components/admin/AdminShell";
+import { useLanguage } from "@/i18n";
+import { AdminShell } from "@/features/academy";
 import { Card, IconButton } from "@/components/ui";
 
 export default function AdminDashboardPage() {

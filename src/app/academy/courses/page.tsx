@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
-import CourseCard from "@/features/academy/components/CourseCard";
-import { ICourse } from "@/features/academy/types";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { CourseCard, ICourse } from "@/features/academy";
+import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
   EmptyState,

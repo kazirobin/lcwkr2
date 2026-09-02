@@ -17,7 +17,7 @@ import {
   PenTool,
   Award,
 } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 const apps = [
   {

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, use, useMemo, useCallback } from "react";
 import { ArrowLeft, Check, ChevronDown, Lock, Pencil, RefreshCw, Trash2 } from "lucide-react";
-import { ICourse, IClassSession, IStudent } from "@/features/academy/types";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { ICourse, IClassSession, IStudent } from "@/features/academy";
+import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
   Button,

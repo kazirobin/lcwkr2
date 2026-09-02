@@ -15,7 +15,7 @@ import {
   FolderOpen,
   ChevronRight,
 } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 // ============================================
 // TYPES & DATA

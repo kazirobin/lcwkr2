@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { ClassLog } from "@/features/academy/models/ClassLog";
-import { Course } from "@/features/academy/models/Course";
+import { ClassLog } from "@/features/academy/models";
+import { Course } from "@/features/academy/models";
 
 export async function POST(req: Request) {
   try {

@@ -8,7 +8,7 @@ import {
   Mic,
   ShieldCheck,
 } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 import { finals, initials, type PinyinSound } from "@/features/marketing/data/pinyin";
 
 type Step = {

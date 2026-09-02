@@ -10,8 +10,8 @@ import {
   Clock,
   RefreshCw,
 } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { ICourse, IStudent } from "@/features/academy/types";
+import { useLanguage } from "@/i18n";
+import { ICourse, IStudent } from "@/features/academy";
 import {
   Breadcrumb,
   ButtonLink,

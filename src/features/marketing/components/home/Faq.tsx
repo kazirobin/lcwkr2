@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Plus, ArrowRight } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 type FAQItem = {
   question: string;

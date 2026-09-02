@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Copy, Check, Send, Sparkles, AlertCircle, Eye, EyeOff } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 export default function ProSubscriptionForm() {
   const { language } = useLanguage();

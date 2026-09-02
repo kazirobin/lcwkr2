@@ -45,3 +45,4 @@ const ClassLogSchema = new Schema<IClassLogDoc>(
 );
 
 export const ClassLog = models.ClassLog || model<IClassLogDoc>("ClassLog", ClassLogSchema);
+export default ClassLog;

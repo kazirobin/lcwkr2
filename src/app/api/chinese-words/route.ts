@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import ChineseWord from "@/features/chinese-words/models/ChineseWord";
+import ChineseWord from "@/features/chinese-words/models";
 
 // 1. GET: সব ওয়ার্ড আনা
 export async function GET(req: NextRequest) {

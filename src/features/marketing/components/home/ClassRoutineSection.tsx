@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, GraduationCap } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 /**
  * Two facts a prospective student needs before joining: the shape of the

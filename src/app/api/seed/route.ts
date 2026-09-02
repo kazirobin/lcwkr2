@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models/Course";
-import { Student } from "@/features/academy/models/Student";
+import { Course } from "@/features/academy/models";
+import { Student } from "@/features/academy/models";
 import { academyData } from "@/features/academy/data";
 
 export async function GET() {

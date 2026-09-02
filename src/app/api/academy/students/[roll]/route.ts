@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { Student } from "@/features/academy/models/Student";
-import { Course } from "@/features/academy/models/Course";
+import { Student } from "@/features/academy/models";
+import { Course } from "@/features/academy/models";
 
 type Props = {
   params: Promise<{ roll: string }>;

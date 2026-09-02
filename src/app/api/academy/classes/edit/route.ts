@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models/Course";
+import { Course } from "@/features/academy/models";
 
 export async function PUT(req: Request) {
   try {

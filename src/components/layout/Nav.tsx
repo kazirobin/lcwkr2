@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 import ThemeButton from "./ThemeButton";
 import ProSubscriptionForm from "@/features/chinese-words/components/ProSubscriptionForm";
 

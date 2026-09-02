@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import ChineseWord from "@/features/chinese-words/models/ChineseWord";
+import ChineseWord from "@/features/chinese-words/models";
 
 // আপনি যতগুলো ইচ্ছা Core Word এখানে একসাথে সাজিয়ে রাখতে পারেন
 const SEED_DATA = [

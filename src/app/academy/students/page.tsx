@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight, MapPin, RefreshCw, Search, X } from "lucide-react";
-import { IStudent, ICourse } from "@/features/academy/types";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { IStudent, ICourse } from "@/features/academy";
+import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
   Card,

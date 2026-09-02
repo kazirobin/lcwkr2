@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Users } from "lucide-react";
-import { ICourse, IStudent } from "@/features/academy/types";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { ICourse, IStudent } from "@/features/academy";
+import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
   Button,

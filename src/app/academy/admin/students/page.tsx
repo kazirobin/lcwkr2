@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ArrowRightLeft, RefreshCw, Trash2 } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { AdminShell } from "@/features/academy/components/admin/AdminShell";
+import { useLanguage } from "@/i18n";
+import { AdminShell } from "@/features/academy";
 import {
   Button,
   Dialog,

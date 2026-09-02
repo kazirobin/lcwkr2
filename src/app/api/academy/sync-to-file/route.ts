@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models/Course";
-import { Student } from "@/features/academy/models/Student";
+import { Course } from "@/features/academy/models";
+import { Student } from "@/features/academy/models";
 
 export async function GET(req: Request) {
   try {
@@ -40,9 +40,9 @@ export async function GET(req: Request) {
     });
 
     // ২. ফাইলের কনটেন্ট তৈরি
-    const studentsFileContent = `import { IStudent } from "@/features/academy/types";\n\nexport const studentsData: IStudent[] = ${JSON.stringify(students, null, 2)};\n`;
+    const studentsFileContent = `import { IStudent } from "@/features/academy";\n\nexport const studentsData: IStudent[] = ${JSON.stringify(students, null, 2)};\n`;
 
-    const academyDataContent = `import { IAcademyData } from "@/features/academy/types";\nimport { studentsData } from "./students";\n\nexport const academyData: IAcademyData = {\n  institution: "Learn Chinese with Kazi Robin",\n  instructor: "Kazi Robin",\n  courses: ${JSON.stringify(courses, null, 2)},\n  students: studentsData,\n};\n`;
+    const academyDataContent = `import { IAcademyData } from "@/features/academy";\nimport { studentsData } from "./students";\n\nexport const academyData: IAcademyData = {\n  institution: "Learn Chinese with Kazi Robin",\n  instructor: "Kazi Robin",\n  courses: ${JSON.stringify(courses, null, 2)},\n  students: studentsData,\n};\n`;
 
     // ৩. data/academy ফোল্ডারে ফাইল রাইট করা
     const targetDir = path.join(process.cwd(), "src", "features", "academy", "data");

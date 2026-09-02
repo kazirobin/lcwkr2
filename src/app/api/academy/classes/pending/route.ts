@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { ClassLog } from "@/features/academy/models/ClassLog";
+import { ClassLog } from "@/features/academy/models";
 
 export async function GET() {
   try {

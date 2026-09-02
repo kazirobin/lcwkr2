@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { useLanguage } from '@/i18n';
 
 /**
  * The `/intro` route — "Start here". A problem → answer read for a Bangla-speaking

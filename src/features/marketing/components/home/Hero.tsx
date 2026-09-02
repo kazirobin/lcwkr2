@@ -12,7 +12,7 @@ import {
   Star,
   Users,
 } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 
 type Props = {
   /** Optional real instructor portrait. Omitted → an initials mark is used instead. */

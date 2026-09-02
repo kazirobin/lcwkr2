@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 import {
   rulesData,
   categoryGroups,

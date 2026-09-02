@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, X } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { AdminShell } from "@/features/academy/components/admin/AdminShell";
+import { useLanguage } from "@/i18n";
+import { AdminShell } from "@/features/academy";
 import {
   Button,
   Card,

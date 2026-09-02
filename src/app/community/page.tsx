@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { Clock, MessageCircle } from "lucide-react";
 
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage } from "@/i18n";
 import {
   communityMembers,
   getCommunityStats,
