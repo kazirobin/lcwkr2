@@ -63,6 +63,7 @@ export const footer = {
     madeWith: "Made with",
     forLearners: "for Chinese learners in Bangladesh",
     backToTop: "Back to top",
+    builtBy: "Designed & developed by",
   },
   bn: {
     tagline:
@@ -107,6 +108,7 @@ export const footer = {
     madeWith: "ভালোবাসা দিয়ে তৈরি",
     forLearners: "বাংলাদেশের চাইনিজ শিক্ষার্থীদের জন্য",
     backToTop: "উপরে যান",
+    builtBy: "ডিজাইন ও ডেভেলপ করেছে",
   },
 };
 
@@ -292,6 +294,19 @@ export default function Footer() {
               {data.backToTop}
             </button>
           </div>
+        </div>
+
+        {/* developer credit */}
+        <div className="flex items-center justify-center gap-1.5 border-t border-text/10 py-5 text-xs text-text/45">
+          <span>{data.builtBy}</span>
+          <a
+            href="https://logiq-dev.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-text/70 transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Logiq Dev
+          </a>
         </div>
       </div>
     </footer>
