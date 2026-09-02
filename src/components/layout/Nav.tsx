@@ -254,15 +254,41 @@ export default function Nav() {
     }
   };
 
-  // Render a single link
-  const renderLink = (href: string, label: string, onClick?: () => void) => {
+  // Render a single link.
+  // - "mobile": full-width rows with rounded chips (mobile panel)
+  // - "desktop": inline, centered nav items — active reads as accent text
+  //   only (no filled chip), matching the header reference.
+  const renderLink = (
+    href: string,
+    label: string,
+    context: "desktop" | "mobile" = "mobile",
+    onClick?: () => void
+  ) => {
     const active = isActive(href);
+
+    if (context === "desktop") {
+      return (
+        <Link
+          href={href}
+          onClick={onClick || closeAll}
+          aria-current={active ? "page" : undefined}
+          className={`px-3 py-2 text-sm font-medium transition-colors ${
+            active
+              ? "text-secondary"
+              : "text-text/70 hover:text-text"
+          }`}
+        >
+          {label}
+        </Link>
+      );
+    }
+
     return (
       <Link
         href={href}
         onClick={onClick || closeAll}
         aria-current={active ? "page" : undefined}
-        className={`block px-4 py-3 md:py-2 text-base md:text-sm font-medium transition-colors rounded-lg md:rounded-full ${
+        className={`block px-4 py-3 text-base font-medium transition-colors rounded-lg ${
           active
             ? "text-secondary bg-secondary/10"
             : "text-text/80 hover:text-secondary hover:bg-secondary/7"
@@ -285,12 +311,10 @@ export default function Nav() {
         <button
           type="button"
           onClick={() => toggleDropdown(dropdownId)}
-          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-full ${
-            active
-              ? "text-secondary bg-secondary/10"
-              : isOpen
-                ? "text-secondary bg-secondary/6"
-                : "text-text/80 hover:text-secondary hover:bg-secondary/7"
+          className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors ${
+            active || isOpen
+              ? "text-secondary"
+              : "text-text/70 hover:text-text"
           }`}
           aria-expanded={isOpen}
           aria-current={active ? "location" : undefined}
@@ -433,14 +457,14 @@ export default function Nav() {
         ref={navRef}
         className="fixed inset-x-0 top-0 z-40"
       >
-        <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
-          <div
-            className={`mt-2 sm:mt-3 flex items-center justify-between gap-2 rounded-2xl px-2.5 sm:px-4 transition-all duration-300 ${
-              scrolled
-                ? "h-14 sm:h-16 border border-text/10 bg-background/70 backdrop-blur-xl ring-1 ring-white/50 dark:ring-white/5 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.28)]"
-                : "h-14 sm:h-17 border border-text/5 bg-background/40 backdrop-blur-md ring-1 ring-white/30 dark:ring-white/3 shadow-[0_10px_30px_-16px_rgba(0,0,0,0.18)]"
-            }`}
-          >
+        <div
+          className={`transition-colors duration-300 ${
+            scrolled
+              ? "border-b border-text/10 bg-background/85 backdrop-blur-xl"
+              : "border-b border-transparent bg-transparent backdrop-blur-sm"
+          }`}
+        >
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:h-20 sm:px-6 lg:px-8">
             {/* Logo */}
             <Link
               href="/"
@@ -457,52 +481,53 @@ export default function Nav() {
               />
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex md:items-center md:gap-0.5">
+            {/* Desktop Navigation — centered between the logo and the actions */}
+            <div className="hidden md:flex md:flex-1 md:items-center md:justify-center md:gap-1">
               {MAIN_LINKS.map((link) => (
                 <div key={link.id}>
-                  {renderLink(link.href, t(link.en, link.bn))}
+                  {renderLink(link.href, t(link.en, link.bn), "desktop")}
                 </div>
               ))}
 
               {Object.keys(DROPDOWNS).map((id) => (
                 <div key={id}>{renderDesktopDropdown(id as DropdownId)}</div>
               ))}
+            </div>
 
-              <div className="ml-2 flex items-center gap-1.5 border-l border-text/10 pl-3">
-                <button
-                  type="button"
-                  onClick={toggleLanguage}
-                  className="px-3 py-2 text-sm font-medium text-text/80 hover:text-secondary hover:bg-secondary/7 rounded-full transition-colors"
-                  aria-label="Toggle language"
+            {/* Desktop actions */}
+            <div className="hidden md:flex md:shrink-0 md:items-center md:gap-1.5">
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="px-3 py-2 text-sm font-medium text-text/70 hover:text-text rounded-full transition-colors"
+                aria-label="Toggle language"
+              >
+                {language === "en" ? "বাংলা" : "English"}
+              </button>
+              <ThemeButton />
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeAll}
+                className="ml-1 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-secondary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-secondary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-secondary/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+              >
+                {t("Join live class", "লাইভ ক্লাসে যোগ দিন")}
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
-                  {language === "en" ? "বাংলা" : "English"}
-                </button>
-                <ThemeButton />
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={closeAll}
-                  className="ml-1 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-secondary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-secondary/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                >
-                  {t("Join live class", "লাইভ ক্লাসে যোগ দিন")}
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                </a>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+              </a>
             </div>
 
             {/* Mobile Controls */}
@@ -553,7 +578,7 @@ export default function Nav() {
           {isMobile && isMobileMenuOpen && (
             <div
               ref={mobileMenuRef}
-              className={`md:hidden mt-2 rounded-2xl py-3 px-2 animate-in fade-in slide-in-from-top-2 duration-150 ${PANEL_GLASS}`}
+              className={`md:hidden mx-4 mb-2 rounded-2xl py-3 px-2 animate-in fade-in slide-in-from-top-2 duration-150 ${PANEL_GLASS}`}
             >
               <div className="flex flex-col space-y-1">
                 {MAIN_LINKS.map((link) => (
