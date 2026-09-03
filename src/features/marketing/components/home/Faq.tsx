@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Plus, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import Script from "next/dist/client/script";
 
 type FAQItem = {
   question: string;
@@ -148,7 +149,7 @@ function FaqJsonLd() {
   };
 
   return (
-    <script
+    <Script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
         __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),

@@ -1,89 +1,76 @@
 import { NextResponse } from "next/server";
-// TODO: wire this up to the DB via a `src/features/donations/server/` module
-// (see docs/architecture.md — API routes stay thin). `db` lives at "@/lib/db".
+import {
+  getAllDonations,
+  createDonation,
+  updateDonation,
+  deleteDonation,
+} from "@/features/marketing/server/donations";
 
-// ১. সকল ডোনেশন ডেটা ফেচ (READ)
+// ১. GET: সব ডোনেশন ফেচ
 export async function GET() {
   try {
-    // const client = await clientPromise;
-    // const db = client.db("lcwkr");
-    // const donations = await db.collection("donations").find({}).sort({ createdAt: -1 }).toArray();
-
-    // মক রেসপন্স (ডাটাবেস কানেক্ট থাকলে ওপরের কোড ব্যবহার করুন)
-    return NextResponse.json({ success: true, donations: [] }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch donations" }, { status: 500 });
+    const donations = await getAllDonations();
+    return NextResponse.json({ success: true, donations }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to fetch donations";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// ২. নতুন ডোনেশন অ্যাড (CREATE)
+// ২. POST: নতুন ডোনেশন তৈরি
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, phone, location, trxId, amount } = body;
 
     if (!name || !phone || !trxId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Name, Phone and TrxID are required." },
+        { status: 400 }
+      );
     }
 
-    const newDonation = {
-      name,
-      phone,
-      location: location || "Bangladesh",
-      trxId: trxId.toUpperCase(),
-      amount: Number(amount) || 200,
-      createdAt: new Date(),
-    };
-
-    // const client = await clientPromise;
-    // const db = client.db("lcwkr");
-    // const result = await db.collection("donations").insertOne(newDonation);
-
-    return NextResponse.json({ success: true, data: newDonation }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create donation" }, { status: 500 });
+    const data = await createDonation({ name, phone, location, trxId, amount });
+    return NextResponse.json({ success: true, data }, { status: 201 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to create donation";
+    const status = message.includes("already been submitted") ? 409 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
-// ৩. ডোনেশন আপডেট (UPDATE)
+// ৩. PUT: ডোনেশন আপডেট
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
     const { id, name, phone, location, trxId, amount } = body;
 
     if (!id) {
-      return NextResponse.json({ error: "Donation ID required" }, { status: 400 });
+      return NextResponse.json({ error: "Donation ID is required." }, { status: 400 });
     }
 
-    // const client = await clientPromise;
-    // const db = client.db("lcwkr");
-    // await db.collection("donations").updateOne(
-    //   { _id: new ObjectId(id) },
-    //   { $set: { name, phone, location, trxId: trxId.toUpperCase(), amount: Number(amount) } }
-    // );
-
-    return NextResponse.json({ success: true, message: "Updated successfully" }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to update donation" }, { status: 500 });
+    const data = await updateDonation(id, { name, phone, location, trxId, amount });
+    return NextResponse.json({ success: true, message: "Updated successfully", data }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to update donation";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// ৪. ডোনেশন ডিলিট (DELETE)
+// ৪. DELETE: ডোনেশন মুছে ফেলা
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "Donation ID required" }, { status: 400 });
+      return NextResponse.json({ error: "Donation ID is required." }, { status: 400 });
     }
 
-    // const client = await clientPromise;
-    // const db = client.db("lcwkr");
-    // await db.collection("donations").deleteOne({ _id: new ObjectId(id) });
-
-    return NextResponse.json({ success: true, message: "Deleted successfully" }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to delete donation" }, { status: 500 });
+    await deleteDonation(id);
+    return NextResponse.json({ success: true, message: "Deleted successfully." }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to delete donation";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

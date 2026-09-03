@@ -1,30 +1,18 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
-import { Heart, Check, Copy, ArrowUpRight } from "lucide-react";
+import { useId, useRef, useState, useEffect } from "react";
+import { Heart, Check, Copy, ArrowUpRight, Target } from "lucide-react";
 
 import { useReveal } from "@/lib/useReveal";
-import { donors as seedDonors, DONATION, type Donor } from "@/features/marketing/data/donors";
-
-/**
- * `/donate` — the voluntary-support page.
- *
- * Rebuilt into the house sumi-e register (see `app/community/page.tsx`):
- * rice-paper hero, an oversized Hanzi per section, hairline-separated rows
- * rather than card grids, and the shared `.reveal-group` entrance. The copy,
- * the donor roll and the submit flow are carried over unchanged from the
- * original page; what changed is the visual treatment plus the form/status
- * accessibility (associated labels, `autocomplete`, an announced status
- * region, and a visible WhatsApp link rather than a silent popup).
- *
- * Backend concerns (`/api/donations` auth, real persistence, server-side
- * validation) are tracked separately and untouched here.
- */
+import {
+  seedDonors,
+  DONATION,
+  type Donor,
+} from "@/features/marketing/data/donors";
 
 const maskPhone = (phone: string) =>
   phone.replace(/^(\d{3})\d+(\d{2})$/, "$1******$2");
 
-// ── the bKash number, with a copy control ──────────────────────────
 function NumberBlock() {
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +22,7 @@ function NumberBlock() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* clipboard unavailable — the number is still visible to type */
+      /* clipboard unavailable */
     }
   };
 
@@ -69,7 +57,6 @@ function NumberBlock() {
   );
 }
 
-// ── field ──────────────────────────────────────────────────────────
 function Field({
   label,
   name,
@@ -98,10 +85,7 @@ function Field({
 
   return (
     <div>
-      <label
-        htmlFor={id}
-        className="block text-sm font-medium text-text"
-      >
+      <label htmlFor={id} className="block text-sm font-medium text-text">
         {label}
         <span className="ml-0.5 text-secondary" aria-hidden="true">
           *
@@ -135,6 +119,7 @@ function Field({
 
 export default function DonatePage() {
   const [donors, setDonors] = useState<Donor[]>(seedDonors);
+  const [fetching, setFetching] = useState(true);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -145,13 +130,38 @@ export default function DonatePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(
-    null,
+    null
   );
   const [waLink, setWaLink] = useState("");
   const waRef = useRef<HTMLAnchorElement>(null);
 
   const formRef = useReveal<HTMLDivElement>();
   const rollRef = useReveal<HTMLDivElement>();
+
+  const loadDonations = async () => {
+    try {
+      const res = await fetch("/api/donations", { cache: "no-store" });
+      const data = await res.json();
+      if (data.donations && data.donations.length > 0) {
+        setDonors(data.donations);
+      }
+    } catch (e) {
+      console.error("Failed to fetch donors:", e);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDonations();
+  }, []);
+
+  const totalRaised = donors.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const remainingNeeded = Math.max(0, DONATION.targetGoal - totalRaised);
+  const progressPercent = Math.min(
+    100,
+    Math.round((totalRaised / DONATION.targetGoal) * 100)
+  );
 
   const setField = (k: keyof typeof formData) => (v: string) => {
     setFormData((prev) => ({ ...prev, [k]: v }));
@@ -173,9 +183,6 @@ export default function DonatePage() {
     const fieldErrors = validate();
     if (Object.keys(fieldErrors).length) {
       setErrors(fieldErrors);
-      document
-        .querySelector<HTMLInputElement>('form [aria-invalid="true"]')
-        ?.focus();
       return;
     }
 
@@ -183,25 +190,23 @@ export default function DonatePage() {
     setStatus(null);
 
     try {
-      // ১. নিজস্ব API-তে ডেটা পাঠানো
       const res = await fetch("/api/donations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, amount: 200 }),
       });
 
-      if (!res.ok) throw new Error("Failed to submit donation");
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "Failed to submit donation");
 
-      // ২. ফ্রন্টএন্ডে রিয়েল-টাইমে লিস্ট আপডেট
       setDonors((prev) => [
-        { ...formData, phone: maskPhone(formData.phone), amount: 200 },
+        resData.data || { ...formData, phone: maskPhone(formData.phone), amount: 200 },
         ...prev,
       ]);
 
-      // ৩. WhatsApp-এ স্বয়ংক্রিয় মেসেজ পাঠানোর লিঙ্ক তৈরি
       const message = `🎉 *New Donation Received!*\n\n👤 *Name:* ${formData.name}\n📱 *Phone:* ${formData.phone}\n📍 *Location:* ${formData.location}\n💳 *TrxID:* ${formData.trxId}\n💰 *Amount:* 200 BDT\n\nThank you for supporting LCWKR!`;
       const whatsappUrl = `https://wa.me/${DONATION.adminWhatsApp}?text=${encodeURIComponent(
-        message,
+        message
       )}`;
       setWaLink(whatsappUrl);
 
@@ -210,19 +215,13 @@ export default function DonatePage() {
         msg: "Donation information submitted successfully! Redirecting to WhatsApp...",
       });
 
-      // ফর্ম রিসেট
       setFormData({ name: "", phone: "", location: "", trxId: "" });
-
-      // WhatsApp ট্যাবে ওপেন করা — the visible link below is the fallback
-      // when the browser blocks the programmatic open.
       window.open(whatsappUrl, "_blank", "noopener");
       requestAnimationFrame(() => waRef.current?.focus());
-    } catch (err) {
-      console.error(err);
-      setStatus({
-        type: "error",
-        msg: "Something went wrong. Please try again.",
-      });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setStatus({ type: "error", msg: message });
     } finally {
       setLoading(false);
     }
@@ -252,12 +251,46 @@ export default function DonatePage() {
 
             <p className="mt-6 max-w-[54ch] text-base leading-[1.9] text-text/70 sm:text-lg">
               আমাদের <span className="font-semibold text-text">LCWKR</span>{" "}
-              প্ল্যাটফর্মকে আরও উন্নত, সহজলভ্য এবং নতুন ফিচারে সমৃদ্ধ করতে আপনার
-              সহযোগিতা অত্যন্ত মূল্যবান। আপনি যদি আমাদের উদ্যোগের সাথে থাকতে চান,
-              তবে স্বেচ্ছায়{" "}
+              প্ল্যাটফর্মকে সচল, ফ্রি এবং নতুন ফিচারে সমৃদ্ধ করতে
+              স্বেচ্ছায়{" "}
               <span className="font-bold text-secondary">২০০ টাকা</span> অনুদান
               দিয়ে প্ল্যাটফর্মের উন্নয়নে অংশ নিতে পারেন।
             </p>
+
+            {/* DYNAMIC PROGRESS / GOAL CARD */}
+            <div className="mt-8 max-w-lg rounded-2xl border border-text/15 bg-card/60 p-5 backdrop-blur-sm">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-text/60">
+                <span className="flex items-center gap-1.5">
+                  <Target className="size-4 text-secondary" /> লক্ষ্যমাত্রা: ৳
+                  {DONATION.targetGoal.toLocaleString()}
+                </span>
+                <span className="font-mono text-text">{progressPercent}% অর্জিত</span>
+              </div>
+
+              <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-text/10">
+                <div
+                  className="h-full rounded-full bg-secondary transition-all duration-700 ease-out"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-text/10 pt-3 text-sm">
+                <div>
+                  <span className="text-xs text-text/50">মোট সংগৃহীত:</span>
+                  <p className="font-mono text-lg font-bold text-ok">
+                    ৳{totalRaised.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-text/50">আর প্রয়োজন:</span>
+                  <p className="font-mono text-lg font-bold text-secondary">
+                    {remainingNeeded === 0
+                      ? "লক্ষ্য পূরণ হয়েছে! 🎉"
+                      : `৳${remainingNeeded.toLocaleString()}`}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <NumberBlock />
           </div>
@@ -330,7 +363,7 @@ export default function DonatePage() {
                 type="submit"
                 disabled={loading}
                 aria-busy={loading}
-                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-text px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text disabled:opacity-55 sm:w-auto"
+                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-text px-5 py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-55 sm:w-auto"
               >
                 {loading ? "সাবমিট হচ্ছে..." : "কনফার্ম করুন (Confirm Donation)"}
               </button>
@@ -356,7 +389,7 @@ export default function DonatePage() {
                       href={waLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-semibold text-text underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                      className="inline-flex items-center gap-1 font-semibold text-text underline underline-offset-2"
                     >
                       Open WhatsApp
                       <ArrowUpRight className="size-3.5" aria-hidden="true" />
@@ -383,7 +416,7 @@ export default function DonatePage() {
               className="size-6 shrink-0 fill-current text-secondary"
               aria-hidden="true"
             />
-            সম্মানিত ডোনারদের তালিকা
+            সম্মানিত ডোনারদের তালিকা ({donors.length} জন)
           </h2>
 
           <ul
@@ -391,22 +424,30 @@ export default function DonatePage() {
             style={{ "--r": 1 } as React.CSSProperties}
             className="mt-8 max-w-2xl border-t border-text/10"
           >
-            {donors.map((donor, idx) => (
-              <li
-                key={`${donor.trxId}-${idx}`}
-                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-text/10 py-4"
-              >
-                <span className="text-[15px] font-medium text-text">
-                  {donor.name}
-                </span>
-                <span className="font-mono text-sm tabular-nums text-text/55">
-                  ৳{donor.amount}
-                </span>
-                <span className="w-full text-xs text-text/50">
-                  {donor.phone} · {donor.location}
-                </span>
+            {fetching ? (
+              <li className="py-6 text-sm text-text/50">ডেটা লোড হচ্ছে...</li>
+            ) : donors.length === 0 ? (
+              <li className="py-6 text-sm text-text/50">
+                এখনও কোনো ডোনেশন রেকর্ড পাওয়া যায়নি।
               </li>
-            ))}
+            ) : (
+              donors.map((donor, idx) => (
+                <li
+                  key={donor._id || `${donor.trxId}-${idx}`}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-text/10 py-4"
+                >
+                  <span className="text-[15px] font-medium text-text">
+                    {donor.name}
+                  </span>
+                  <span className="font-mono text-sm tabular-nums text-text/55">
+                    ৳{donor.amount}
+                  </span>
+                  <span className="w-full text-xs text-text/50">
+                    {maskPhone(donor.phone)} · {donor.location}
+                  </span>
+                </li>
+              ))
+            )}
           </ul>
         </div>
       </section>

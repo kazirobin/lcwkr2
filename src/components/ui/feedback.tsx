@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -31,7 +32,12 @@ const toneIcon: Record<ToastTone, ReactNode> = {
 
 function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mounted, setMounted] = useState(false);
   const seq = useRef(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toast = useCallback((message: string, tone: ToastTone = "info") => {
     const id = ++seq.current;
@@ -44,7 +50,7 @@ function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={value}>
       {children}
-      {typeof document !== "undefined" &&
+      {mounted &&
         createPortal(
           <div
             className="pointer-events-none fixed inset-x-0 bottom-4 z-[70] flex flex-col items-center gap-2 px-4"

@@ -7,6 +7,7 @@ import {
   getTextParams,
 } from "@/features/vocabulary/data";
 import TextReader from "@/features/vocabulary/components/TextReader";
+import Script from "next/dist/client/script";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://lcwkr.vercel.app";
@@ -93,7 +94,7 @@ export default async function TextPage({ params }: Props) {
 
   return (
     <>
-      <script
+      <Script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />

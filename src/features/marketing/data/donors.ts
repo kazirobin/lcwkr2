@@ -1,19 +1,18 @@
 /**
  * Donor honour roll + donation config for `/donate`.
- *
- * Rows are the recorded donors shown on the page. New entries submitted through
- * the form are prepended client-side (phone masked) and also POSTed to
- * `/api/donations`.
  */
+
 export interface Donor {
+  _id?: string;
   name: string;
   phone: string;
   location: string;
   trxId: string;
   amount: number;
+  createdAt?: string | Date;
 }
 
-export const donors: Donor[] = [
+export const seedDonors: Donor[] = [
   {
     name: "Thakurdash Chandra Ray",
     phone: "017******12",
@@ -26,6 +25,8 @@ export const donors: Donor[] = [
 export const DONATION = {
   /** Suggested voluntary amount, in BDT. */
   amount: 200,
+  /** প্ল্যাটফর্মের বর্তমান ডোনেশন লক্ষ্যমাত্রা (টাকায়) */
+  targetGoal: 5000,
   /** bKash Personal number for "Send Money". */
   bkashNumber: "01787881334",
   /** Admin WhatsApp in E.164 without the leading "+". */

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import IntroContent from "./IntroContent";
+import Script from "next/dist/client/script";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://lcwkr.vercel.app";
@@ -79,7 +80,7 @@ const jsonLd = {
 export default function IntroPage() {
   return (
     <>
-      <script
+      <Script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
