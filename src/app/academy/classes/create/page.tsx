@@ -65,15 +65,44 @@ export default function TeacherClassLogPage() {
 
   const enrolled = useMemo(() => {
     const code = courseId.toLowerCase();
-    return students.filter((s) => {
+    const filtered = students.filter((s) => {
       if (Array.isArray(s.enrolledCourseIds))
         return s.enrolledCourseIds.some((id) => id.toLowerCase() === code);
       const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
       return legacy ? legacy.toLowerCase() === code : false;
     });
+
+    // 👈 সর্টিং লজিক: উপস্থিত স্টুডেন্টদের উপরে এবং বাকিদের নিচে রাখা, 
+    // একই সাথে মূল রোল নম্বরের ক্রম বজায় রাখা যাতে আগের পজিশনে ফিরে যেতে পারে।
+    return [...filtered].sort((a, b) => {
+      const rollA = String(a.rollNumber).trim();
+      const rollB = String(b.rollNumber).trim();
+      const aPresent = presentRolls.includes(rollA);
+      const bPresent = presentRolls.includes(rollB);
+
+      if (aPresent && !bPresent) return -1;
+      if (!aPresent && bPresent) return 1;
+
+      // যদি উভয়ই উপস্থিত অথবা উভয়ই অনুপস্থিত থাকে, তবে রোল নম্বর অনুযায়ী সাজবে
+      const numA = parseInt(rollA.replace(/\D/g, ""), 10);
+      const numB = parseInt(rollB.replace(/\D/g, ""), 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return rollA.localeCompare(rollB);
+    });
+  }, [students, courseId, presentRolls]);
+
+  const allRolls = useMemo(() => {
+    const code = courseId.toLowerCase();
+    return students
+      .filter((s) => {
+        if (Array.isArray(s.enrolledCourseIds))
+          return s.enrolledCourseIds.some((id) => id.toLowerCase() === code);
+        const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
+        return legacy ? legacy.toLowerCase() === code : false;
+      })
+      .map((s) => String(s.rollNumber).trim());
   }, [students, courseId]);
 
-  const allRolls = useMemo(() => enrolled.map((s) => String(s.rollNumber).trim()), [enrolled]);
   const allPresent = allRolls.length > 0 && presentRolls.length === allRolls.length;
 
   const toggle = (roll: string) =>
@@ -215,13 +244,13 @@ export default function TeacherClassLogPage() {
                     </h2>
                     <p className="mt-0.5 text-xs tabular-nums text-text/55">
                       {t(
-                        `উপস্থিত ${presentRolls.length} · অনুপস্থিত ${enrolled.length - presentRolls.length} · মোট ${enrolled.length}`,
-                        `${presentRolls.length} present · ${enrolled.length - presentRolls.length} absent · ${enrolled.length} total`,
+                        `উপস্থিত ${presentRolls.length} · অনুপস্থিত ${allRolls.length - presentRolls.length} · মোট ${allRolls.length}`,
+                        `${presentRolls.length} present · ${allRolls.length - presentRolls.length} absent · ${allRolls.length} total`,
                       )}
                     </p>
                   </div>
                 </div>
-                {enrolled.length > 0 && (
+                {allRolls.length > 0 && (
                   <Button
                     type="button"
                     variant="secondary"
@@ -249,7 +278,7 @@ export default function TeacherClassLogPage() {
                           type="button"
                           onClick={() => toggle(roll)}
                           aria-pressed={present}
-                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
                             present
                               ? "border-ok/40 bg-ok-surface"
                               : "border-text/12 bg-card hover:border-text/25"
@@ -262,8 +291,8 @@ export default function TeacherClassLogPage() {
                             </span>
                           </span>
                           <span
-                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
-                              present ? "border-ok bg-ok text-card" : "border-text/25 text-transparent"
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-transform ${
+                              present ? "border-ok bg-ok text-card scale-105" : "border-text/25 text-transparent"
                             }`}
                             aria-hidden="true"
                           >
