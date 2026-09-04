@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, MessageSquare, RefreshCw } from "lucide-react";
+import { ArrowRight, MessageSquare, RefreshCw, X, AlertCircle, Clock, Calendar } from "lucide-react";
 import { ICourse } from "@/features/academy";
 import { useLanguage } from "@/i18n";
 import {
@@ -59,6 +59,11 @@ export default function StudentAdmissionPage() {
 
   const [registered, setRegistered] = useState<Registered | null>(null);
 
+  // 👈 রানিং কোর্সের পপআপ ও কাউন্টডাউন স্টেট
+  const [showRunningModal, setShowRunningModal] = useState(false);
+  const [countdown, setCountdown] = useState(20);
+  const [nextBatchDate, setNextBatchDate] = useState("September 15, 2026");
+
   const fetchCourses = useCallback(async () => {
     setLoadingCourses(true);
     try {
@@ -69,6 +74,19 @@ export default function StudentAdmissionPage() {
           (c: ICourse) => c.status === "Coming Soon" || c.status === "Running",
         );
         setCourses(open);
+
+        // যদি সব কোর্সই Running থাকে এবং Coming Soon না থাকে, তবে পপআপ ট্রিগার করুন
+        const hasComingSoon = open.some((c: ICourse) => c.status === "Coming Soon");
+        const hasRunning = open.some((c: ICourse) => c.status === "Running");
+
+        if (!hasComingSoon && hasRunning) {
+          const runningCourse = open.find((c: ICourse) => c.status === "Running");
+          if (runningCourse?.nextBatchRegistrationDate) {
+            setNextBatchDate(runningCourse.nextBatchRegistrationDate);
+          }
+          setShowRunningModal(true);
+        }
+
         if (open.length > 0) setCourseId(open[0].courseId);
       }
     } catch {
@@ -81,6 +99,25 @@ export default function StudentAdmissionPage() {
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
+
+// ২০ সেকেন্ডের কাউন্টডাউন ও অটো রিডাইরেক্ট লজিক (Fix applied)
+  useEffect(() => {
+    if (!showRunningModal) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // রেন্ডার সাইকেলের বাইরে নেভিগেট করার জন্য setTimeout ব্যবহার করা হলো
+          setTimeout(() => {
+            router.push("/academy");
+          }, 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [showRunningModal, router]);
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -266,6 +303,54 @@ export default function StudentAdmissionPage() {
           </form>
         )}
       </div>
+
+      {/* 👈 কোর্স স্ট্যাটাস Running থাকলে পপআপ মোডাল */}
+      {showRunningModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-background border border-text/10 rounded-3xl p-6 text-center space-y-4 relative shadow-2xl animate-in fade-in zoom-in-95">
+            <button
+              onClick={() => router.push("/academy")}
+              className="absolute top-3 right-3 text-text/40 hover:text-text p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <AlertCircle className="w-10 h-10 text-secondary mx-auto" />
+
+            <div>
+              <h3 className="text-lg font-bold text-text">
+                {t("ভর্তি বন্ধ রয়েছে (ব্যাচ চলমান)", "Admission Closed (Batch Running)")}
+              </h3>
+              <p className="text-xs text-text/60 mt-1 leading-relaxed">
+                {t(
+                  "এই মুহূর্তে চলমান ব্যাচে নতুন শিক্ষার্থী ভর্তি নেওয়া হচ্ছে না। পরবর্তী ব্যাচের জন্য অপেক্ষা করুন।",
+                  "New student admissions are currently closed for the running batch. Please wait for the next intake.",
+                )}
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-text/5 border border-text/10 text-left text-xs space-y-1">
+              <span className="text-primary font-semibold flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" /> {t("পরবর্তী ব্যাচ শুরু:", "Next Batch Starts:")}
+              </span>
+              <p className="font-mono font-bold text-text pl-4.5">{nextBatchDate}</p>
+            </div>
+
+            <div className="space-y-2 pt-1 text-xs">
+              <p className="text-text/40 flex items-center justify-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> {t("হোমপেজে রিডাইরেক্ট হতে সময় বাকি", "Redirecting home in")} <b className="text-secondary">{countdown}s</b>
+              </p>
+              <Button
+                onClick={() => router.push("/academy")}
+                className="w-full"
+                variant="secondary"
+              >
+                {t("একাডেমি হাবে ফিরে যান", "Return to Academy Hub")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog
         open={registered !== null}

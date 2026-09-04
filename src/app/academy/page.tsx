@@ -162,7 +162,7 @@ export default function AcademyHubPage() {
         }
       />
 
-      {/* Stat row — hairline divided, ink figures, never a placeholder zero */}
+      {/* Stat row */}
       <dl className="mt-10 grid grid-cols-2 divide-text/10 rounded-2xl border border-text/10 bg-card sm:grid-cols-4 sm:divide-x">
         {(
           [
@@ -281,14 +281,14 @@ export default function AcademyHubPage() {
           </div>
         )}
 
-        {/* Admission notice — calm, no countdown, no forced redirect */}
+        {/* Admission notice */}
         {!loading && (
           <Card className="mt-6 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-text">
                 {openBatch
                   ? t("নতুন ব্যাচের ভর্তি চলছে", "Admission is open for the next cohort")
-                  : t("সব ব্যাচে ক্লাস চলছে", "All cohorts are currently running")}
+                  : t("সব ব্যাচে ক্লাস চলছে (ভর্তি বন্ধ)", "All cohorts are currently running (Admission closed)")}
               </p>
               <p className="mt-1 text-sm text-text/60">
                 {openBatch
@@ -297,15 +297,21 @@ export default function AcademyHubPage() {
                       `${openBatch.courseName} — reserve a seat now.`,
                     )
                   : t(
-                      `পরবর্তী ভর্তি: ${nextIntake}`,
-                      `Next intake: ${nextIntake}`,
+                      `পরবর্তী ব্যাচে ভর্তি শুরু হবে: ${nextIntake}`,
+                      `Next batch admission starts: ${nextIntake}`,
                     )}
               </p>
             </div>
-            {openBatch && (
+            
+            {openBatch ? (
               <ButtonLink href="/academy/admission" size="sm" iconRight={<ArrowRight className="h-4 w-4" />}>
                 {t("আবেদন করুন", "Apply now")}
               </ButtonLink>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-xl border border-text/15 bg-text/5 px-4 py-2 text-xs font-semibold text-text/70">
+                <span>{t("আগামী ভর্তি:", "Next Intake:")}</span>
+                <span className="font-mono text-primary font-bold">{nextIntake}</span>
+              </div>
             )}
           </Card>
         )}
