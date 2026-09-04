@@ -2,6 +2,8 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ITodo extends Document {
   title: string;
+  title2?: string;
+  studentsName?: string;
   completed: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -13,6 +15,16 @@ const TodoSchema: Schema = new Schema(
       type: String,
       required: [true, "Title is required"],
       trim: true,
+    },
+    title2: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    studentsName: {
+      type: String,
+      trim: true,
+      default: "",
     },
     completed: {
       type: Boolean,
