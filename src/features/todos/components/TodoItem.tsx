@@ -24,6 +24,7 @@ export default function TodoItemComponent({
   const [studentsName, setStudentsName] = useState(todo.studentsName || "");
   const [completed, setCompleted] = useState(todo.completed);
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // Collapse/Expand state
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
@@ -58,14 +59,17 @@ export default function TodoItemComponent({
     }
   };
 
+  // Check if text is long enough to warrant collapsing (e.g., more than 120 characters or has line breaks)
+  const isLongText = todo.title.length > 120 || todo.title.split("\n").length > 3;
+
   return (
-    <div className="bg-[#202124] border border-[#5f6368] hover:border-slate-300 rounded-lg p-4 flex flex-col justify-between gap-3 shadow-sm transition group">
+    <div className="bg-card border border-border hover:border-primary/50 rounded-lg p-4 flex flex-col justify-between gap-3 shadow-sm transition">
       <div className="flex flex-col gap-3">
-        {/* Admin-only Fields (at the top when editing) */}
+        {/* Admin-only Fields (Side by side when editing) */}
         {isEditing && (
-          <div className="flex flex-col gap-2 pb-2 border-b border-[#3c4043]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-2 border-b border-border">
             <div>
-              <label className="text-[10px] text-amber-400 font-semibold uppercase">
+              <label className="text-[10px] text-primary font-semibold uppercase">
                 Title 2 (Admin Only)
               </label>
               <input
@@ -73,11 +77,11 @@ export default function TodoItemComponent({
                 value={title2}
                 onChange={(e) => setTitle2(e.target.value)}
                 placeholder="Secondary detail"
-                className="w-full bg-[#171717] border border-[#5f6368] px-2 py-1 rounded text-xs text-slate-100 mt-0.5 focus:outline-none focus:border-amber-400"
+                className="w-full bg-background border border-border px-2 py-1 rounded text-xs text-text mt-0.5 focus:outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="text-[10px] text-amber-400 font-semibold uppercase">
+              <label className="text-[10px] text-primary font-semibold uppercase">
                 Student Name (Admin Only)
               </label>
               <input
@@ -85,48 +89,61 @@ export default function TodoItemComponent({
                 value={studentsName}
                 onChange={(e) => setStudentsName(e.target.value)}
                 placeholder="Student name"
-                className="w-full bg-[#171717] border border-[#5f6368] px-2 py-1 rounded text-xs text-slate-100 mt-0.5 focus:outline-none focus:border-amber-400"
+                className="w-full bg-background border border-border px-2 py-1 rounded text-xs text-text mt-0.5 focus:outline-none focus:border-primary"
               />
             </div>
           </div>
         )}
 
-        {/* Display Admin Fields if they exist and not editing */}
+        {/* Display Admin Fields Side by Side if they exist and not editing */}
         {!isEditing && (todo.title2 || todo.studentsName) && (
-          <div className="flex flex-col text-xs text-slate-400 pb-2 border-b border-[#3c4043] gap-1">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted pb-2 border-b border-border">
             {todo.title2 && (
               <span>
-                <strong className="text-slate-300">Detail:</strong> {todo.title2}
+                <strong className="text-text">Detail:</strong> {todo.title2}
               </span>
             )}
             {todo.studentsName && (
               <span>
-                <strong className="text-slate-300">Student:</strong> {todo.studentsName}
+                <strong className="text-text">Student:</strong> {todo.studentsName}
               </span>
             )}
           </div>
         )}
 
-        {/* Main Note Text (Now placed at the bottom/last) */}
+        {/* Main Note Text with Collapse / Expand Logic */}
         {isEditing ? (
           <textarea
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bg-[#171717] border border-[#5f6368] px-2 py-1 rounded text-sm text-slate-100 w-full focus:outline-none focus:border-amber-400 resize-y min-h-[60px]"
+            className="bg-background border border-border px-2 py-1 rounded text-sm text-text w-full focus:outline-none focus:border-primary resize-y min-h-[80px]"
           />
         ) : (
-          <span
-            className={`text-sm font-medium whitespace-pre-wrap break-words ${
-              completed ? "line-through text-slate-500" : "text-slate-100"
-            }`}
-          >
-            {todo.title}
-          </span>
+          <div className="flex flex-col gap-1">
+            <span
+              className={`text-sm font-medium whitespace-pre-wrap break-words ${
+                completed ? "line-through text-muted" : "text-text"
+              } ${!isExpanded && isLongText ? "line-clamp-3" : ""}`}
+            >
+              {todo.title}
+            </span>
+
+            {/* Show More / Show Less Button */}
+            {isLongText && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs text-primary hover:underline self-start font-medium mt-1 focus:outline-none"
+              >
+                {isExpanded ? "Show Less" : "Show More..."}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-[#3c4043]/50 mt-auto">
+      <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
         <input
           type="checkbox"
           checked={completed}
@@ -144,7 +161,7 @@ export default function TodoItemComponent({
               onError(err.message);
             }
           }}
-          className="w-4 h-4 accent-amber-500 rounded bg-[#171717] border-[#5f6368] cursor-pointer"
+          className="w-4 h-4 accent-primary rounded bg-background border-border cursor-pointer"
         />
 
         <div className="flex items-center gap-2">
@@ -153,7 +170,7 @@ export default function TodoItemComponent({
               type="button"
               onClick={handleSave}
               disabled={loading}
-              className="bg-amber-500 hover:bg-amber-400 text-black px-3 py-1 rounded text-xs font-semibold"
+              className="bg-primary text-primary-foreground hover:opacity-90 px-3 py-1 rounded text-xs font-semibold"
             >
               Done
             </button>
@@ -161,7 +178,7 @@ export default function TodoItemComponent({
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="text-slate-400 hover:text-white px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition"
+              className="text-muted hover:text-text px-2 py-1 rounded text-xs font-medium transition"
             >
               Edit
             </button>
@@ -170,7 +187,7 @@ export default function TodoItemComponent({
             type="button"
             onClick={handleDelete}
             disabled={loading}
-            className="text-red-400 hover:text-red-300 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition"
+            className="text-danger hover:opacity-80 px-2 py-1 rounded text-xs font-medium transition"
           >
             Delete
           </button>

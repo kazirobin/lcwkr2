@@ -7,8 +7,10 @@ export const metadata = {
 
 export default function TodosPage() {
   return (
-    <div className="min-h-screen bg-[#121212] text-slate-100 p-6 flex justify-center">
-      <TodoApp />
+    <div className="min-h-screen bg-background text-text p-4 sm:p-6 md:p-8 flex justify-center">
+      <div className="w-full max-w-5xl">
+        <TodoApp />
+      </div>
     </div>
   );
 }

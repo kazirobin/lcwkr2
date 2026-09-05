@@ -9,7 +9,7 @@ export default function TodoApp() {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [passcode, setPasscode] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true); // Ensure initial state is boolean
   const [error, setError] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -18,7 +18,7 @@ export default function TodoApp() {
     listTodos()
       .then(setTodos)
       .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false)); // Properly set to false once fetched
   }, []);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -45,29 +45,29 @@ export default function TodoApp() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 font-sans">
+    <div className="w-full flex flex-col gap-6 font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between bg-[#202124] border border-[#5f6368] rounded-lg px-4 py-3 shadow-md">
-        <span className="text-xl font-semibold text-amber-400 tracking-wide">Keep Notes</span>
+      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3 shadow-md">
+        <span className="text-xl font-semibold text-primary tracking-wide">Keep Notes</span>
         <input
           type="password"
-          placeholder="Admin Passcode (For Delete & Admin fields)..."
+          placeholder="Admin Passcode..."
           value={passcode}
           onChange={(e) => setPasscode(e.target.value)}
-          className="bg-[#171717] border border-[#5f6368] text-xs text-slate-200 px-3 py-1.5 rounded-md focus:outline-none focus:border-amber-400 w-72"
+          className="bg-background border border-border text-xs text-text px-3 py-1.5 rounded-md focus:outline-none focus:border-primary w-56"
         />
       </div>
 
       {error && (
-        <div className="bg-red-950/50 border border-red-700 text-red-300 px-4 py-2 rounded-lg text-xs">
+        <div className="bg-danger-surface border border-danger text-danger px-4 py-2 rounded-lg text-xs">
           {error}
         </div>
       )}
 
-      {/* Create Note Box (No Password Required) */}
+      {/* Create Note Box */}
       <form
         onSubmit={handleCreate}
-        className="bg-[#202124] border border-[#5f6368] rounded-lg shadow-lg p-3 transition-all flex flex-col gap-2"
+        className="bg-card border border-border rounded-lg shadow-lg p-3 transition-all flex flex-col gap-2"
       >
         <textarea
           ref={textareaRef}
@@ -76,20 +76,20 @@ export default function TodoApp() {
           value={newTitle}
           onFocus={() => setIsExpanded(true)}
           onChange={handleInput}
-          className="bg-transparent text-slate-100 placeholder-slate-400 text-sm focus:outline-none px-2 py-1 resize-none overflow-hidden"
+          className="bg-transparent text-text placeholder-muted text-sm focus:outline-none px-2 py-1 resize-none overflow-hidden"
         />
         {isExpanded && (
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#3c4043]">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
-              className="text-xs text-slate-300 hover:bg-[#3c4043] px-3 py-1.5 rounded font-medium"
+              className="text-xs text-muted hover:bg-border/50 px-3 py-1.5 rounded font-medium"
             >
               Close
             </button>
             <button
               type="submit"
-              className="text-xs bg-amber-500 hover:bg-amber-400 text-black px-4 py-1.5 rounded font-semibold transition"
+              className="text-xs bg-primary text-primary-foreground hover:opacity-90 px-4 py-1.5 rounded font-semibold transition"
             >
               Save Note
             </button>
@@ -98,12 +98,13 @@ export default function TodoApp() {
       </form>
 
       {/* Notes Grid */}
+      {/* Notes List (Stacked one by one vertically) */}
       {loading ? (
-        <p className="text-center text-slate-500 text-sm py-8">Loading notes...</p>
+        <p className="text-center text-muted text-sm py-8">Loading notes...</p>
       ) : todos.length === 0 ? (
-        <p className="text-center text-slate-500 text-sm py-8">No notes yet.</p>
+        <p className="text-center text-muted text-sm py-8">No notes yet.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-3 max-w-xl mx-auto w-full">
           {todos.map((todo) => (
             <TodoItemComponent
               key={todo._id}
@@ -118,6 +119,7 @@ export default function TodoApp() {
           ))}
         </div>
       )}
+     
     </div>
   );
 }
