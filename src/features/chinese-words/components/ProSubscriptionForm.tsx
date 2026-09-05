@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Copy, Check, Send, Sparkles, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Copy, Check, Send, Sparkles, AlertCircle, Eye, EyeOff, KeyRound, ShieldCheck } from "lucide-react";
 import { useLanguage } from "@/i18n";
 
 export default function ProSubscriptionForm() {
@@ -23,11 +23,36 @@ export default function ProSubscriptionForm() {
   // ডেমো ওপেন/ক্লোজ স্টেট
   const [showDemo, setShowDemo] = useState(false);
 
+  // পাসওয়ার্ড চেক ও শো/হাইড স্টেট
+  const [accessPassword, setAccessPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState<"idle" | "success" | "error">("idle");
+
   // bKash নম্বর কপি হ্যান্ডলার
   const handleCopyNumber = () => {
     navigator.clipboard.writeText(BKASH_NUMBER);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // পাসওয়ার্ড ভেরিফিকেশন চেক হ্যান্ডলার (ডেমো বা লোকাল চেকের জন্য)
+  const handleVerifyPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessPassword.trim()) return;
+
+    // এখানে আপনার এডমিন পাসওয়ার্ড বা নির্দিষ্ট কোড দিয়ে চেক করতে পারেন
+    // উদাহরণস্বরূপ পাসওয়ার্ড "PRO-2026" বা আপনার কোনো সিক্রেট কোড হতে পারে
+    if (accessPassword.trim() === "LCWKR-PRO" || accessPassword.trim() === process.env.NEXT_PUBLIC_ADMIN_PASSCODE) {
+      setPasswordStatus("success");
+      setError("");
+    } else {
+      setPasswordStatus("error");
+      setError(
+        language === "bn"
+          ? "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ডের জন্য WhatsApp-এ যোগাযোগ করুন।"
+          : "Invalid password! Please contact via WhatsApp for the correct password."
+      );
+    }
   };
 
   // ফর্ম সাবমিট এবং WhatsApp-এ ডিরেক্ট মেসেজ রিডাইরেক্ট
@@ -63,7 +88,7 @@ export default function ProSubscriptionForm() {
 
   return (
     <div
-      className={`w-full max-w-xl mx-auto p-6 sm:p-8 rounded-3xl bg-background border border-text/15 shadow-xl text-text ${
+      className={`w-full max-w-xl mx-auto p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-xl text-text ${
         language === "bn" ? "font-bn" : "font-en"
       }`}
     >
@@ -76,7 +101,7 @@ export default function ProSubscriptionForm() {
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
           {t("চাইনিজ কোর ওয়ার্ড বিল্ডার আনলক করুন", "Unlock Chinese Core Word Builder")}
         </h2>
-        <p className="text-xs sm:text-sm text-text/70">
+        <p className="text-xs sm:text-sm text-muted">
           {t(
             "বিকাশে সেন্ড মানি করে নিচের ফর্মটি সাবমিট করুন। ভেরিফিকেশনের পর সরাসরি পাসওয়ার্ড পেয়ে যাবেন।",
             "Send Money via bKash and submit the form below to receive your instant access password."
@@ -84,7 +109,7 @@ export default function ProSubscriptionForm() {
         </p>
 
         {/* ডেমো টগল বাটন */}
-        <div className="pt-2">
+        <div className="pt-2 flex items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => setShowDemo((prev) => !prev)}
@@ -105,19 +130,62 @@ export default function ProSubscriptionForm() {
         </div>
       </div>
 
+      {/* পাসওয়ার্ড চেকার সেকশন (যদি অলরেডি পাসওয়ার্ড পেয়ে থাকেন) */}
+      <div className="mb-6 p-4 rounded-2xl bg-background border border-border space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-primary">
+          <KeyRound className="w-4 h-4" />
+          <span>{t("ইতিমধ্যে কি পাসওয়ার্ড পেয়েছেন?", "Already have an access password?")}</span>
+        </div>
+        
+        <form onSubmit={handleVerifyPassword} className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder={t("আপনার Pro পাসওয়ার্ড দিন", "Enter your Pro password")}
+              value={accessPassword}
+              onChange={(e) => {
+                setAccessPassword(e.target.value);
+                setPasswordStatus("idle");
+              }}
+              className="w-full pl-3.5 pr-10 py-2 rounded-xl border border-border bg-card text-xs text-text focus:outline-none focus:border-primary transition font-mono"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-xl text-xs hover:opacity-95 transition cursor-pointer"
+          >
+            {t("চেক করুন", "Verify")}
+          </button>
+        </form>
+
+        {passwordStatus === "success" && (
+          <p className="text-xs text-ok flex items-center gap-1 font-medium">
+            <ShieldCheck className="w-4 h-4" />
+            {t("সফল! আপনার পাসওয়ার্ডটি সঠিক আছে।", "Success! Your password is valid.")}
+          </p>
+        )}
+      </div>
+
       {/* ডেমো প্রিভিউ সেকশন */}
       {showDemo && (
-        <div className="mb-6 p-4 rounded-2xl bg-text/5 border border-secondary/25 space-y-3 transition-all animate-in fade-in zoom-in-95">
+        <div className="mb-6 p-4 rounded-2xl bg-background border border-secondary/25 space-y-3 transition-all animate-in fade-in zoom-in-95">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-secondary uppercase font-mono tracking-wider">
-              {t("Pro মেটেরিয়াল ডেমো", "Pro Material Demo")}
+              {t("Pro মেটেরিয়াল ডেমো", "Pro Material Demo")}
             </span>
-            <span className="text-[11px] font-mono text-text/60">
+            <span className="text-[11px] font-mono text-muted">
               chinese-words.png
             </span>
           </div>
 
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-text/10 bg-background">
+          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-card">
             <Image
               src="/chinese-words.png"
               alt="Chinese Core Words Demo"
@@ -126,9 +194,9 @@ export default function ProSubscriptionForm() {
             />
           </div>
 
-          <p className="text-[11px] text-text/70 leading-relaxed">
+          <p className="text-[11px] text-muted leading-relaxed">
             {t(
-              "সাবস্ক্রিপশন নিলে HSK কোর শব্দভাণ্ডার, পিনয়িন, স্ট্রোক অর্ডার এবং অর্থসহ এই ধরনের পূর্ণাঙ্গ ফ্ল্যাশকার্ড ও নোটবুক অ্যাক্সেস পাবেন।",
+              "সাবস্ক্রিপশন নিলে HSK কোর শব্দভাণ্ডার, পিনয়িন, স্ট্রোক অর্ডার এবং অর্থসহ এই ধরনের পূর্ণাঙ্গ ফ্ল্যাশকার্ড ও নোটবুক অ্যাক্সেস পাবেন।",
               "Subscribing unlocks complete interactive flashcards, stroke breakdown, and full word lists."
             )}
           </p>
@@ -136,29 +204,29 @@ export default function ProSubscriptionForm() {
       )}
 
       {/* bKash Instructions Box */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 space-y-3 mb-6">
+      <div className="p-4 sm:p-5 rounded-2xl bg-background border border-border space-y-3 mb-6">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-secondary uppercase font-mono tracking-wider">
             {t("bKash Personal (Send Money)", "bKash Personal (Send Money)")}
           </span>
-          <span className="text-xs font-semibold text-text/60">
+          <span className="text-xs font-semibold text-muted">
             ফি: ৳৪৯৯ (আজীবন মেয়াদ)
           </span>
         </div>
 
-        <div className="flex items-center justify-between bg-background p-3 rounded-xl border border-text/15">
+        <div className="flex items-center justify-between bg-card p-3 rounded-xl border border-border">
           <span className="font-mono text-base sm:text-lg font-bold tracking-wider text-text">
             {BKASH_NUMBER}
           </span>
           <button
             type="button"
             onClick={handleCopyNumber}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-text/10 hover:bg-text/15 text-text transition cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-border/40 hover:bg-border/60 text-text transition cursor-pointer"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-emerald-500 font-bold">{t("কপি হয়েছে!", "Copied!")}</span>
+                <Check className="w-3.5 h-3.5 text-ok" />
+                <span className="text-ok font-bold">{t("কপি হয়েছে!", "Copied!")}</span>
               </>
             ) : (
               <>
@@ -169,7 +237,7 @@ export default function ProSubscriptionForm() {
           </button>
         </div>
 
-        <p className="text-[11px] text-text/60 leading-relaxed">
+        <p className="text-[11px] text-muted leading-relaxed">
           {t(
             "* উপরে দেওয়া বিকাশ নম্বরে 'Send Money' করে প্রাপ্ত TrxID নিচের বক্সে লিখে সাবমিট বাটনে চাপ দিন।",
             "* Send Money to the number above and provide the Transaction ID (TrxID) below."
@@ -180,7 +248,7 @@ export default function ProSubscriptionForm() {
       {/* Subscription Submission Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-secondary/10 border border-secondary/20 rounded-xl text-xs text-secondary flex items-center gap-2">
+          <div className="p-3 bg-danger-surface border border-danger/30 rounded-xl text-xs text-danger flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -196,7 +264,7 @@ export default function ProSubscriptionForm() {
             placeholder={t("আপনার নাম লিখুন", "Enter your full name")}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-text/20 bg-background text-sm text-text focus:outline-none focus:border-secondary transition"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-text focus:outline-none focus:border-primary transition"
           />
         </div>
 
@@ -210,7 +278,7 @@ export default function ProSubscriptionForm() {
             placeholder="01XXXXXXXXX"
             value={senderPhone}
             onChange={(e) => setSenderPhone(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-text/20 bg-background text-sm font-mono text-text focus:outline-none focus:border-secondary transition"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-mono text-text focus:outline-none focus:border-primary transition"
           />
         </div>
 
@@ -224,7 +292,7 @@ export default function ProSubscriptionForm() {
             placeholder="e.g. BL92A8XKQ"
             value={trxId}
             onChange={(e) => setTrxId(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-text/20 bg-background text-sm font-mono uppercase text-text focus:outline-none focus:border-secondary transition"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-mono uppercase text-text focus:outline-none focus:border-primary transition"
           />
         </div>
 
@@ -235,7 +303,7 @@ export default function ProSubscriptionForm() {
           <select
             value={planType}
             onChange={(e) => setPlanType(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-text/20 bg-background text-sm text-text focus:outline-none focus:border-secondary transition"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-text focus:outline-none focus:border-primary transition"
           >
             <option value="Lifetime Access (৳৪৯৯)">লাইফটাইম অ্যাক্সেস — ৳৪৯৯</option>
             <option value="1 Year Access (৳২৯৯)">১ বছরের জন্য — ৳২৯৯</option>
@@ -250,7 +318,7 @@ export default function ProSubscriptionForm() {
           <span>{t("ভেরিফিকেশনের জন্য WhatsApp-এ পাঠান", "Submit via WhatsApp")}</span>
         </button>
 
-        <p className="text-[11px] text-center text-text/50 pt-1">
+        <p className="text-[11px] text-center text-muted pt-1">
           {t(
             "বাটনে ক্লিক করলে সরাসরি TrxID সহ WhatsApp মেসেজ ওপেন হবে।",
             "Clicking submit will open WhatsApp with all payment details pre-filled."
