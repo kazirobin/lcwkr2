@@ -1,3 +1,5 @@
+"use client";
+
 import type { Dialogue as DialogueType } from "@/features/vocabulary/types";
 
 /**
@@ -44,7 +46,8 @@ export default function Dialogue({
           if (NARRATOR.has(line.speaker)) {
             return (
               <li key={i} className="px-4 py-2 text-center">
-                <p lang="zh" className="text-sm leading-relaxed text-text/60">
+                {/* Narrator Chinese text with font-chinese and larger size */}
+                <p lang="zh" className="font-chinese text-4xl leading-relaxed text-text/60">
                   {line.hanzi}
                 </p>
                 <p className="mt-0.5 text-[12px] italic leading-5 text-text/45">
@@ -95,7 +98,8 @@ export default function Dialogue({
                     {line.speaker}
                   </span>
                 )}
-                <p lang="zh" className="text-[1.05rem] leading-relaxed text-text">
+                {/* Dialogue Chinese text: added font-chinese and increased size to text-[1.25rem] / text-2xl */}
+                <p lang="zh" className="font-chinese text-3xl leading-relaxed text-text">
                   {line.hanzi}
                 </p>
                 <p

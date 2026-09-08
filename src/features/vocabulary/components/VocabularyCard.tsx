@@ -27,7 +27,7 @@ export default function VocabularyCard({
     <li className="grid gap-x-6 gap-y-2.5 border-b border-text/10 py-7 sm:grid-cols-[9.5rem_1fr]">
       {/* headword */}
       <div className="sm:pt-1">
-        <p lang="zh" className="text-[2rem] font-normal leading-none text-text">
+        <p lang="zh" className="font-chinese text-[2.2rem] font-normal leading-none text-text">
           {item.hanzi}
         </p>
         <p
@@ -79,7 +79,7 @@ export default function VocabularyCard({
                         key={i}
                         className="border border-text/12 bg-card/50 px-2.5 py-1.5 text-sm"
                       >
-                        <span lang="zh" className="font-medium text-text">
+                        <span lang="zh" className="font-chinese font-medium text-text">
                           {ch.hanzi}
                         </span>
                         <span className="ml-1.5 text-text/55">{ch.pinyin}</span>
@@ -97,7 +97,7 @@ export default function VocabularyCard({
                   </h4>
                   <p
                     lang="zh"
-                    className="mt-2 text-[17px] leading-relaxed text-text"
+                    className="font-chinese mt-2 text-[1.2rem] leading-relaxed text-text"
                   >
                     {item.example.hanzi}
                   </p>
@@ -126,7 +126,7 @@ export default function VocabularyCard({
                   <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
                     {item.similar.map((s, i) => (
                       <li key={i} className="text-sm">
-                        <span lang="zh" className="text-text">
+                        <span lang="zh" className="font-chinese text-text">
                           {s.hanzi}
                         </span>
                         <span className="ml-1.5 text-text/55">{s.pinyin}</span>

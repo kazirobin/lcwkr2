@@ -39,10 +39,11 @@ export default function TextReader({
   return (
     <PaperPage isBn={isBn}>
       <header className="relative isolate mx-auto max-w-3xl overflow-hidden px-5 pt-28 pb-2 sm:px-6 md:pt-32">
+        {/* Background Watermark Hanzi - Added font-chinese */}
         <span
           aria-hidden="true"
           lang="zh"
-          className="pointer-events-none absolute -top-8 right-0 select-none text-[13rem] leading-none font-medium text-text/[0.05] sm:text-[16rem]"
+          className="font-chinese pointer-events-none absolute -top-8 right-0 select-none text-[13rem] leading-none font-medium text-text/[0.05] sm:text-[16rem]"
         >
           {data.vocabulary[0]?.hanzi ?? "字"}
         </span>
@@ -103,7 +104,10 @@ export default function TextReader({
             <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text/45">
               {c.dialogueHeading}
             </h2>
-            <Dialogue dialogue={data.dialogue} speakersLabel={c.speakers} />
+            {/* Dialogue component should also handle Chinese characters inside */}
+            <div className="font-chinese ">
+              <Dialogue dialogue={data.dialogue} speakersLabel={c.speakers} />
+            </div>
           </section>
         )}
 

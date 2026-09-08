@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Noto_Sans_Bengali, Lora } from "next/font/google";
+import { Noto_Sans_Bengali, Lora, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
@@ -30,6 +30,14 @@ const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
   weight: ["500"],
+  display: "swap",
+});
+
+// Chinese serif font for Chinese characters (Fixed subsets)
+const notoSerifSC = Noto_Serif_SC({
+  variable: "--font-noto-serif-sc",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -71,7 +79,7 @@ export default function RootLayout({
   return (
     <html
       lang="bn"
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansBengali.variable} ${lora.variable} font-bn h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansBengali.variable} ${lora.variable} ${notoSerifSC.variable} font-bn h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
