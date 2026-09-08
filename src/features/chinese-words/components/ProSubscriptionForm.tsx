@@ -207,7 +207,7 @@ export default function ProSubscriptionForm() {
       <div className="p-4 sm:p-5 rounded-2xl bg-background border border-border space-y-3 mb-6">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-secondary uppercase font-mono tracking-wider">
-            {t("bKash Personal (Send Money)", "bKash Personal (Send Money)")}
+            {t("bKash/Rocket Personal (Send Money)", "bKash/Rocket Personal (Send Money)")}
           </span>
           <span className="text-xs font-semibold text-muted">
             ফি: ৳৪৯৯ (আজীবন মেয়াদ)

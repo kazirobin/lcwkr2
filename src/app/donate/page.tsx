@@ -31,7 +31,7 @@ function NumberBlock() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text/50">
-            bKash Personal Number
+            bKash/Rocket Personal Number
           </p>
           <p className="mt-1 font-mono text-xl tracking-[0.12em] text-text tabular-nums select-all">
             {DONATION.bkashNumber}
