@@ -57,7 +57,7 @@ const DROPDOWNS = {
     ],
     activePrefixes: ["/hsk"],
   },
-  apps: {
+apps: {
     id: "resources",
     en: "Resources",
     bn: "রিসোর্স",
@@ -68,10 +68,16 @@ const DROPDOWNS = {
         bn: "চাইনিজ কোর ওয়ার্ডস",
         isProtected: true,
       },
+      {
+        href: "/hw/hsk1/1",
+        en: "HSK Homework",
+        bn: "হোমওয়ার্ক ও প্র্যাকটিস",
+        isProtected: true, // চাইলে ফলস করে দিতে পারেন
+      },
       { href: "/apps", en: "Suggested Apps", bn: "প্রস্তাবিত অ্যাপস" },
       { href: "/pdf", en: "PDF", bn: "পিডিএফ" },
     ],
-    activePrefixes: ["/apps", "/pdf", "/chinese-words"],
+    activePrefixes: ["/apps", "/pdf", "/chinese-words", "/hw"],
   },
 } as const;
 
