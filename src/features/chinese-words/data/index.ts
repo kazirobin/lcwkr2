@@ -9,9 +9,9 @@ import { LESSON_WORDS } from "./lesson-words";
 export { CHINESE_WORDS, LESSON_WORDS };
 
 /** HSK levels present in the local lesson data. */
-export const LESSON_LEVELS = [...new Set(LESSON_WORDS.map((w) => w.level))].sort(
-  (a, b) => a - b,
-);
+export const LESSON_LEVELS = [
+  ...new Set(LESSON_WORDS.map((w) => w.level)),
+].sort((a, b) => a - b);
 
 /** lesson → words for one level. */
 export function getLessonWords(level: number): Map<number, LessonWord[]> {
