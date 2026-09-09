@@ -5,6 +5,238 @@
 import type { ChineseWordEntry } from "../types";
 
 export const CHINESE_WORDS: ChineseWordEntry[] = [
+
+  {
+    character: "你",
+    pinyin: "nǐ",
+    meaningEn: "You",
+    meaningBn: "তুমি",
+    descriptionEn: "Second-person singular pronoun used to address someone directly.",
+    descriptionBn: "একবচনে কাউকে সরাসরি সম্বোধন করার জন্য ব্যবহৃত সর্বনাম।",
+    hskLevel: 1,
+    strokeCount: 7,
+    relatedWords: [
+      {
+        word: "你们",
+        pinyin: "nǐmen",
+        meaningEn: "You (plural)",
+        meaningBn: "তোমরা",
+        wordType: "Pronoun",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "你们好！",
+            pinyin: "Nǐmen hǎo!",
+            meaningEn: "Hello everyone / Hello you all!",
+            meaningBn: "তোমরা সবাই কেমন আছো!",
+            type: "Greeting"
+          }
+        ]
+      },
+      {
+        word: "你好",
+        pinyin: "nǐ hǎo",
+        meaningEn: "Hello",
+        meaningBn: "হ্যালো / কেমন আছো",
+        wordType: "Phrase",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "你好，老师！",
+            pinyin: "Nǐ hǎo, lǎoshī!",
+            meaningEn: "Hello, teacher!",
+            meaningBn: "হ্যালো, শিক্ষক!",
+            type: "Greeting"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    character: "好",
+    pinyin: "hǎo",
+    meaningEn: "Good",
+    meaningBn: "ভালো",
+    descriptionEn: "A common adjective indicating positive quality, wellness, or being proper.",
+    descriptionBn: "একটি সাধারণ বিশেষণ যা ভালো গুণ, সুস্থতা বা সঠিক বিষয় বোঝায়।",
+    hskLevel: 1,
+    strokeCount: 6,
+    relatedWords: [
+      {
+        word: "很好",
+        pinyin: "hěn hǎo",
+        meaningEn: "Very good",
+        meaningBn: "খুব ভালো",
+        wordType: "Adjective Phrase",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "这个学生很好。",
+            pinyin: "Zhège xuésheng hěn hǎo.",
+            meaningEn: "This student is very good.",
+            meaningBn: "এই ছাত্রটি খুব ভালো।",
+            type: "Statement"
+          }
+        ]
+      },
+      {
+        word: "好人",
+        pinyin: "hǎo rén",
+        meaningEn: "Good person",
+        meaningBn: "ভালো মানুষ",
+        wordType: "Noun Phrase",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "他是一个好人。",
+            pinyin: "Tā shì yígè hǎo rén.",
+            meaningEn: "He is a good person.",
+            meaningBn: "সে একজন ভালো মানুষ।",
+            type: "Statement"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    character: "叫",
+    pinyin: "jiào",
+    meaningEn: "To be called",
+    meaningBn: "ডাকা হয় / নাম হওয়া",
+    descriptionEn: "Verb used to state someone's name or being called by a specific identifier.",
+    descriptionBn: "কারও নাম প্রকাশ করতে বা কোনো নামে ডাকতে ব্যবহৃত ক্রিয়া।",
+    hskLevel: 1,
+    strokeCount: 5,
+    relatedWords: [
+      {
+        word: "叫做",
+        pinyin: "jiàozuò",
+        meaningEn: "To be called / To be known as",
+        meaningBn: "নামে পরিচিত হওয়া",
+        wordType: "Verb",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "这个汉字叫做什么？",
+            pinyin: "Zhège hànzì jiàozuò shénme?",
+            meaningEn: "What is this Chinese character called?",
+            meaningBn: "এই চাইনিজ অক্ষরটির নাম কী?",
+            type: "Question"
+          }
+        ]
+      },
+      {
+        word: "大叫",
+        pinyin: "dà jiào",
+        meaningEn: "To shout / Scream",
+        meaningBn: "চিৎকার করা",
+        wordType: "Verb",
+        hskLevel: 2,
+        examples: [
+          {
+            chinese: "请不要大叫。",
+            pinyin: "Qǐng búyào dà jiào.",
+            meaningEn: "Please do not shout.",
+            meaningBn: "দয়া করে চিৎকার করবেন না।",
+            type: "Command"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    character: "学",
+    pinyin: "xué",
+    meaningEn: "To study / To learn",
+    meaningBn: "পড়াশোনা করা / শেখা",
+    descriptionEn: "Core action verb related to acquiring knowledge or education.",
+    descriptionBn: "জ্ঞান অর্জন বা শিক্ষা গ্রহণের সাথে সম্পর্কিত মূল ক্রিয়াপদ।",
+    hskLevel: 1,
+    strokeCount: 8,
+    relatedWords: [
+      {
+        word: "学生",
+        pinyin: "xuéshēng",
+        meaningEn: "Student",
+        meaningBn: "ছাত্র",
+        wordType: "Noun",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "我是中文学生。",
+            pinyin: "Wǒ shì zhōngwén xuésheng.",
+            meaningEn: "I am a Chinese language student.",
+            meaningBn: "আমি একজন চাইনিজ ভাষার ছাত্র।",
+            type: "Statement"
+          }
+        ]
+      },
+      {
+        word: "学习",
+        pinyin: "xuéxí",
+        meaningEn: "To learn / To study",
+        meaningBn: "শেখা / অধ্যয়ন করা",
+        wordType: "Verb",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "我们一起学习汉语。",
+            pinyin: "Wǒmen yìqǐ xuéxí hànyǔ.",
+            meaningEn: "We study Chinese together.",
+            meaningBn: "আমরা একসাথে চীনা ভাষা শিখি।",
+            type: "Statement"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    character: "师",
+    pinyin: "shī",
+    meaningEn: "Teacher / Master",
+    meaningBn: "শিক্ষক / ওস্তাদ",
+    descriptionEn: "A root character representing an expert, teacher, or military division.",
+    descriptionBn: "বিশেষজ্ঞ, শিক্ষক বা গুরু বোঝাতে ব্যবহৃত মূল অক্ষর।",
+    hskLevel: 2,
+    strokeCount: 6,
+    relatedWords: [
+      {
+        word: "老师",
+        pinyin: "lǎoshī",
+        meaningEn: "Teacher",
+        meaningBn: "শিক্ষক",
+        wordType: "Noun",
+        hskLevel: 1,
+        examples: [
+          {
+            chinese: "老师好！",
+            pinyin: "Lǎoshī hǎo!",
+            meaningEn: "Hello, teacher!",
+            meaningBn: "শিক্ষক মহোদয়, নমস্কার!",
+            type: "Greeting"
+          }
+        ]
+      },
+      {
+        word: "师傅",
+        pinyin: "shīfu",
+        meaningEn: "Master worker / Artisan",
+        meaningBn: "কারিগর / ওস্তাদ",
+        wordType: "Noun",
+        hskLevel: 2,
+        examples: [
+          {
+            chinese: "师傅，请停车。",
+            pinyin: "Shīfu, qǐng tíngchē.",
+            meaningEn: "Driver / Master, please stop the car.",
+            meaningBn: "ড্রাইভার ভাই, গাড়িটি থামান।",
+            type: "Request"
+          }
+        ]
+      }
+    ]
+  },
+
   {
     character: "你",
     pinyin: "nǐ",
