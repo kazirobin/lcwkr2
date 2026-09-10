@@ -26,6 +26,7 @@ import type {
 import WritingSection from "@/features/hw/components/WritingSection";
 import MatchingSection from "@/features/hw/components/MatchingSection";
 import DialogueSection from "@/features/hw/components/DialogueSection";
+import McqSection from "@/features/hw/components/McqSection";
 import SpeakingSection from "@/features/hw/components/SpeakingSection";
 
 interface MistakeItem {
@@ -175,6 +176,23 @@ export default function HomeworkDynamicPage() {
       }
     }
 
+    // MCQ: 1 mark per word, hanzi → Bangla meaning
+    for (const q of exam.mcq) {
+      const user = (answers[q.id] ?? "").trim();
+      const ok = user === q.bn;
+      const earned = ok ? q.marks : 0;
+      totalScore += earned;
+      items.push({
+        section: "mcq",
+        id: q.id,
+        prompt: `${q.hanzi} (${q.pinyin})`,
+        userAnswer: user || "—",
+        correctAnswer: q.bn,
+        earned,
+        marks: q.marks,
+      });
+    }
+
     // speaking: full marks when a recording exists
     for (const q of exam.speaking) {
       const has = Boolean(answers[q.id]);
@@ -233,13 +251,15 @@ export default function HomeworkDynamicPage() {
   const writingRes = resultBySection();
   const matchingRes = resultBySection();
   const dialogueRes = resultBySection();
+  const mcqRes = resultBySection();
   const speakingRes = resultBySection();
 
   const SECTION_LABELS: Record<string, string> = {
     writing: t("সেকশন ১ — লেখা", "Section 1 — Writing"),
     matching: t("সেকশন ২ — মিলকরণ", "Section 2 — Matching"),
     dialogue: t("সেকশন ৩ — ডায়লগ", "Section 3 — Dialogue"),
-    speaking: t("সেকশন ৪ — স্পিকিং", "Section 4 — Speaking"),
+    mcq: t("সেকশন ৪ — MCQ", "Section 4 — MCQ"),
+    speaking: t("সেকশন ৫ — স্পিকিং", "Section 5 — Speaking"),
   };
 
   return (
@@ -300,8 +320,8 @@ export default function HomeworkDynamicPage() {
           </h1>
           <p className="text-sm text-muted mt-1">
             {t(
-              `${exam.totalMarks} নম্বরের পূর্ণ পরীক্ষা — লেখা, মিলকরণ, ডায়লগ ও স্পিকিং।`,
-              `Full ${exam.totalMarks}-mark exam — writing, matching, dialogue and speaking.`
+              `লেখা, মিলকরণ, ডায়লগ, MCQ ও স্পিকিং — প্রতিটি শব্দে ১ নম্বর করে।`,
+              `Writing, matching, dialogue, MCQ and speaking — 1 mark per word.`
             )}
           </p>
         </div>
@@ -453,6 +473,7 @@ export default function HomeworkDynamicPage() {
           />
           <MatchingSection questions={exam.matching} answers={answers} onChange={handleInputChange} />
           <DialogueSection questions={exam.dialogues} answers={answers} onChange={handleInputChange} />
+          <McqSection questions={exam.mcq} answers={answers} onChange={handleInputChange} />
           <SpeakingSection questions={exam.speaking} answers={answers} onChange={handleInputChange} />
 
           <div className="sticky bottom-4">
@@ -492,6 +513,13 @@ export default function HomeworkDynamicPage() {
             onChange={handleInputChange}
             disabled
             results={dialogueRes}
+          />
+          <McqSection
+            questions={exam.mcq}
+            answers={answers}
+            onChange={handleInputChange}
+            disabled
+            results={mcqRes}
           />
           <SpeakingSection
             questions={exam.speaking}

@@ -4,11 +4,15 @@
 export { default as ProSubscriptionForm } from "./components/ProSubscriptionForm";
 export {
   CHINESE_WORDS,
+  WORDS_BY_LEVEL,
+  WORD_LEVELS,
   LESSON_WORDS,
   LESSON_LEVELS,
   getLessonWords,
   buildKnownWordSet,
   findWordEntry,
+  searchWords,
+  stripTones,
 } from "./data";
 export type {
   ChineseWordEntry,

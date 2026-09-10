@@ -34,7 +34,12 @@ export interface GenLesson {
 
 // ── exam engine shapes ──────────────────────────────────────────────────
 
-export type ExamSectionId = "writing" | "matching" | "dialogue" | "speaking";
+export type ExamSectionId =
+  | "writing"
+  | "matching"
+  | "dialogue"
+  | "mcq"
+  | "speaking";
 
 export interface WritingQuestion {
   kind: "writing";
@@ -89,10 +94,23 @@ export interface SpeakingQuestion {
   marks: number; // 5 each
 }
 
+/** MCQ: hanzi shown, pick the correct Bangla meaning. 1 mark each. */
+export interface McqQuestion {
+  kind: "mcq";
+  id: string;
+  hanzi: string;
+  pinyin: string;
+  en: string;
+  bn: string; // correct Bangla
+  choices: string[]; // 4 Bangla options (includes bn)
+  marks: number;
+}
+
 export type ExamQuestion =
   | WritingQuestion
   | MatchingQuestion
   | DialogueQuestion
+  | McqQuestion
   | SpeakingQuestion;
 
 /** Fully-derived exam for one lesson. */
@@ -105,6 +123,7 @@ export interface LessonExam {
   writing: WritingQuestion[];
   matching: MatchingQuestion[];
   dialogues: DialogueQuestion[];
+  mcq: McqQuestion[];
   speaking: SpeakingQuestion[];
 }
 

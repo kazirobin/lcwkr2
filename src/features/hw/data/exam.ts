@@ -5,16 +5,17 @@
 import type {
   DialogueBlank,
   DialogueQuestion,
+  GenLesson,
   LessonExam,
   MatchingPair,
   MatchingQuestion,
+  McqQuestion,
   SpeakingQuestion,
   WritingQuestion,
 } from "../exam-types";
 import { hsk1ExamLessons } from "./generated/hsk1";
 import { hsk2ExamLessons } from "./generated/hsk2";
 import { hsk3ExamLessons } from "./generated/hsk3";
-import type { GenLesson } from "../exam-types";
 
 const ALL_LESSONS: GenLesson[] = [
   ...hsk1ExamLessons,
@@ -206,7 +207,40 @@ function buildSpeaking(data: GenLesson, rand: () => number): SpeakingQuestion[] 
   }));
 }
 
-/** Full 50-mark exam for a lesson (writing 10 + matching 10 + dialogue 15 + speaking 15). */
+function buildMcq(data: GenLesson, level: number, rand: () => number): McqQuestion[] {
+  // One MCQ per unique lesson word: hanzi shown, pick the Bangla meaning.
+  // 1 mark each — every word in the lesson is asked.
+  const words = data.words.filter((w) => w.h && w.b);
+  // Bangla distractor pool: same lesson first, then the whole level
+  const levelPool = ALL_LESSONS.filter((l) => l.level === level).flatMap(
+    (l) => l.words.map((w) => w.b),
+  );
+  const seenBn = new Set<string>();
+  const bnPool = [...new Set([...words.map((w) => w.b), ...levelPool])];
+
+  return words.map((w, i) => {
+    const distractors: string[] = [];
+    for (const bn of shuffled(bnPool, rand)) {
+      if (bn === w.b || distractors.includes(bn)) continue;
+      distractors.push(bn);
+      if (distractors.length === 3) break;
+    }
+    seenBn.add(w.b);
+    const choices = shuffled([w.b, ...distractors], rand);
+    return {
+      kind: "mcq" as const,
+      id: `q${i}`,
+      hanzi: w.h,
+      pinyin: w.p,
+      en: w.e,
+      bn: w.b,
+      choices,
+      marks: 1,
+    };
+  });
+}
+
+/** Full exam: writing 10 + matching 10 + dialogue 15 + MCQ (1/word) + speaking 15. */
 export function buildLessonExam(level: number, lesson: number): LessonExam | null {
   const data = getExamLesson(level, lesson);
   if (!data) return null;
@@ -215,12 +249,14 @@ export function buildLessonExam(level: number, lesson: number): LessonExam | nul
   const writing = buildWriting(data, rand);
   const matching = buildMatching(data, rand);
   const dialogues = buildDialogues(data, rand);
+  const mcq = buildMcq(data, level, rand);
   const speaking = buildSpeaking(data, rand);
 
   const totalMarks =
     writing.reduce((n, q) => n + q.marks, 0) +
     matching.reduce((n, q) => n + q.marks, 0) +
     dialogues.reduce((n, q) => n + q.marks, 0) +
+    mcq.reduce((n, q) => n + q.marks, 0) +
     speaking.reduce((n, q) => n + q.marks, 0);
 
   return {
@@ -232,6 +268,7 @@ export function buildLessonExam(level: number, lesson: number): LessonExam | nul
     writing,
     matching,
     dialogues,
+    mcq,
     speaking,
   };
 }

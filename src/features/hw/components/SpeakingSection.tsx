@@ -93,7 +93,7 @@ export default function SpeakingSection({ questions, answers, onChange, disabled
     <section className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-sm space-y-4">
       <div className="flex justify-between items-center border-b border-border pb-3">
         <h2 className="text-base sm:text-xl font-semibold text-text">
-          4. {t("ভয়েস রেকর্ডিং ও স্পিকিং এক্টিভিটি", "Voice Recording & Speaking Activity")}
+          5. {t("ভয়েস রেকর্ডিং ও স্পিকিং এক্টিভিটি", "Voice Recording & Speaking Activity")}
         </h2>
         <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full whitespace-nowrap">
           {questions.reduce((n, q) => n + q.marks, 0)} {t("নম্বর", "Marks")}

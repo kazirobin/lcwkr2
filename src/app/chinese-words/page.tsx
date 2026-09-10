@@ -3,11 +3,13 @@
 import React, { useMemo, useState } from "react";
 import { useLanguage } from "@/i18n";
 import {
-  CHINESE_WORDS,
   LESSON_LEVELS,
+  WORD_LEVELS,
   buildKnownWordSet,
   findWordEntry,
   getLessonWords,
+  searchWords,
+  stripTones,
 } from "@/features/chinese-words";
 import type { LessonWord } from "@/features/chinese-words";
 
@@ -49,39 +51,24 @@ export default function ChineseWordBuilderPage() {
 
   const filteredLessonWords = useMemo(() => {
     const q = wordSearch.toLowerCase().trim();
+    const qToneless = stripTones(wordSearch);
+    const tokens = (qToneless || q).split(/\s+/).filter(Boolean);
     return lessonWordList.filter((w) => {
       const inDataset = knownWords.has(w.hanzi);
       if (onlyMissing && inDataset) return false;
-      if (!q) return true;
-      return (
-        w.hanzi.includes(q) ||
-        w.pinyin.toLowerCase().includes(q) ||
-        w.en.toLowerCase().includes(q) ||
-        w.bn.includes(q)
-      );
+      if (tokens.length === 0) return true;
+      const corpus = [w.hanzi, stripTones(w.pinyin), w.pinyin.toLowerCase(), w.en.toLowerCase(), w.bn]
+        .join("\n")
+        .toLowerCase();
+      return tokens.every((tok) => corpus.includes(tok));
     });
   }, [lessonWordList, knownWords, onlyMissing, wordSearch]);
 
   // ── root view filtering (local data, no fetch) ──────────────────────
-  const filteredWords = CHINESE_WORDS.filter((item) => {
-    const matchHsk = selectedHsk === "All" || item.hskLevel === Number(selectedHsk);
-    const q = search.toLowerCase().trim();
-    const matchSearch =
-      !q ||
-      item.character?.includes(q) ||
-      item.pinyin?.toLowerCase().includes(q) ||
-      item.meaningEn?.toLowerCase().includes(q) ||
-      item.meaningBn?.includes(q) ||
-      item.relatedWords?.some(
-        (rw) =>
-          rw.word?.includes(q) ||
-          rw.pinyin?.toLowerCase().includes(q) ||
-          rw.meaningEn?.toLowerCase().includes(q) ||
-          rw.meaningBn?.includes(q)
-      );
-
-    return matchHsk && matchSearch;
-  });
+  const filteredWords = useMemo(
+    () => searchWords(search, selectedHsk === "All" ? "All" : Number(selectedHsk)),
+    [search, selectedHsk],
+  );
 
   return (
     <div
@@ -139,8 +126,8 @@ export default function ChineseWordBuilderPage() {
               <input
                 type="text"
                 placeholder={t(
-                  "খুঁজুন (যেমন: 学, xue, শেখা, student)...",
-                  "Search (e.g. 学, xue, study, student)..."
+                  "খুঁজুন (学, xue/xué, শেখা, student)...",
+                  "Search (学, xue/xué, study, student)..."
                 )}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -148,7 +135,7 @@ export default function ChineseWordBuilderPage() {
               />
 
               <div className="flex flex-wrap gap-1.5 justify-center">
-                {["All", "1", "2", "3", "4", "5", "6"].map((lvl) => (
+                {["All", ...WORD_LEVELS.map(String)].map((lvl) => (
                   <button
                     key={lvl}
                     onClick={() => setSelectedHsk(lvl)}
