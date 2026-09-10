@@ -247,7 +247,7 @@ export default function PracticeGame() {
               <>
                 <p className="text-xs text-muted">{t("এর বাংলা অর্থ কোনটি?", "What does this mean?")}</p>
                 <p className="text-4xl sm:text-6xl font-chinese font-bold text-text leading-tight break-words px-2">{current.prompt}</p>
-                <p className="text-xs font-mono text-secondary">{current.hint}</p>
+                <p data-pinyin className="text-xs font-mono text-secondary">{current.hint}</p>
               </>
             ) : (
               <>

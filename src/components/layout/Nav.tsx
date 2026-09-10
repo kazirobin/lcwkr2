@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import { useLanguage } from "@/i18n";
 import ThemeButton from "./ThemeButton";
+import PinyinToggle from "@/components/ui/PinyinToggle";
 import ProSubscriptionForm from "@/features/chinese-words/components/ProSubscriptionForm";
 
 // ============================================
@@ -502,7 +503,7 @@ export default function Nav() {
             </div>
 
             {/* Desktop actions */}
-            <div className="hidden md:flex md:shrink-0 md:items-center md:gap-1.5">
+              <div className="hidden md:flex md:shrink-0 md:items-center md:gap-1.5">
               <button
                 type="button"
                 onClick={toggleLanguage}
@@ -511,6 +512,7 @@ export default function Nav() {
               >
                 {language === "en" ? "বাংলা" : "English"}
               </button>
+              <PinyinToggle />
               <ThemeButton />
               <a
                 href={WHATSAPP_URL}
@@ -547,6 +549,7 @@ export default function Nav() {
               >
                 {language === "en" ? "বাংলা" : "English"}
               </button>
+              <PinyinToggle />
               <ThemeButton />
               <button
                 type="button"

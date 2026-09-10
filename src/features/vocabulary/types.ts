@@ -5,6 +5,7 @@ export interface Character {
   hanzi: string; // the component character
   pinyin: string; // its pronunciation
   meaning: string; // its meaning in English
+  bangla?: string; // Bangla meaning, filled from the vocabulary map
 }
 
 /** A word offered for comparison / disambiguation. */
@@ -12,6 +13,7 @@ export interface SimilarWord {
   hanzi: string;
   pinyin: string;
   english: string;
+  bangla?: string; // Bangla meaning, filled from the vocabulary map
 }
 
 /** An example sentence for a vocabulary item. */

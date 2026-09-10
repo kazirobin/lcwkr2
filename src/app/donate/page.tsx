@@ -77,7 +77,7 @@ function Field({
   error?: string;
   placeholder?: string;
   autoComplete?: string;
-  inputMode?: "text" | "tel";
+  inputMode?: "text" | "tel" | "numeric";
   uppercase?: boolean;
 }) {
   const id = useId();
@@ -126,6 +126,7 @@ export default function DonatePage() {
     phone: "",
     location: "",
     trxId: "",
+    amount: "200",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -174,6 +175,8 @@ export default function DonatePage() {
     if (!formData.phone.trim()) e.phone = "Please enter your bKash number.";
     if (!formData.location.trim()) e.location = "Please enter your city.";
     if (!formData.trxId.trim()) e.trxId = "Please enter the bKash TrxID.";
+    if (!formData.amount.trim() || Number(formData.amount) <= 0 || Number.isNaN(Number(formData.amount)))
+      e.amount = "Please enter a valid amount (BDT).";
     return e;
   };
 
@@ -188,23 +191,24 @@ export default function DonatePage() {
 
     setLoading(true);
     setStatus(null);
+    const amount = Number(formData.amount) || 200;
 
     try {
       const res = await fetch("/api/donations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, amount: 200 }),
+        body: JSON.stringify({ ...formData, amount }),
       });
 
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || "Failed to submit donation");
 
       setDonors((prev) => [
-        resData.data || { ...formData, phone: maskPhone(formData.phone), amount: 200 },
+        resData.data || { ...formData, phone: maskPhone(formData.phone), amount },
         ...prev,
       ]);
 
-      const message = `🎉 *New Donation Received!*\n\n👤 *Name:* ${formData.name}\n📱 *Phone:* ${formData.phone}\n📍 *Location:* ${formData.location}\n💳 *TrxID:* ${formData.trxId}\n💰 *Amount:* 200 BDT\n\nThank you for supporting LCWKR!`;
+      const message = `🎉 *New Donation Received!*\n\n👤 *Name:* ${formData.name}\n📱 *Phone:* ${formData.phone}\n📍 *Location:* ${formData.location}\n💳 *TrxID:* ${formData.trxId}\n💰 *Amount:* ${amount} BDT\n\nThank you for supporting LCWKR!`;
       const whatsappUrl = `https://wa.me/${DONATION.adminWhatsApp}?text=${encodeURIComponent(
         message
       )}`;
@@ -215,7 +219,7 @@ export default function DonatePage() {
         msg: "Donation information submitted successfully! Redirecting to WhatsApp...",
       });
 
-      setFormData({ name: "", phone: "", location: "", trxId: "" });
+      setFormData({ name: "", phone: "", location: "", trxId: "", amount: "200" });
       window.open(whatsappUrl, "_blank", "noopener");
       requestAnimationFrame(() => waRef.current?.focus());
     } catch (err: unknown) {
@@ -253,8 +257,8 @@ export default function DonatePage() {
               আমাদের <span className="font-semibold text-text">LCWKR</span>{" "}
               প্ল্যাটফর্মকে সচল, ফ্রি এবং নতুন ফিচারে সমৃদ্ধ করতে
               স্বেচ্ছায়{" "}
-              <span className="font-bold text-secondary">২০০ টাকা</span> অনুদান
-              দিয়ে প্ল্যাটফর্মের উন্নয়নে অংশ নিতে পারেন।
+              <span className="font-bold text-secondary">২০০ টাকা বা আপনার ইচ্ছামতো পরিমাণের</span>{" "}
+              অনুদান দিয়ে প্ল্যাটফর্মের উন্নয়নে অংশ নিতে পারেন।
             </p>
 
             {/* DYNAMIC PROGRESS / GOAL CARD */}
@@ -293,6 +297,59 @@ export default function DonatePage() {
             </div>
 
             <NumberBlock />
+          </div>
+        </div>
+      </section>
+
+      {/* ======================= DEVELOPER'S NOTE ==================== */}
+      <section className="border-t border-text/10 bg-background py-14 md:py-20">
+        <div
+          className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8"
+        >
+          <div className="relative overflow-hidden rounded-3xl border border-text/12 bg-card/70 p-7 sm:p-10">
+            <span
+              aria-hidden="true"
+              lang="zh"
+              className="pointer-events-none absolute -top-6 right-2 select-none font-chinese text-[10rem] leading-none font-bold text-text/[0.04]"
+            >
+              心
+            </span>
+
+            <div className="relative">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                <Heart className="size-3.5 fill-current" aria-hidden="true" />
+                ডেভেলপারের কথা · A note from the developer
+              </span>
+
+              <div className="mt-5 space-y-4 text-[15px] leading-[1.9] text-text/80 sm:text-base">
+                <p>
+                  আসসালামু আলাইকুম। আমি{" "}
+                  <span className="font-semibold text-text">কাজী রবিন</span> —
+                  এই <span className="font-semibold text-text">LCWKR</span>{" "}
+                  প্ল্যাটফর্মটি অনেক দিনের পরিশ্রম, অনেক রাত জেগে নিজের হাতে
+                  তৈরি করেছি। শুধু তাই না, ডেভেলপার হায়ার করেও অনেক কাজ
+                  করিয়েছি — এই প্রজেক্টে আমার{" "}
+                  <span className="font-semibold text-text">অনেক টাকা আর অনেক
+                  সময়</span>{" "}
+                  ইনভেস্ট হয়েছে।
+                </p>
+                <p>
+                  এই পুরো প্ল্যাটফর্মটি ফ্রি রেখেই চালানোর ইচ্ছা আছে। তাই
+                  টার্গেট নিয়েছি মাত্র{" "}
+                  <span className="font-bold text-secondary">৫,০০০ টাকা</span> —
+                  সার্ভার, ডোমেইন আর ডেভেলপমেন্টে যে খরচ হয়, তার একটা ছোট
+                  অংশ।
+                </p>
+                <p className="font-medium text-text">
+                  এই ছোট্ট লক্ষ্যটা পূরণ হলে ইনশাআল্লাহ এই সাইটে আরও অনেক নতুন
+                  নতুন ফিচার ও আপডেট আনব — আপনাদের সাপোর্টই আমার অনুপ্রেরণা। 🤍
+                </p>
+              </div>
+
+              <p className="mt-6 font-serif text-sm italic text-text/55">
+                — Kazi Robin, Founder of LCWKR
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -347,6 +404,19 @@ export default function DonatePage() {
                   error={errors.location}
                   placeholder="যেমন: Dhaka"
                   autoComplete="address-level2"
+                />
+                <Field
+                  label="Donation Amount (BDT)"
+                  name="amount"
+                  type="tel"
+                  inputMode="numeric"
+                  value={formData.amount}
+                  onChange={(v) =>
+                    setField("amount")(v.replace(/[^0-9]/g, ""))
+                  }
+                  error={errors.amount}
+                  placeholder="যেমন: 200"
+                  autoComplete="off"
                 />
                 <Field
                   label="bKash TrxID"

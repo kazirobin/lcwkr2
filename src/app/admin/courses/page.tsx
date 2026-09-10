@@ -234,9 +234,9 @@ export default function AdminCoursesPage() {
                     {t(`${c.classes.length}টি ক্লাস লগ`, `${c.classes.length} class logs`)}
                   </summary>
                   <ul className="mt-2 space-y-1.5">
-                    {c.classes.map((cls) => (
+                    {c.classes.map((cls, i) => (
                       <li
-                        key={cls.classId}
+                        key={`${cls.classId}-${i}`}
                         className="flex items-center justify-between gap-2 rounded-lg border border-text/10 bg-text/2 px-2.5 py-1.5 text-[11px]"
                       >
                         <span className="truncate">

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Dialogue as DialogueType } from "@/features/vocabulary/types";
+import SpeakerButton from "@/components/ui/SpeakerButton";
 
 /**
  * The short dialogue that opens some texts, shown as the conversation it is:
@@ -98,11 +99,15 @@ export default function Dialogue({
                     {line.speaker}
                   </span>
                 )}
-                {/* Dialogue Chinese text: added font-chinese and increased size to text-[1.25rem] / text-2xl */}
-                <p lang="zh" className="font-chinese text-3xl leading-relaxed text-text">
-                  {line.hanzi}
-                </p>
+                {/* Dialogue Chinese text with per-line pronunciation button */}
+                <div className="flex items-start justify-between gap-2">
+                  <p lang="zh" className="font-chinese text-3xl leading-relaxed text-text">
+                    {line.hanzi}
+                  </p>
+                  <SpeakerButton text={line.hanzi} className="mt-1.5 size-7" />
+                </div>
                 <p
+                  data-pinyin
                   lang="zh-Latn-pinyin"
                   className="mt-0.5 text-[13px] leading-5 text-text/55"
                 >
@@ -110,12 +115,10 @@ export default function Dialogue({
                 </p>
                 <p className="mt-1 text-[13px] leading-relaxed text-text/70">
                   {line.english}
+                  {line.bangla && (
+                    <span className="text-text/85"> · {line.bangla}</span>
+                  )}
                 </p>
-                {line.bangla && (
-                  <p className="mt-0.5 text-[13px] leading-relaxed text-text/70">
-                    {line.bangla}
-                  </p>
-                )}
               </div>
             </li>
           );

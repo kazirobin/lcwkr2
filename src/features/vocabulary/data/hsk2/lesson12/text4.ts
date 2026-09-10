@@ -1,94 +1,61 @@
-// app/data/vocabulary/lesson12-text4.ts
-import { VocabularyData } from "@/features/vocabulary/types";
+// AUTO-FILLED: Bangla added beside every English meaning (regenerated).
+import type { VocabularyData } from "@/features/vocabulary/types";
 
 export const hsk2lesson12text4: VocabularyData = {
-  hskLevel: 2,
-  lesson: 12,
-  text: 4,
-  dialogue: {
-    title: "Running with Li Wen",
-    lines: [
+    hskLevel: 2,
+    lesson: 12,
+    text: 4,
+    dialogue: {
+      title: "Running with Li Wen",
+      lines: [
+      { speaker: "Narrator", hanzi: "前几天天气不好，我没走路，每天坐两站地铁去学校。", pinyin: "Qián jǐ tiān tiānqì bù hǎo, wǒ méi zǒulù, měitiān zuò liǎng zhàn dìtiě qù xuéxiào.", english: "The weather was bad a few days ago, so I didn't walk. I took the subway two stops to school every day.", bangla: "কিছুদিন আগে আবহাওয়া খারাপ ছিল, হাঁটিনি, প্রতিদিন দুই স্টপ মেট্রোতে স্কুলে যেতাম।" },
+      { speaker: "Narrator", hanzi: "今天是个大晴天，李文让我跟他去外面跑步。", pinyin: "Jīntiān shì ge dà qíngtiān, Lǐ Wén ràng wǒ gēn tā qù wàimiàn pǎobù.", english: "Today is a very sunny day, and Li Wen asked me to go running outside with him.", bangla: "আজ খুব রোদেলা দিন, লি ওয়েন আমাকে বাইরে দৌড়াতে ডেকে নিল।" },
+      { speaker: "Narrator", hanzi: "他小时候经常跑步，跑得比我快，但是他会等我。", pinyin: "Tā xiǎoshíhou jīngcháng pǎobù, pǎo de bǐ wǒ kuài, dànshì tā huì děng wǒ.", english: "He often ran when he was young. He runs faster than me, but he will wait for me.", bangla: "ছোটবেলায় সে প্রায়ই দৌড়াত, আমার চেয়ে দ্রুত দৌড়ায়, কিন্তু আমার জন্য অপেক্ষা করে।" },
+      { speaker: "Narrator", hanzi: "跟李文一起跑步，我好高兴啊！", pinyin: "Gēn Lǐ Wén yìqǐ pǎobù, wǒ hǎo gāoxìng a!", english: "I'm so happy to run with Li Wen!", bangla: "লি ওয়েনের সাথে দৌড়াতে পেরে আমি খুব খুশি!" },
+      ],
+    },
+    vocabulary: [
       {
-        speaker: "Narrator",
-        hanzi: "前几天天气不好，我没走路，每天坐两站地铁去学校。",
-        pinyin:
-          "Qián jǐ tiān tiānqì bù hǎo, wǒ méi zǒulù, měitiān zuò liǎng zhàn dìtiě qù xuéxiào.",
-        english:
-          "The weather was bad a few days ago, so I didn't walk. I took the subway two stops to school every day.",
+        hanzi: "站",
+        pinyin: "zhàn",
+        english: "Station/To stand",
+        bangla: "স্টেশন/দাঁড়ানো",
+        characters: [
+          { hanzi: "站", pinyin: "zhàn", meaning: "Stand/Station", bangla: "স্টেশন/দাঁড়ানো" },
+        ],
+        example: { hanzi: "我在火车站等你。", pinyin: "Wǒ zài huǒchēzhàn děng nǐ.", english: "I am waiting for you at the railway station.", bangla: "আমি রেল স্টেশনে তোমার জন্য অপেক্ষা করছি।" },
+        similar: [
+          { hanzi: "车站", pinyin: "chēzhàn", english: "Station", bangla: "স্টেশন/স্টপ" },
+        ],
       },
       {
-        speaker: "Narrator",
-        hanzi: "今天是个大晴天，李文让我跟他去外面跑步。",
-        pinyin:
-          "Jīntiān shì ge dà qíngtiān, Lǐ Wén ràng wǒ gēn tā qù wàimiàn pǎobù.",
-        english:
-          "Today is a very sunny day, and Li Wen asked me to go running outside with him.",
+        hanzi: "小时候",
+        pinyin: "xiǎoshíhou",
+        english: "In one's childhood",
+        bangla: "ছোটবেলায়",
+        characters: [
+          { hanzi: "小", pinyin: "xiǎo", meaning: "Small/Young", bangla: "ছোট" },
+          { hanzi: "时", pinyin: "shí", meaning: "Time", bangla: "সময়/যখন" },
+          { hanzi: "候", pinyin: "hòu", meaning: "Time" },
+        ],
+        example: { hanzi: "我小时候喜欢画画。", pinyin: "Wǒ xiǎoshíhou xǐhuan huàhuà.", english: "I liked drawing when I was a child.", bangla: "আমি ছোটবেলায় ছবি আঁকতে পছন্দ করতাম।" },
+        similar: [
+          { hanzi: "童年", pinyin: "tóngnián", english: "Childhood" },
+        ],
       },
       {
-        speaker: "Narrator",
-        hanzi: "他小时候经常跑步，跑得比我快，但是他会等我。",
-        pinyin:
-          "Tā xiǎoshíhou jīngcháng pǎobù, pǎo de bǐ wǒ kuài, dànshì tā huì děng wǒ.",
-        english:
-          "He often ran when he was young. He runs faster than me, but he will wait for me.",
-      },
-      {
-        speaker: "Narrator",
-        hanzi: "跟李文一起跑步，我好高兴啊！",
-        pinyin: "Gēn Lǐ Wén yìqǐ pǎobù, wǒ hǎo gāoxìng a!",
-        english: "I'm so happy to run with Li Wen!",
+        hanzi: "好",
+        pinyin: "hǎo",
+        english: "Good/Very",
+        bangla: "ভালো/খুব",
+        characters: [
+          { hanzi: "女", pinyin: "nǚ", meaning: "Woman", bangla: "মহিলা" },
+          { hanzi: "子", pinyin: "zǐ", meaning: "Child" },
+        ],
+        example: { hanzi: "今天天气很好。", pinyin: "Jīntiān tiānqì hěn hǎo.", english: "The weather is very good today.", bangla: "আজ আবহাওয়া খুব ভালো।" },
+        similar: [
+          { hanzi: "棒", pinyin: "bàng", english: "Great" },
+        ],
       },
     ],
-  },
-  vocabulary: [
-    {
-      hanzi: "站",
-      pinyin: "zhàn",
-      english: "Station/To stand",
-      bangla: "স্টেশন/দাঁড়ানো",
-      characters: [{ hanzi: "站", pinyin: "zhàn", meaning: "Stand/Station" }],
-      example: {
-        hanzi: "我在火车站等你。",
-        pinyin: "Wǒ zài huǒchēzhàn děng nǐ.",
-        english: "I am waiting for you at the railway station.",
-        bangla: "আমি রেল স্টেশনে তোমার জন্য অপেক্ষা করছি।",
-      },
-      similar: [{ hanzi: "车站", pinyin: "chēzhàn", english: "Station" }],
-    },
-    {
-      hanzi: "小时候",
-      pinyin: "xiǎoshíhou",
-      english: "In one's childhood",
-      bangla: "ছোটবেলায়",
-      characters: [
-        { hanzi: "小", pinyin: "xiǎo", meaning: "Small/Young" },
-        { hanzi: "时", pinyin: "shí", meaning: "Time" },
-        { hanzi: "候", pinyin: "hòu", meaning: "Time" },
-      ],
-      example: {
-        hanzi: "我小时候喜欢画画。",
-        pinyin: "Wǒ xiǎoshíhou xǐhuan huàhuà.",
-        english: "I liked drawing when I was a child.",
-        bangla: "আমি ছোটবেলায় ছবি আঁকতে পছন্দ করতাম।",
-      },
-      similar: [{ hanzi: "童年", pinyin: "tóngnián", english: "Childhood" }],
-    },
-    {
-      hanzi: "好",
-      pinyin: "hǎo",
-      english: "Good/Very",
-      bangla: "ভালো/খুব",
-      characters: [
-        { hanzi: "女", pinyin: "nǚ", meaning: "Woman" },
-        { hanzi: "子", pinyin: "zǐ", meaning: "Child" },
-      ],
-      example: {
-        hanzi: "今天天气很好。",
-        pinyin: "Jīntiān tiānqì hěn hǎo.",
-        english: "The weather is very good today.",
-        bangla: "আজ আবহাওয়া খুব ভালো।",
-      },
-      similar: [{ hanzi: "棒", pinyin: "bàng", english: "Great" }],
-    },
-  ],
 };

@@ -78,7 +78,7 @@ export default function MatchingSection({ questions, answers, onChange, disabled
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xl font-chinese font-bold text-text">{pair.hanzi}</span>
-                      <span className="text-[10px] font-mono text-muted">{pair.pinyin}</span>
+                      <span data-pinyin className="text-[10px] font-mono text-muted">{pair.pinyin}</span>
                     </div>
                     <select
                       value={val}

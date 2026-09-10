@@ -138,7 +138,7 @@ export default function SpeakingSection({ questions, answers, onChange, disabled
             </div>
 
             <p className="text-xl font-chinese font-bold text-text">{q.line}</p>
-            <p className="text-xs font-mono text-secondary">{q.pinyin}</p>
+            <p data-pinyin className="text-xs font-mono text-secondary">{q.pinyin}</p>
             <p className="text-xs text-muted">
               {language === "bn" ? q.bn || q.en : q.en}
             </p>

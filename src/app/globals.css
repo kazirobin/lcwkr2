@@ -13,6 +13,12 @@
   font-family: var(--font-noto-serif-sc), serif;
 }
 
+/* Pinyin visibility: the Nav "拼" toggle adds .hide-pinyin on <html>; every
+   pinyin element carries data-pinyin and disappears site-wide. */
+.hide-pinyin [data-pinyin] {
+  display: none !important;
+}
+
 /* Bangla carries taller vowel signs and low-hanging
    conjuncts than Latin — tight Tailwind line-heights clip them. On the
    /hsk workbook, give Bangla headings and compact UI text enough

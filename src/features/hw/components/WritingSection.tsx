@@ -62,7 +62,7 @@ export default function WritingSection({ questions, answers, onChange, disabled,
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted">{q.pinyin}</p>
+              <p data-pinyin className="text-xs text-muted">{q.pinyin}</p>
               <input
                 type="text"
                 value={val}

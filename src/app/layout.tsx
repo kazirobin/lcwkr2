@@ -6,6 +6,7 @@ import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import { LanguageProvider } from "@/i18n";
 import ThemeProvider from "@/providers/ThemeProvider";
+import { PinyinProvider } from "@/providers/PinyinProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -90,13 +91,15 @@ export default function RootLayout({
           Skip to content
         </a>
         <ThemeProvider>
-          <LanguageProvider>
-            <Nav />
-            <main id="main-content" className="flex-1 pt-16 sm:pt-20">
-              {children}
-            </main>
-            <Footer />
-          </LanguageProvider>
+          <PinyinProvider>
+            <LanguageProvider>
+              <Nav />
+              <main id="main-content" className="flex-1 pt-16 sm:pt-20">
+                {children}
+              </main>
+              <Footer />
+            </LanguageProvider>
+          </PinyinProvider>
         </ThemeProvider>
       </body>
     </html>

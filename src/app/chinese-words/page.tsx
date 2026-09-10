@@ -17,6 +17,7 @@ import {
 import { PracticeGame } from "@/features/chinese-words";
 import { SelectableText } from "@/features/chinese-words";
 import ProGate from "@/features/chinese-words/components/ProGate";
+import SpeakerButton from "@/components/ui/SpeakerButton";
 import type { LessonWord } from "@/features/chinese-words";
 
 const READ_KEY = "cw:read";
@@ -269,7 +270,7 @@ export default function ChineseWordBuilderPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             {/* pinyin sits above the hanzi */}
-                            <p className="mb-1 text-xs font-mono font-medium text-secondary break-words">
+                            <p data-pinyin className="mb-1 text-xs font-mono font-medium text-secondary break-words">
                               {item.pinyin}
                             </p>
                             <div className="flex items-center gap-2.5">
@@ -292,6 +293,10 @@ export default function ChineseWordBuilderPage() {
                               <SelectableText className="text-[26px] sm:text-3xl font-chinese font-bold text-secondary leading-tight break-words cursor-text">
                                 {item.character}
                               </SelectableText>
+                              <SpeakerButton
+                                text={item.character}
+                                className="size-7"
+                              />
                             </div>
                           </div>
 
@@ -348,8 +353,11 @@ export default function ChineseWordBuilderPage() {
                                     <SelectableText className="text-xl sm:text-2xl font-chinese font-bold text-text break-words cursor-text">
                                       {rw.word}
                                     </SelectableText>
-                                    <span className="text-xs font-mono font-medium text-secondary">
-                                      {rw.pinyin}
+                                    <span className="flex items-center gap-2">
+                                      <span data-pinyin className="text-xs font-mono font-medium text-secondary">
+                                        {rw.pinyin}
+                                      </span>
+                                      <SpeakerButton text={rw.word} className="size-6" />
                                     </span>
                                   </div>
 
@@ -495,7 +503,7 @@ export default function ChineseWordBuilderPage() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             {/* pinyin sits above the hanzi */}
-                            <p className="mb-1 text-xs font-mono font-medium text-secondary break-words">
+                            <p data-pinyin className="mb-1 text-xs font-mono font-medium text-secondary break-words">
                               {w.pinyin}
                             </p>
                             <div className="flex items-center gap-2.5">
@@ -515,6 +523,7 @@ export default function ChineseWordBuilderPage() {
                               <SelectableText className="text-[26px] sm:text-3xl font-chinese font-bold text-text leading-tight break-words cursor-text">
                                 {w.hanzi}
                               </SelectableText>
+                              <SpeakerButton text={w.hanzi} className="size-7" />
                             </div>
                           </div>
                           <span

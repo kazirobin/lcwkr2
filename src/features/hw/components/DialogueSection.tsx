@@ -99,7 +99,7 @@ export default function DialogueSection({ questions, answers, onChange, disabled
                       {t("সঠিক উত্তর", "Correct")}: {res.correctAnswer}
                     </p>
                   )}
-                  <p className="text-[10px] font-mono text-muted mt-1">{blank.pinyin}</p>
+                  <p data-pinyin className="text-[10px] font-mono text-muted mt-1">{blank.pinyin}</p>
                 </div>
               );
             })}

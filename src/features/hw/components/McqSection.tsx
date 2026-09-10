@@ -57,7 +57,7 @@ export default function McqSection({ questions, answers, onChange, disabled, res
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl font-chinese font-bold text-text">{q.hanzi}</span>
-                  <span className="text-[10px] font-mono text-muted">{q.pinyin}</span>
+                  <span data-pinyin className="text-[10px] font-mono text-muted">{q.pinyin}</span>
                 </div>
                 {res && (
                   <span

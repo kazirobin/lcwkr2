@@ -14,15 +14,25 @@ type ContextType = {
 const LanguageContext = createContext<ContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("language") as Language;
-      if (saved === "bn" || saved === "en") return saved;
-    }
-    return "bn";
-  });
+  // Always start from the default so the server HTML and the client's
+  // first render match. The saved preference is applied right after
+  // mount — reading localStorage in the state initializer caused a
+  // hydration mismatch in the Nav (server: "bn", client: saved value).
+  const [language, setLanguage] = useState<Language>("bn");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("language");
+      if (saved === "bn" || saved === "en") setLanguage(saved);
+    } catch {
+      /* ignore */
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem("language", language);
 
     document.documentElement.lang = language;
@@ -30,7 +40,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.add(
       language === "bn" ? "font-bn" : "font-en",
     );
-  }, [language]);
+  }, [language, hydrated]);
 
   return (
     <LanguageContext.Provider
