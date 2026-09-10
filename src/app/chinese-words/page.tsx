@@ -1,26 +1,69 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/i18n";
 import {
+  CHINESE_WORDS,
   LESSON_LEVELS,
   WORD_LEVELS,
   buildKnownWordSet,
   findWordEntry,
   getLessonWords,
+  makeSearchCorpus,
+  searchTokens,
   searchWords,
   stripTones,
 } from "@/features/chinese-words";
+import { PracticeGame } from "@/features/chinese-words";
 import type { LessonWord } from "@/features/chinese-words";
+
+const READ_KEY = "cw:read";
+
+function loadReadSet(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? "[]") as string[]);
+  } catch {
+    return new Set();
+  }
+}
 
 export default function ChineseWordBuilderPage() {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
-  const [view, setView] = useState<"root" | "words">("root");
+  const [view, setView] = useState<"root" | "words" | "game">("root");
 
   // ── shared ──────────────────────────────────────────────────────────
   const knownWords = useMemo(() => buildKnownWordSet(), []);
+
+  // read/unread marks — persisted in localStorage
+  const [readSet, setReadSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    queueMicrotask(() => setReadSet(loadReadSet()));
+  }, []);
+  const toggleRead = (hanzi: string) => {
+    setReadSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(hanzi)) next.delete(hanzi);
+      else next.add(hanzi);
+      try {
+        localStorage.setItem(READ_KEY, JSON.stringify([...next]));
+      } catch {
+        /* storage full — ignore */
+      }
+      return next;
+    });
+  };
+
+  // go-to-top visibility
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // ── root network view state ─────────────────────────────────────────
   const [search, setSearch] = useState("");
@@ -46,20 +89,24 @@ export default function ChineseWordBuilderPage() {
 
   const lessonStats = useMemo(() => {
     const found = lessonWordList.filter((w) => knownWords.has(w.hanzi)).length;
-    return { found, total: lessonWordList.length };
-  }, [lessonWordList, knownWords]);
+    const marked = lessonWordList.filter((w) => readSet.has(w.hanzi)).length;
+    return { found, total: lessonWordList.length, marked };
+  }, [lessonWordList, knownWords, readSet]);
 
   const filteredLessonWords = useMemo(() => {
-    const q = wordSearch.toLowerCase().trim();
-    const qToneless = stripTones(wordSearch);
-    const tokens = (qToneless || q).split(/\s+/).filter(Boolean);
+    const tokens = searchTokens(wordSearch);
     return lessonWordList.filter((w) => {
       const inDataset = knownWords.has(w.hanzi);
       if (onlyMissing && inDataset) return false;
       if (tokens.length === 0) return true;
-      const corpus = [w.hanzi, stripTones(w.pinyin), w.pinyin.toLowerCase(), w.en.toLowerCase(), w.bn]
-        .join("\n")
-        .toLowerCase();
+      const corpus = makeSearchCorpus([
+        w.hanzi,
+        w.pinyin,
+        stripTones(w.pinyin),
+        stripTones(w.pinyin).replace(/\s+/g, ""),
+        w.en,
+        w.bn,
+      ]);
       return tokens.every((tok) => corpus.includes(tok));
     });
   }, [lessonWordList, knownWords, onlyMissing, wordSearch]);
@@ -68,6 +115,11 @@ export default function ChineseWordBuilderPage() {
   const filteredWords = useMemo(
     () => searchWords(search, selectedHsk === "All" ? "All" : Number(selectedHsk)),
     [search, selectedHsk],
+  );
+
+  const markedCount = useMemo(
+    () => filteredWords.filter((w) => readSet.has(w.character)).length,
+    [filteredWords, readSet],
   );
 
   return (
@@ -91,6 +143,10 @@ export default function ChineseWordBuilderPage() {
               "Learn one core character and discover how multiple words are formed from it."
             )}
           </p>
+          {/* Total marked progress */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-ok/30 bg-ok/10 text-ok text-xs font-mono">
+            ✓ {readSet.size} / {CHINESE_WORDS.length} {t("টি শব্দ পড়া হয়েছে", "words marked as read")}
+          </div>
         </div>
 
         {/* View Toggle */}
@@ -116,59 +172,90 @@ export default function ChineseWordBuilderPage() {
             >
               {t("শব্দ তালিকা", "Words")}
             </button>
+            <button
+              onClick={() => setView("game")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                view === "game"
+                  ? "bg-secondary text-background font-bold shadow-sm"
+                  : "text-text/70 hover:bg-text/5"
+              }`}
+            >
+              🎮 {t("অভ্যাস গেম", "Practice")}
+            </button>
           </div>
         </div>
 
-        {view === "root" ? (
+        {view === "game" ? (
+          <PracticeGame />
+        ) : view === "root" ? (
           <>
             {/* Search & HSK Filters */}
             <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
               <input
                 type="text"
                 placeholder={t(
-                  "খুঁজুন (学, xue/xué, শেখা, student)...",
-                  "Search (学, xue/xué, study, student)..."
+                  "যেভাবে খুঁজুন: 学 / xue / ni hao / শেখা / student",
+                  "Search any way: 学 / xue / ni hao / study"
                 )}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full sm:max-w-md px-4 py-2.5 rounded-xl border border-text/20 bg-background/60 text-text placeholder-text/40 focus:outline-none focus:border-secondary transition text-sm"
               />
 
-              <div className="flex flex-wrap gap-1.5 justify-center">
-                {["All", ...WORD_LEVELS.map(String)].map((lvl) => (
-                  <button
-                    key={lvl}
-                    onClick={() => setSelectedHsk(lvl)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                      selectedHsk === lvl
-                        ? "bg-secondary text-background font-bold shadow-sm"
-                        : "border border-text/15 hover:bg-text/5 text-text/70"
-                    }`}
-                  >
-                    {lvl === "All" ? "All" : `HSK ${lvl}`}
-                  </button>
-                ))}
+              <div className="flex items-center gap-3">
+                {search.trim() && (
+                  <span className="text-[11px] font-mono text-text/60 whitespace-nowrap">
+                    {filteredWords.length} {t("টি পাওয়া গেছে", "found")} · {markedCount}{" "}
+                    {t("মার্ক করা", "read")}
+                  </span>
+                )}
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {["All", ...WORD_LEVELS.map(String)].map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => setSelectedHsk(lvl)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                        selectedHsk === lvl
+                          ? "bg-secondary text-background font-bold shadow-sm"
+                          : "border border-text/15 hover:bg-text/5 text-text/70"
+                      }`}
+                    >
+                      {lvl === "All" ? "All" : `HSK ${lvl}`}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Core Words Accordion List */}
             {filteredWords.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-text/20 rounded-2xl text-text/60 text-sm">
-                {t("কোনো শব্দ পাওয়া যায়নি।", "No words found matching your search.")}
+              <div className="text-center py-16 border border-dashed border-text/20 rounded-2xl text-text/60 text-sm space-y-1">
+                <p className="text-danger font-semibold">
+                  {t("কোনো শব্দ পাওয়া যায়নি।", "No words found.")}
+                </p>
+                <p className="text-xs">
+                  {t(
+                    `"${search.trim()}" এর জন্য কোনো ম্যাচ নেই — হানজি, পিনইন, ইংরেজি বা বাংলা দিয়ে আবার চেষ্টা করুন।`,
+                    `No match for "${search.trim()}" — try hanzi, pinyin, English or Bangla.`
+                  )}
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {filteredWords.map((item) => {
                   const isExpanded = expandedId === item.character;
                   const relatedCount = item.relatedWords?.length || 0;
+                  const isRead = readSet.has(item.character);
 
                   return (
                     <div
                       key={item.character}
                       className={`border rounded-2xl transition-all overflow-hidden ${
-                        isExpanded
-                          ? "border-secondary shadow-md bg-background/80"
-                          : "border-text/15 bg-background hover:border-text/30"
+                        isRead
+                          ? "border-ok/40 bg-ok-surface/30"
+                          : isExpanded
+                            ? "border-secondary shadow-md bg-background/80"
+                            : "border-text/15 bg-background hover:border-text/30"
                       }`}
                     >
                       {/* Top Clickable Bar */}
@@ -186,7 +273,7 @@ export default function ChineseWordBuilderPage() {
 
                           <div>
                             <div className="flex items-center gap-2">
-                              <h2 className="font-semibold text-lg text-text">
+                              <h2 className={`font-semibold text-lg ${isRead ? "text-ok" : "text-text"}`}>
                                 {language === "bn" ? item.meaningBn : item.meaningEn}
                               </h2>
                               <span className="text-xs text-text/50">
@@ -199,7 +286,23 @@ export default function ChineseWordBuilderPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5">
+                          {/* Read / Unread toggle */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRead(item.character);
+                            }}
+                            title={isRead ? t("আনমার্ক করুন", "Mark as unread") : t("পড়া হয়েছে", "Mark as read")}
+                            className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm transition ${
+                              isRead
+                                ? "bg-ok text-background border-ok"
+                                : "border-text/25 text-text/40 hover:border-ok/60 hover:text-ok"
+                            }`}
+                          >
+                            {isRead ? "✓" : "○"}
+                          </button>
                           {item.hskLevel && (
                             <span className="px-2.5 py-1 text-[11px] rounded-full border border-secondary/30 bg-secondary/10 text-secondary font-mono">
                               HSK {item.hskLevel}
@@ -324,8 +427,8 @@ export default function ChineseWordBuilderPage() {
                 <input
                   type="text"
                   placeholder={t(
-                    "শব্দ খুঁজুন (যেমন: 你, nǐ, তুমি)...",
-                    "Search words (e.g. 你, nǐ, you)..."
+                    "যেভাবে খুঁজুন: 你 / ni / ni hao / তুমি / you",
+                    "Search any way: 你 / ni / ni hao / you"
                   )}
                   value={wordSearch}
                   onChange={(e) => setWordSearch(e.target.value)}
@@ -342,16 +445,25 @@ export default function ChineseWordBuilderPage() {
                     />
                     {t("শুধু বাদ পড়াগুলো", "Only missing")}
                   </label>
-                  <span className="px-2.5 py-1 text-[11px] rounded-full border border-text/15 bg-text/5 text-text/60 font-mono">
-                    {lessonStats.found}/{lessonStats.total} {t("আছে", "in list")}
+                  <span className="px-2.5 py-1 text-[11px] rounded-full border border-text/15 bg-text/5 text-text/60 font-mono whitespace-nowrap">
+                    {lessonStats.found}/{lessonStats.total} {t("আছে", "in list")} · {lessonStats.marked}{" "}
+                    {t("মার্ক করা", "read")}
                   </span>
                 </div>
               </div>
 
               {/* Words grid */}
               {filteredLessonWords.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-text/20 rounded-2xl text-text/60 text-sm">
-                  {t("এই লেসনে কোনো শব্দ পাওয়া যায়নি।", "No words found for this lesson.")}
+                <div className="text-center py-16 border border-dashed border-text/20 rounded-2xl text-text/60 text-sm space-y-1">
+                  <p className="text-danger font-semibold">
+                    {t("কোনো শব্দ পাওয়া যায়নি।", "No words found.")}
+                  </p>
+                  <p className="text-xs">
+                    {t(
+                      `"${wordSearch.trim()}" এর জন্য কোনো ম্যাচ নেই — হানজি, পিনইন, ইংরেজি বা বাংলা দিয়ে আবার চেষ্টা করুন।`,
+                      `No match for "${wordSearch.trim()}" — try hanzi, pinyin, English or Bangla.`
+                    )}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -359,20 +471,38 @@ export default function ChineseWordBuilderPage() {
                     const inDataset = knownWords.has(w.hanzi);
                     const root = findWordEntry(w.hanzi);
                     const relatedCount = root?.relatedWords?.length ?? 0;
+                    const isRead = readSet.has(w.hanzi);
 
                     return (
                       <div
                         key={`${w.level}-${w.lesson}-${w.text}-${w.hanzi}-${idx}`}
                         className={`border rounded-2xl p-4 space-y-2.5 shadow-sm transition-colors ${
-                          inDataset
-                            ? "border-ok/30 bg-ok-surface/40"
-                            : "border-warn/30 bg-warn-surface/30"
+                          isRead
+                            ? "border-ok/40 bg-ok-surface/40"
+                            : inDataset
+                              ? "border-ok/30 bg-ok-surface/20"
+                              : "border-warn/30 bg-warn-surface/30"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <span className="text-3xl font-chinese font-bold text-text leading-tight">
-                            {w.hanzi}
-                          </span>
+                          <div className="flex items-center gap-2.5">
+                            {/* Read / Unread toggle */}
+                            <button
+                              type="button"
+                              onClick={() => toggleRead(w.hanzi)}
+                              title={isRead ? t("আনমার্ক করুন", "Mark as unread") : t("পড়া হয়েছে", "Mark as read")}
+                              className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs transition shrink-0 ${
+                                isRead
+                                  ? "bg-ok text-background border-ok"
+                                  : "border-text/25 text-text/40 hover:border-ok/60 hover:text-ok"
+                              }`}
+                            >
+                              {isRead ? "✓" : "○"}
+                            </button>
+                            <span className="text-3xl font-chinese font-bold text-text leading-tight">
+                              {w.hanzi}
+                            </span>
+                          </div>
                           <span
                             className={`shrink-0 px-2 py-0.5 text-[10px] font-mono rounded-full border ${
                               inDataset
@@ -412,6 +542,18 @@ export default function ChineseWordBuilderPage() {
           </>
         )}
       </div>
+
+      {/* Go to top */}
+      {showTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          title={t("উপরে যান", "Go to top")}
+          className="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-lg font-bold hover:opacity-90 transition"
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 }

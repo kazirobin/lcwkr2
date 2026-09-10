@@ -77,40 +77,67 @@ export function stripTones(pinyin: string): string {
     .trim();
 }
 
+/** Toneless pinyin with no spaces — "nǐ hǎo" → "nihao". */
+function tonelessCompact(pinyin: string): string {
+  return stripTones(pinyin).replace(/\s+/g, "");
+}
+
+/**
+ * Split any query (hanzi / pinyin with or without tones or tone numbers /
+ * English / Bangla) into searchable tokens. Punctuation and digits are
+ * dropped; CJK and Bangla clusters stay intact.
+ */
+export function searchTokens(query: string): string[] {
+  const q = query
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return q
+    .split(/[^\p{L}\p{M}\p{N}]+/u)
+    .map((t) => t.replace(/\d+/g, "").normalize("NFC"))
+    .filter((t) => t.length > 0);
+}
+
+/** Build the lowercase search corpus for one entry from its text fields. */
+export function makeSearchCorpus(fields: string[]): string {
+  return fields.map((f) => f.toLowerCase()).join("\n");
+}
+
 /** Precomputed lowercase search corpus per entry (hanzi/pinyin/en/bn). */
 const searchCorpus = new Map<ChineseWordEntry, string>();
 for (const entry of CHINESE_WORDS) {
   const parts: string[] = [
     entry.character,
+    entry.pinyin,
     stripTones(entry.pinyin),
-    entry.pinyin.toLowerCase(),
-    entry.meaningEn.toLowerCase(),
+    tonelessCompact(entry.pinyin),
+    entry.meaningEn,
     entry.meaningBn,
   ];
   for (const rw of entry.relatedWords ?? []) {
     parts.push(
       rw.word,
+      rw.pinyin,
       stripTones(rw.pinyin),
-      rw.pinyin.toLowerCase(),
-      rw.meaningEn.toLowerCase(),
+      tonelessCompact(rw.pinyin),
+      rw.meaningEn,
       rw.meaningBn,
     );
   }
-  searchCorpus.set(entry, parts.join("\n").toLowerCase());
+  searchCorpus.set(entry, makeSearchCorpus(parts));
 }
 
 /**
- * Dynamic search across hanzi, toneless pinyin, English and Bangla.
+ * Dynamic search across hanzi, pinyin (with or without tones/numbers),
+ * English and Bangla — any direction, partial matches allowed.
  * Multi-token queries must all match ("xue sheng" finds 学生).
  */
 export function searchWords(query: string, level: number | "All"): ChineseWordEntry[] {
-  const q = query.trim().toLowerCase();
-  const qToneless = stripTones(query);
-  const tokens = (qToneless || q).split(/\s+/).filter(Boolean);
+  const tokens = searchTokens(query);
 
   const pool =
     level === "All" ? CHINESE_WORDS : WORDS_BY_LEVEL[level] ?? CHINESE_WORDS;
-  if (!q && !qToneless) return pool;
+  if (tokens.length === 0) return pool;
 
   return pool.filter((entry) => {
     const corpus = searchCorpus.get(entry) ?? "";
