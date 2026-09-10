@@ -3,6 +3,7 @@
 // no MongoDB. Server code and models remain for a future migration.
 export { default as ProSubscriptionForm } from "./components/ProSubscriptionForm";
 export { default as PracticeGame } from "./components/PracticeGame";
+export { default as SelectableText } from "./components/Selectable";
 export {
   CHINESE_WORDS,
   WORDS_BY_LEVEL,

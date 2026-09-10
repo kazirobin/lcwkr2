@@ -15,6 +15,7 @@ import {
   stripTones,
 } from "@/features/chinese-words";
 import { PracticeGame } from "@/features/chinese-words";
+import { SelectableText } from "@/features/chinese-words";
 import ProGate from "@/features/chinese-words/components/ProGate";
 import type { LessonWord } from "@/features/chinese-words";
 
@@ -260,57 +261,62 @@ export default function ChineseWordBuilderPage() {
                             : "border-text/15 bg-background hover:border-text/30"
                       }`}
                     >
-                      {/* Top Clickable Bar */}
+                      {/* Top Clickable Bar — pinyin above hanzi, like the words cards */}
                       <div
                         onClick={() => setExpandedId(isExpanded ? null : item.character)}
-                        className="p-5 flex items-center justify-between cursor-pointer select-none"
+                        className="p-4 sm:p-5 cursor-pointer select-none"
                       >
-                        <div className="flex items-center gap-5">
-                          <div className="w-14 h-14 rounded-xl bg-secondary/10 border border-secondary/20 flex flex-col items-center justify-center shrink-0">
-                            <span className="text-2xl font-chinese font-bold text-secondary">
-                              {item.character}
-                            </span>
-                            <span className="text-[10px] text-secondary font-mono">{item.pinyin}</span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            {/* pinyin sits above the hanzi */}
+                            <p className="mb-1 text-xs font-mono font-medium text-secondary break-words">
+                              {item.pinyin}
+                            </p>
+                            <div className="flex items-center gap-2.5">
+                              {/* Read / Unread toggle */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRead(item.character);
+                                }}
+                                title={isRead ? t("আনমার্ক করুন", "Mark as unread") : t("পড়া হয়েছে", "Mark as read")}
+                                className={`w-7 h-7 shrink-0 rounded-full border flex items-center justify-center text-xs transition ${
+                                  isRead
+                                    ? "bg-ok text-background border-ok"
+                                    : "border-text/25 text-text/40 hover:border-ok/60 hover:text-ok"
+                                }`}
+                              >
+                                {isRead ? "✓" : "○"}
+                              </button>
+                              <SelectableText className="text-[26px] sm:text-3xl font-chinese font-bold text-secondary leading-tight break-words cursor-text">
+                                {item.character}
+                              </SelectableText>
+                            </div>
                           </div>
 
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h2 className={`font-semibold text-lg ${isRead ? "text-ok" : "text-text"}`}>
-                                {language === "bn" ? item.meaningBn : item.meaningEn}
-                              </h2>
-                              <span className="text-xs text-text/50">
-                                ({language === "bn" ? item.meaningEn : item.meaningBn})
+                          <div className="flex items-center gap-2 shrink-0">
+                            {item.hskLevel && (
+                              <span className="px-2 py-0.5 text-[10px] sm:text-[11px] rounded-full border border-secondary/30 bg-secondary/10 text-secondary font-mono">
+                                HSK {item.hskLevel}
                               </span>
-                            </div>
-                            <p className="text-xs text-text/60 mt-0.5">
-                              {relatedCount} {t("টি সংযুক্ত শব্দ", "related words")}
-                            </p>
+                            )}
+                            <span className="text-text/40 text-sm">{isExpanded ? "▲" : "▼"}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5">
-                          {/* Read / Unread toggle */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleRead(item.character);
-                            }}
-                            title={isRead ? t("আনমার্ক করুন", "Mark as unread") : t("পড়া হয়েছে", "Mark as read")}
-                            className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm transition ${
-                              isRead
-                                ? "bg-ok text-background border-ok"
-                                : "border-text/25 text-text/40 hover:border-ok/60 hover:text-ok"
-                            }`}
-                          >
-                            {isRead ? "✓" : "○"}
-                          </button>
-                          {item.hskLevel && (
-                            <span className="px-2.5 py-1 text-[11px] rounded-full border border-secondary/30 bg-secondary/10 text-secondary font-mono">
-                              HSK {item.hskLevel}
+                        <div className="mt-2.5">
+                          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span className={`font-semibold text-base sm:text-lg ${isRead ? "text-ok" : "text-text"}`}>
+                              {language === "bn" ? item.meaningBn : item.meaningEn}
                             </span>
-                          )}
-                          <span className="text-text/40 text-sm">{isExpanded ? "▲" : "▼"}</span>
+                            <span className="text-xs text-text/50">
+                              ({language === "bn" ? item.meaningEn : item.meaningBn})
+                            </span>
+                          </p>
+                          <p className="text-xs text-text/60 mt-0.5">
+                            {relatedCount} {t("টি সংযুক্ত শব্দ", "related words")}
+                          </p>
                         </div>
                       </div>
 
@@ -338,10 +344,10 @@ export default function ChineseWordBuilderPage() {
                                   key={idx}
                                   className="border border-text/10 rounded-xl p-4 bg-background space-y-2.5 shadow-sm"
                                 >
-                                  <div className="flex items-baseline justify-between">
-                                    <span className="text-2xl font-chinese font-bold text-text">
+                                  <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                                    <SelectableText className="text-xl sm:text-2xl font-chinese font-bold text-text break-words cursor-text">
                                       {rw.word}
-                                    </span>
+                                    </SelectableText>
                                     <span className="text-xs font-mono font-medium text-secondary">
                                       {rw.pinyin}
                                     </span>
@@ -362,7 +368,7 @@ export default function ChineseWordBuilderPage() {
                                           key={eIdx}
                                           className="p-2.5 rounded-lg bg-text/[0.03] border border-text/5 text-xs space-y-0.5"
                                         >
-                                          <p className="text-sm font-chinese font-normal">{ex.chinese}</p>
+                                          <SelectableText className="text-sm font-chinese font-normal cursor-text">{ex.chinese}</SelectableText>
                                           <p className="text-[11px] font-mono text-secondary">{ex.pinyin}</p>
                                           <p className="text-text/80">
                                             {language === "bn" ? ex.meaningBn : ex.meaningEn}
@@ -478,7 +484,7 @@ export default function ChineseWordBuilderPage() {
                     return (
                       <div
                         key={`${w.level}-${w.lesson}-${w.text}-${w.hanzi}-${idx}`}
-                        className={`border rounded-2xl p-4 space-y-2.5 shadow-sm transition-colors ${
+                        className={`border rounded-2xl p-4 space-y-2 shadow-sm transition-colors ${
                           isRead
                             ? "border-ok/40 bg-ok-surface/40"
                             : inDataset
@@ -486,24 +492,30 @@ export default function ChineseWordBuilderPage() {
                               : "border-warn/30 bg-warn-surface/30"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-2.5">
-                            {/* Read / Unread toggle */}
-                            <button
-                              type="button"
-                              onClick={() => toggleRead(w.hanzi)}
-                              title={isRead ? t("আনমার্ক করুন", "Mark as unread") : t("পড়া হয়েছে", "Mark as read")}
-                              className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs transition shrink-0 ${
-                                isRead
-                                  ? "bg-ok text-background border-ok"
-                                  : "border-text/25 text-text/40 hover:border-ok/60 hover:text-ok"
-                              }`}
-                            >
-                              {isRead ? "✓" : "○"}
-                            </button>
-                            <span className="text-3xl font-chinese font-bold text-text leading-tight">
-                              {w.hanzi}
-                            </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            {/* pinyin sits above the hanzi */}
+                            <p className="mb-1 text-xs font-mono font-medium text-secondary break-words">
+                              {w.pinyin}
+                            </p>
+                            <div className="flex items-center gap-2.5">
+                              {/* Read / Unread toggle */}
+                              <button
+                                type="button"
+                                onClick={() => toggleRead(w.hanzi)}
+                                title={isRead ? t("আনমার্ক করুন", "Mark as unread") : t("পড়া হয়েছে", "Mark as read")}
+                                className={`w-7 h-7 shrink-0 rounded-full border flex items-center justify-center text-xs transition ${
+                                  isRead
+                                    ? "bg-ok text-background border-ok"
+                                    : "border-text/25 text-text/40 hover:border-ok/60 hover:text-ok"
+                                }`}
+                              >
+                                {isRead ? "✓" : "○"}
+                              </button>
+                              <SelectableText className="text-[26px] sm:text-3xl font-chinese font-bold text-text leading-tight break-words cursor-text">
+                                {w.hanzi}
+                              </SelectableText>
+                            </div>
                           </div>
                           <span
                             className={`shrink-0 px-2 py-0.5 text-[10px] font-mono rounded-full border ${
@@ -517,8 +529,6 @@ export default function ChineseWordBuilderPage() {
                               : `✗ ${t("নেই", "missing")}`}
                           </span>
                         </div>
-
-                        <p className="text-xs font-mono font-medium text-secondary">{w.pinyin}</p>
 
                         <p className="text-sm font-medium text-text">
                           {language === "bn" ? w.bn || w.en : w.en}

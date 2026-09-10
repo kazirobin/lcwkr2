@@ -35,6 +35,7 @@ export default function TextReader({
     `/hsk/${level}/lesson/${l}/text/${t}`;
 
   const nextIsNewLesson = nav.next != null && nav.next.lesson !== lesson;
+  const currentIsAll = false; // this is a single-text view; the All chip never reads active
 
   return (
     <PaperPage isBn={isBn}>
@@ -93,6 +94,16 @@ export default function TextReader({
                   </Link>
                 );
               })}
+              <Link
+                href={`/hsk/${level}/lesson/${lesson}/all`}
+                className={`inline-flex h-9 items-center justify-center rounded-full border px-3.5 font-serif text-[15px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                  currentIsAll
+                    ? "border-secondary bg-secondary text-white"
+                    : "border-text/20 text-text/65 hover:border-text/45 hover:text-text"
+                }`}
+              >
+                {c.allChip}
+              </Link>
             </div>
           )}
         </div>

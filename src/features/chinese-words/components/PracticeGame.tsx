@@ -246,13 +246,13 @@ export default function PracticeGame() {
             {current.type === "hanzi-to-bn" ? (
               <>
                 <p className="text-xs text-muted">{t("এর বাংলা অর্থ কোনটি?", "What does this mean?")}</p>
-                <p className="text-6xl font-chinese font-bold text-text leading-tight">{current.prompt}</p>
+                <p className="text-4xl sm:text-6xl font-chinese font-bold text-text leading-tight break-words px-2">{current.prompt}</p>
                 <p className="text-xs font-mono text-secondary">{current.hint}</p>
               </>
             ) : (
               <>
                 <p className="text-xs text-muted">{t("কোন হানজি এই অর্থ প্রকাশ করে?", "Which hanzi means this?")}</p>
-                <p className="text-3xl font-bold text-text leading-snug">{current.prompt}</p>
+                <p className="text-xl sm:text-3xl font-bold text-text leading-snug break-words px-2">{current.prompt}</p>
                 <p className="text-xs text-text/50">{current.hint}</p>
               </>
             )}

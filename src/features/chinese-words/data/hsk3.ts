@@ -9,7 +9,7 @@ import type { ChineseWordEntry } from "../types";
 export const HSK3_WORDS: ChineseWordEntry[] = [
   {
     character: "以为",
-    pinyin: "",
+    pinyin: "yǐwéi",
     meaningEn: "Mistakenly think",
     meaningBn: "মনে করা",
     hskLevel: 3,
@@ -18,7 +18,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "像",
-    pinyin: "",
+    pinyin: "xiàng",
     meaningEn: "Be like/Resemble",
     meaningBn: "মতো/সাদৃশ্য",
     hskLevel: 3,
@@ -27,7 +27,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "身高",
-    pinyin: "",
+    pinyin: "shēngāo",
     meaningEn: "Height",
     meaningBn: "উচ্চতা",
     hskLevel: 3,
@@ -36,7 +36,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "米",
-    pinyin: "",
+    pinyin: "mǐ",
     meaningEn: "Meter",
     meaningBn: "মিটার",
     hskLevel: 3,
@@ -45,7 +45,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "瘦",
-    pinyin: "",
+    pinyin: "shòu",
     meaningEn: "Thin",
     meaningBn: "রোগা",
     hskLevel: 3,
@@ -54,7 +54,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "行李",
-    pinyin: "",
+    pinyin: "xíngli",
     meaningEn: "Luggage/Baggage",
     meaningBn: "লাগেজ",
     hskLevel: 3,
@@ -63,7 +63,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "丢",
-    pinyin: "",
+    pinyin: "diū",
     meaningEn: "Lose/Misplace",
     meaningBn: "হারানো",
     hskLevel: 3,
@@ -72,7 +72,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "箱子",
-    pinyin: "",
+    pinyin: "xiāngzi",
     meaningEn: "Suitcase/Box/Chest",
     meaningBn: "ট্রলি/বাক্স",
     hskLevel: 3,
@@ -81,7 +81,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "号码",
-    pinyin: "",
+    pinyin: "hàomǎ",
     meaningEn: "Number",
     meaningBn: "নম্বর",
     hskLevel: 3,
@@ -90,7 +90,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "重要",
-    pinyin: "",
+    pinyin: "zhòngyào",
     meaningEn: "Important",
     meaningBn: "গুরুত্বপূর্ণ",
     hskLevel: 3,
@@ -99,7 +99,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "着急",
-    pinyin: "",
+    pinyin: "zháojí",
     meaningEn: "Worried/Anxious",
     meaningBn: "চিন্তিত",
     hskLevel: 3,
@@ -108,7 +108,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "护照",
-    pinyin: "",
+    pinyin: "hùzhào",
     meaningEn: "Passport",
     meaningBn: "পাসপোর্ট",
     hskLevel: 3,
@@ -117,7 +117,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "服务台",
-    pinyin: "",
+    pinyin: "fúwùtái",
     meaningEn: "Service desk/Counter",
     meaningBn: "হেল্পডেস্ক/সার্ভিস ডেস্ক",
     hskLevel: 3,
@@ -126,7 +126,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "应该",
-    pinyin: "",
+    pinyin: "yīnggāi",
     meaningEn: "Should/Ought to",
     meaningBn: "উচিত",
     hskLevel: 3,
@@ -135,7 +135,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "中间",
-    pinyin: "",
+    pinyin: "zhōngjiān",
     meaningEn: "Middle/Center",
     meaningBn: "মাঝখানে",
     hskLevel: 3,
@@ -144,7 +144,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "短",
-    pinyin: "",
+    pinyin: "duǎn",
     meaningEn: "Short",
     meaningBn: "ছোট",
     hskLevel: 3,
@@ -173,7 +173,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "头发",
-    pinyin: "",
+    pinyin: "tóufa",
     meaningEn: "Hair",
     meaningBn: "চুল",
     hskLevel: 3,
@@ -182,7 +182,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "年轻",
-    pinyin: "",
+    pinyin: "niánqīng",
     meaningEn: "Young",
     meaningBn: "তরুণ/যুবক",
     hskLevel: 3,
@@ -191,7 +191,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "发现",
-    pinyin: "",
+    pinyin: "fāxiàn",
     meaningEn: "Discover/Find",
     meaningBn: "আবিষ্কার করা",
     hskLevel: 3,
@@ -200,7 +200,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "不见",
-    pinyin: "",
+    pinyin: "bújiàn",
     meaningEn: "Be lost/Disappear",
     meaningBn: "হারিয়ে যাওয়া",
     hskLevel: 3,
@@ -209,7 +209,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "带",
-    pinyin: "",
+    pinyin: "dài",
     meaningEn: "Take/Bring/Carry",
     meaningBn: "নিয়ে যাওয়া",
     hskLevel: 3,
@@ -218,7 +218,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "帮助",
-    pinyin: "",
+    pinyin: "bāngzhù",
     meaningEn: "Help/Assist",
     meaningBn: "সাহায্য করা",
     hskLevel: 3,
@@ -227,7 +227,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "照片",
-    pinyin: "",
+    pinyin: "zhàopiàn",
     meaningEn: "Photo/Picture",
     meaningBn: "ছবি",
     hskLevel: 3,
@@ -236,7 +236,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "菜单",
-    pinyin: "",
+    pinyin: "càidān",
     meaningEn: "Menu",
     meaningBn: "মেনু কার্ড",
     hskLevel: 3,
@@ -245,7 +245,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "又",
-    pinyin: "",
+    pinyin: "yòu",
     meaningEn: "And/Also",
     meaningBn: "এবং",
     hskLevel: 3,
@@ -254,7 +254,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "饿",
-    pinyin: "",
+    pinyin: "è",
     meaningEn: "Hungry",
     meaningBn: "ক্ষুধার্ত",
     hskLevel: 3,
@@ -263,7 +263,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "渴",
-    pinyin: "",
+    pinyin: "kě",
     meaningEn: "Thirsty",
     meaningBn: "তৃষ্ণার্ত",
     hskLevel: 3,
@@ -272,7 +272,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "客气",
-    pinyin: "",
+    pinyin: "kèqi",
     meaningEn: "Polite",
     meaningBn: "সৌজন্য দেখাানো",
     hskLevel: 3,
@@ -281,7 +281,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "饮料",
-    pinyin: "",
+    pinyin: "yǐnliào",
     meaningEn: "Drink/Beverage",
     meaningBn: "পানীয়",
     hskLevel: 3,
@@ -290,7 +290,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "好久",
-    pinyin: "",
+    pinyin: "hǎojiǔ",
     meaningEn: "Long time",
     meaningBn: "দীর্ঘ সময়",
     hskLevel: 3,
@@ -299,7 +299,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "服务",
-    pinyin: "",
+    pinyin: "fúwù",
     meaningEn: "Serve/Service",
     meaningBn: "সেবা দেওয়া",
     hskLevel: 3,
@@ -308,7 +308,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "员",
-    pinyin: "",
+    pinyin: "yuán",
     meaningEn: "Person",
     meaningBn: "কর্মী",
     hskLevel: 3,
@@ -317,7 +317,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "双",
-    pinyin: "",
+    pinyin: "shuāng",
     meaningEn: "Pair",
     meaningBn: "জোড়া",
     hskLevel: 3,
@@ -326,7 +326,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "筷子",
-    pinyin: "",
+    pinyin: "kuàizi",
     meaningEn: "Chopsticks",
     meaningBn: "চপস্টিক",
     hskLevel: 3,
@@ -335,7 +335,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "勺子",
-    pinyin: "",
+    pinyin: "sháozi",
     meaningEn: "Spoon",
     meaningBn: "চামচ",
     hskLevel: 3,
@@ -344,7 +344,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "碗",
-    pinyin: "",
+    pinyin: "wǎn",
     meaningEn: "Bowl",
     meaningBn: "বাটি",
     hskLevel: 3,
@@ -353,7 +353,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "马上",
-    pinyin: "",
+    pinyin: "mǎshàng",
     meaningEn: "Immediately/Right away",
     meaningBn: "এখনই",
     hskLevel: 3,
@@ -362,7 +362,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "热情",
-    pinyin: "",
+    pinyin: "rèqíng",
     meaningEn: "Warm/Enthusiastic",
     meaningBn: "আন্তরিক",
     hskLevel: 3,
@@ -371,7 +371,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "尝",
-    pinyin: "",
+    pinyin: "cháng",
     meaningEn: "Taste",
     meaningBn: "স্বাদ নেওয়া",
     hskLevel: 3,
@@ -380,7 +380,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "记",
-    pinyin: "",
+    pinyin: "jì",
     meaningEn: "Remember",
     meaningBn: "মনে রাখা",
     hskLevel: 3,
@@ -389,7 +389,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "用",
-    pinyin: "",
+    pinyin: "yòng",
     meaningEn: "Use/Eat",
     meaningBn: "ব্যবহার করা",
     hskLevel: 3,
@@ -398,7 +398,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "鸡",
-    pinyin: "",
+    pinyin: "jī",
     meaningEn: "Chicken",
     meaningBn: "মুরগি",
     hskLevel: 3,
@@ -407,7 +407,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "张",
-    pinyin: "",
+    pinyin: "zhāng",
     meaningEn: "Measure word for flat objects",
     meaningBn: "টি",
     hskLevel: 3,
@@ -416,7 +416,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "不用",
-    pinyin: "",
+    pinyin: "búyòng",
     meaningEn: "Need not",
     meaningBn: "প্রয়োজন নেই",
     hskLevel: 3,
@@ -425,7 +425,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "选",
-    pinyin: "",
+    pinyin: "xuǎn",
     meaningEn: "Choose/Select",
     meaningBn: "নির্বাচন করা",
     hskLevel: 3,
@@ -434,7 +434,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "外卖",
-    pinyin: "",
+    pinyin: "wàimài",
     meaningEn: "Takeout/Food delivery",
     meaningBn: "ডেলিভারি",
     hskLevel: 3,
@@ -443,7 +443,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "方便",
-    pinyin: "",
+    pinyin: "fāngbiàn",
     meaningEn: "Convenient",
     meaningBn: "সুবিধাজনক",
     hskLevel: 3,
@@ -452,7 +452,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "方便面",
-    pinyin: "",
+    pinyin: "fāngbiànmiàn",
     meaningEn: "Instant noodles",
     meaningBn: "ইনস্ট্যান্ট নুডুলস",
     hskLevel: 3,
@@ -461,7 +461,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "简单",
-    pinyin: "",
+    pinyin: "jiǎndān",
     meaningEn: "Simple",
     meaningBn: "সহজ",
     hskLevel: 3,
@@ -470,7 +470,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "初中",
-    pinyin: "",
+    pinyin: "chūzhōng",
     meaningEn: "Junior high school",
     meaningBn: "জুনিয়র হাইস্কুল",
     hskLevel: 3,
@@ -479,7 +479,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "环境",
-    pinyin: "",
+    pinyin: "huánjìng",
     meaningEn: "Environment",
     meaningBn: "পরিবেশ",
     hskLevel: 3,
@@ -488,7 +488,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "空调",
-    pinyin: "",
+    pinyin: "kōngtiáo",
     meaningEn: "Air conditioner",
     meaningBn: "এয়ার কন্ডিশনার",
     hskLevel: 3,
@@ -497,7 +497,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "洗衣机",
-    pinyin: "",
+    pinyin: "xǐyījī",
     meaningEn: "Washing machine",
     meaningBn: "ওয়াশিং মেশিন",
     hskLevel: 3,
@@ -506,7 +506,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "层",
-    pinyin: "",
+    pinyin: "céng",
     meaningEn: "Floor (of a building)",
     meaningBn: "তলা",
     hskLevel: 3,
@@ -515,7 +515,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "忘记",
-    pinyin: "",
+    pinyin: "wàngjì",
     meaningEn: "Forget",
     meaningBn: "ভুলে যাওয়া",
     hskLevel: 3,
@@ -524,7 +524,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "关",
-    pinyin: "",
+    pinyin: "guān",
     meaningEn: "Turn off/Close",
     meaningBn: "বন্ধ করা",
     hskLevel: 3,
@@ -563,7 +563,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "冰箱",
-    pinyin: "",
+    pinyin: "bīngxiāng",
     meaningEn: "Refrigerator",
     meaningBn: "ফ্রিজ",
     hskLevel: 3,
@@ -572,7 +572,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "卫生间",
-    pinyin: "",
+    pinyin: "wèishēngjiān",
     meaningEn: "Bathroom",
     meaningBn: "বাথরুম",
     hskLevel: 3,
@@ -581,7 +581,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "打扫",
-    pinyin: "",
+    pinyin: "dǎsǎo",
     meaningEn: "Clean",
     meaningBn: "পরিষ্কার করা",
     hskLevel: 3,
@@ -590,7 +590,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "搬家",
-    pinyin: "",
+    pinyin: "bānjiā",
     meaningEn: "Move (house)",
     meaningBn: "বাসা বদলানো",
     hskLevel: 3,
@@ -599,7 +599,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "办",
-    pinyin: "",
+    pinyin: "bàn",
     meaningEn: "Handle/Apply for",
     meaningBn: "করানো/আবেদন করা",
     hskLevel: 3,
@@ -608,7 +608,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "信用卡",
-    pinyin: "",
+    pinyin: "xìnyòngkǎ",
     meaningEn: "Credit card",
     meaningBn: "ক্রেডিট কার্ড",
     hskLevel: 3,
@@ -617,7 +617,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "银行",
-    pinyin: "",
+    pinyin: "yínháng",
     meaningEn: "Bank",
     meaningBn: "ব্যাংক",
     hskLevel: 3,
@@ -626,7 +626,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "纸箱",
-    pinyin: "",
+    pinyin: "zhǐxiāng",
     meaningEn: "Cardboard box",
     meaningBn: "কার্টন/পেপার বক্স",
     hskLevel: 3,
@@ -635,7 +635,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "最多",
-    pinyin: "",
+    pinyin: "zuì duō",
     meaningEn: "At most",
     meaningBn: "সর্বোচ্চ",
     hskLevel: 3,
@@ -644,7 +644,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "搬完",
-    pinyin: "",
+    pinyin: "bān wán",
     meaningEn: "Finish moving",
     meaningBn: "বাসা বদলানো শেষ করা",
     hskLevel: 3,
@@ -653,7 +653,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "最少",
-    pinyin: "",
+    pinyin: "zuì shǎo",
     meaningEn: "At least",
     meaningBn: "কমপক্ষে",
     hskLevel: 3,
@@ -662,7 +662,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "搬家公司",
-    pinyin: "",
+    pinyin: "bānjiā gōngsī",
     meaningEn: "Moving company",
     meaningBn: "মুভিং কোম্পানি",
     hskLevel: 3,
@@ -671,7 +671,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "假期",
-    pinyin: "",
+    pinyin: "jiàqī",
     meaningEn: "Vacation/Holiday",
     meaningBn: "ছুটি",
     hskLevel: 3,
@@ -680,7 +680,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "海",
-    pinyin: "",
+    pinyin: "hǎi",
     meaningEn: "Sea",
     meaningBn: "সমুদ্র",
     hskLevel: 3,
@@ -689,7 +689,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "草原",
-    pinyin: "",
+    pinyin: "cǎoyuán",
     meaningEn: "Grassland",
     meaningBn: "তৃণভূমি",
     hskLevel: 3,
@@ -698,7 +698,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "主意",
-    pinyin: "",
+    pinyin: "zhǔyi",
     meaningEn: "Idea",
     meaningBn: "আইডিয়া",
     hskLevel: 3,
@@ -707,7 +707,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "骑",
-    pinyin: "",
+    pinyin: "qí",
     meaningEn: "Ride",
     meaningBn: "চড়া",
     hskLevel: 3,
@@ -716,7 +716,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "马",
-    pinyin: "",
+    pinyin: "mǎ",
     meaningEn: "Horse",
     meaningBn: "ঘোড়া",
     hskLevel: 3,
@@ -725,7 +725,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "羊",
-    pinyin: "",
+    pinyin: "yáng",
     meaningEn: "Sheep/Goat",
     meaningBn: "ভেড়া/ছাগল",
     hskLevel: 3,
@@ -734,7 +734,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "月亮",
-    pinyin: "",
+    pinyin: "yuèliang",
     meaningEn: "Moon",
     meaningBn: "চাঁদ",
     hskLevel: 3,
@@ -743,7 +743,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一定",
-    pinyin: "",
+    pinyin: "yídìng",
     meaningEn: "Certainly/Definitely",
     meaningBn: "অবশ্যই",
     hskLevel: 3,
@@ -752,7 +752,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "刻",
-    pinyin: "",
+    pinyin: "kè",
     meaningEn: "Quarter (15 minutes)",
     meaningBn: "এক কোয়ার্টার",
     hskLevel: 3,
@@ -761,7 +761,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "起飞",
-    pinyin: "",
+    pinyin: "qǐfēi",
     meaningEn: "Take off",
     meaningBn: "টেক অফ করা",
     hskLevel: 3,
@@ -770,7 +770,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "宾馆",
-    pinyin: "",
+    pinyin: "bīnguǎn",
     meaningEn: "Hotel",
     meaningBn: "হোটেল",
     hskLevel: 3,
@@ -779,7 +779,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "特别",
-    pinyin: "",
+    pinyin: "tèbié",
     meaningEn: "Special/Especially",
     meaningBn: "বিশেষ",
     hskLevel: 3,
@@ -788,7 +788,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "别的",
-    pinyin: "",
+    pinyin: "biéde",
     meaningEn: "Other",
     meaningBn: "অন্যান্য",
     hskLevel: 3,
@@ -797,7 +797,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一样",
-    pinyin: "",
+    pinyin: "yíyàng",
     meaningEn: "The same",
     meaningBn: "একই",
     hskLevel: 3,
@@ -806,7 +806,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "牛",
-    pinyin: "",
+    pinyin: "niú",
     meaningEn: "Cattle/Cow",
     meaningBn: "গরু",
     hskLevel: 3,
@@ -815,7 +815,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "相机",
-    pinyin: "",
+    pinyin: "xiàngjī",
     meaningEn: "Camera",
     meaningBn: "ক্যামেরা",
     hskLevel: 3,
@@ -824,7 +824,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "欢迎",
-    pinyin: "",
+    pinyin: "huānyíng",
     meaningEn: "Welcome",
     meaningBn: "স্বাগতম জানানো",
     hskLevel: 3,
@@ -833,7 +833,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "司机",
-    pinyin: "",
+    pinyin: "sījī",
     meaningEn: "Driver",
     meaningBn: "ড্রাইভার",
     hskLevel: 3,
@@ -842,7 +842,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "晚点",
-    pinyin: "",
+    pinyin: "wǎndiǎn",
     meaningEn: "Be late (train/flight)",
     meaningBn: "বিলম্ব হওয়া",
     hskLevel: 3,
@@ -851,7 +851,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "久",
-    pinyin: "",
+    pinyin: "jiǔ",
     meaningEn: "Long (time)",
     meaningBn: "দীর্ঘ সময়",
     hskLevel: 3,
@@ -860,7 +860,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "除了",
-    pinyin: "",
+    pinyin: "chúle",
     meaningEn: "Besides/Except",
     meaningBn: "ছাড়া",
     hskLevel: 3,
@@ -869,7 +869,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "以外",
-    pinyin: "",
+    pinyin: "yǐwài",
     meaningEn: "Other than/Except",
     meaningBn: "ব্যতিরেকে",
     hskLevel: 3,
@@ -878,7 +878,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "先",
-    pinyin: "",
+    pinyin: "xiān",
     meaningEn: "First",
     meaningBn: "আগে",
     hskLevel: 3,
@@ -887,7 +887,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一直",
-    pinyin: "",
+    pinyin: "yìzhí",
     meaningEn: "All along/Continuously",
     meaningBn: "সবসময়/একটানা",
     hskLevel: 3,
@@ -896,7 +896,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "干净",
-    pinyin: "",
+    pinyin: "gānjìng",
     meaningEn: "Clean",
     meaningBn: "পরিষ্কার",
     hskLevel: 3,
@@ -905,7 +905,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "满意",
-    pinyin: "",
+    pinyin: "mǎnyì",
     meaningEn: "Be satisfied",
     meaningBn: "সন্তুষ্ট",
     hskLevel: 3,
@@ -914,7 +914,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "总是",
-    pinyin: "",
+    pinyin: "zǒngshì",
     meaningEn: "Always",
     meaningBn: "সর্বদা",
     hskLevel: 3,
@@ -923,7 +923,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "终于",
-    pinyin: "",
+    pinyin: "zhōngyú",
     meaningEn: "Finally",
     meaningBn: "অবশেষে",
     hskLevel: 3,
@@ -932,7 +932,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "爬",
-    pinyin: "",
+    pinyin: "pá",
     meaningEn: "Climb",
     meaningBn: "চড়া",
     hskLevel: 3,
@@ -941,7 +941,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "山",
-    pinyin: "",
+    pinyin: "shān",
     meaningEn: "Mountain",
     meaningBn: "পাহাড়",
     hskLevel: 3,
@@ -950,7 +950,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "锻炼",
-    pinyin: "",
+    pinyin: "duànliàn",
     meaningEn: "Exercise",
     meaningBn: "ব্যায়াম করা",
     hskLevel: 3,
@@ -959,7 +959,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "照",
-    pinyin: "",
+    pinyin: "zhào",
     meaningEn: "Take (a picture)",
     meaningBn: "ছবি তোলা",
     hskLevel: 3,
@@ -968,7 +968,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "鞋",
-    pinyin: "",
+    pinyin: "xié",
     meaningEn: "Shoe",
     meaningBn: "জুতো",
     hskLevel: 3,
@@ -977,7 +977,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "大衣",
-    pinyin: "",
+    pinyin: "dàyī",
     meaningEn: "Overcoat",
     meaningBn: "ওভারকোট",
     hskLevel: 3,
@@ -986,7 +986,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "拍照",
-    pinyin: "",
+    pinyin: "pāizhào",
     meaningEn: "Take a picture",
     meaningBn: "ছবি তোলা",
     hskLevel: 3,
@@ -995,7 +995,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "感兴趣",
-    pinyin: "",
+    pinyin: "gǎn xìngqù",
     meaningEn: "Be interested in",
     meaningBn: "আগ্রহী হওয়া",
     hskLevel: 3,
@@ -1004,7 +1004,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "照相",
-    pinyin: "",
+    pinyin: "zhàoxiāng",
     meaningEn: "Take a picture",
     meaningBn: "ছবি তোলা",
     hskLevel: 3,
@@ -1013,7 +1013,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "难看",
-    pinyin: "",
+    pinyin: "nánkàn",
     meaningEn: "Bad-looking/Ugly",
     meaningBn: "দেখতে খারাপ",
     hskLevel: 3,
@@ -1022,7 +1022,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "比较",
-    pinyin: "",
+    pinyin: "bǐjiào",
     meaningEn: "Compare/Relatively",
     meaningBn: "তুলনা করা",
     hskLevel: 3,
@@ -1031,7 +1031,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "水平",
-    pinyin: "",
+    pinyin: "shuǐpíng",
     meaningEn: "Level/Standard",
     meaningBn: "দক্ষতা",
     hskLevel: 3,
@@ -1040,7 +1040,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "太阳",
-    pinyin: "",
+    pinyin: "tàiyáng",
     meaningEn: "Sun",
     meaningBn: "সূর্য",
     hskLevel: 3,
@@ -1049,7 +1049,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "树",
-    pinyin: "",
+    pinyin: "shù",
     meaningEn: "Tree",
     meaningBn: "গাছ",
     hskLevel: 3,
@@ -1058,7 +1058,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "干",
-    pinyin: "",
+    pinyin: "gàn",
     meaningEn: "Do",
     meaningBn: "করা",
     hskLevel: 3,
@@ -1067,7 +1067,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "电",
-    pinyin: "",
+    pinyin: "diàn",
     meaningEn: "Electricity",
     meaningBn: "বিদ্যুৎ",
     hskLevel: 3,
@@ -1076,7 +1076,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "收到",
-    pinyin: "",
+    pinyin: "shōudào",
     meaningEn: "Receive",
     meaningBn: "গ্রহণ করা",
     hskLevel: 3,
@@ -1085,7 +1085,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "封",
-    pinyin: "",
+    pinyin: "fēng",
     meaningEn: "Measure word for letters/mail",
     meaningBn: "চিঠি/মেইল গণনার একক",
     hskLevel: 3,
@@ -1094,7 +1094,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "邮件",
-    pinyin: "",
+    pinyin: "yóujiàn",
     meaningEn: "Email/Mail",
     meaningBn: "ইমেইল",
     hskLevel: 3,
@@ -1103,7 +1103,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "难过",
-    pinyin: "",
+    pinyin: "nánguò",
     meaningEn: "Sad",
     meaningBn: "মন খারাপ",
     hskLevel: 3,
@@ -1112,7 +1112,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "哈哈",
-    pinyin: "",
+    pinyin: "hāhā",
     meaningEn: "Haha (laughter)",
     meaningBn: "হাহা",
     hskLevel: 3,
@@ -1121,7 +1121,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "音乐",
-    pinyin: "",
+    pinyin: "yīnyuè",
     meaningEn: "Music",
     meaningBn: "সঙ্গীত",
     hskLevel: 3,
@@ -1130,7 +1130,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "兴趣",
-    pinyin: "",
+    pinyin: "xìngqù",
     meaningEn: "Interest",
     meaningBn: "আগ্রহ",
     hskLevel: 3,
@@ -1139,7 +1139,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "结束",
-    pinyin: "",
+    pinyin: "jiéshù",
     meaningEn: "Finish/End",
     meaningBn: "শেষ করা",
     hskLevel: 3,
@@ -1148,7 +1148,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "该",
-    pinyin: "",
+    pinyin: "gāi",
     meaningEn: "Should/Ought to",
     meaningBn: "উচিত",
     hskLevel: 3,
@@ -1157,7 +1157,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "打算",
-    pinyin: "",
+    pinyin: "dǎsuàn",
     meaningEn: "Plan/Intend",
     meaningBn: "পরিকল্পনা করা",
     hskLevel: 3,
@@ -1166,7 +1166,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "高铁",
-    pinyin: "",
+    pinyin: "gāotiě",
     meaningEn: "High-speed train",
     meaningBn: "বুলেট ট্রেন",
     hskLevel: 3,
@@ -1175,7 +1175,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "行",
-    pinyin: "",
+    pinyin: "xíng",
     meaningEn: "Okay/All right",
     meaningBn: "ঠিক আছে",
     hskLevel: 3,
@@ -1184,7 +1184,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "路口",
-    pinyin: "",
+    pinyin: "lùkǒu",
     meaningEn: "Intersection",
     meaningBn: "মোড়/চৌরাস্তা",
     hskLevel: 3,
@@ -1193,7 +1193,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "小心",
-    pinyin: "",
+    pinyin: "xiǎoxīn",
     meaningEn: "Careful",
     meaningBn: "সাবধানে",
     hskLevel: 3,
@@ -1202,7 +1202,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "迟到",
-    pinyin: "",
+    pinyin: "chídào",
     meaningEn: "Be late",
     meaningBn: "দেরি করা",
     hskLevel: 3,
@@ -1211,7 +1211,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "红绿灯",
-    pinyin: "",
+    pinyin: "hónglǜdēng",
     meaningEn: "Traffic lights",
     meaningBn: "ট্রাফিক লাইট",
     hskLevel: 3,
@@ -1220,7 +1220,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "后来",
-    pinyin: "",
+    pinyin: "hòulái",
     meaningEn: "Afterward/Later",
     meaningBn: "পরবর্তীতে",
     hskLevel: 3,
@@ -1229,7 +1229,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "急",
-    pinyin: "",
+    pinyin: "jí",
     meaningEn: "Urgent/Anxious",
     meaningBn: "তাড়াহুড়ো করা",
     hskLevel: 3,
@@ -1238,7 +1238,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "如果",
-    pinyin: "",
+    pinyin: "rúguǒ",
     meaningEn: "If",
     meaningBn: "যদি",
     hskLevel: 3,
@@ -1247,7 +1247,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "以前",
-    pinyin: "",
+    pinyin: "yǐqián",
     meaningEn: "Ago/Before",
     meaningBn: "আগে",
     hskLevel: 3,
@@ -1256,7 +1256,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "耳机",
-    pinyin: "",
+    pinyin: "ěrjī",
     meaningEn: "Earphones/Headphones",
     meaningBn: "হেডফোন",
     hskLevel: 3,
@@ -1265,7 +1265,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "充电宝",
-    pinyin: "",
+    pinyin: "chōngdiànbǎo",
     meaningEn: "Power bank",
     meaningBn: "পাওয়ার ব্যাংক",
     hskLevel: 3,
@@ -1274,7 +1274,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "常用",
-    pinyin: "",
+    pinyin: "chángyòng",
     meaningEn: "Commonly used",
     meaningBn: "সচরাচর ব্যবহৃত",
     hskLevel: 3,
@@ -1283,7 +1283,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "越",
-    pinyin: "",
+    pinyin: "yuè",
     meaningEn: "The more... the more...",
     meaningBn: "যত... তত...",
     hskLevel: 3,
@@ -1292,7 +1292,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "分开",
-    pinyin: "",
+    pinyin: "fēnkāi",
     meaningEn: "Separate",
     meaningBn: "আলাদা হওয়া",
     hskLevel: 3,
@@ -1301,7 +1301,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "检查",
-    pinyin: "",
+    pinyin: "jiǎnchá",
     meaningEn: "Check/Inspect",
     meaningBn: "পরীক্ষা করা",
     hskLevel: 3,
@@ -1310,7 +1310,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "刷",
-    pinyin: "",
+    pinyin: "shuā",
     meaningEn: "Scan/Swipe",
     meaningBn: "স্ক্যান করা",
     hskLevel: 3,
@@ -1319,7 +1319,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "检票",
-    pinyin: "",
+    pinyin: "jiǎnpiào",
     meaningEn: "Check tickets",
     meaningBn: "টিকিট চেক করা",
     hskLevel: 3,
@@ -1328,7 +1328,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "电梯",
-    pinyin: "",
+    pinyin: "diàntī",
     meaningEn: "Elevator",
     meaningBn: "লিফট",
     hskLevel: 3,
@@ -1337,7 +1337,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "放假",
-    pinyin: "",
+    pinyin: "fàngjià",
     meaningEn: "Have a vacation",
     meaningBn: "ছুটি পাওয়া",
     hskLevel: 3,
@@ -1346,7 +1346,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "沙发",
-    pinyin: "",
+    pinyin: "shāfā",
     meaningEn: "Sofa",
     meaningBn: "সোফা",
     hskLevel: 3,
@@ -1355,7 +1355,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "安静",
-    pinyin: "",
+    pinyin: "ānjìng",
     meaningEn: "Quiet",
     meaningBn: "শান্ত",
     hskLevel: 3,
@@ -1364,7 +1364,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "选择",
-    pinyin: "",
+    pinyin: "xuǎnzé",
     meaningEn: "Choose",
     meaningBn: "পছন্দ করা",
     hskLevel: 3,
@@ -1373,7 +1373,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "必须",
-    pinyin: "",
+    pinyin: "bìxū",
     meaningEn: "Must/Have to",
     meaningBn: "অবশ্যই",
     hskLevel: 3,
@@ -1382,7 +1382,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "辆",
-    pinyin: "",
+    pinyin: "liàng",
     meaningEn: "Measure word for vehicles",
     meaningBn: "যানবাহন গণনার একক",
     hskLevel: 3,
@@ -1391,7 +1391,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "自行车",
-    pinyin: "",
+    pinyin: "zìxíngchē",
     meaningEn: "Bicycle",
     meaningBn: "সাইকেল",
     hskLevel: 3,
@@ -1400,7 +1400,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "旧",
-    pinyin: "",
+    pinyin: "jiù",
     meaningEn: "Old",
     meaningBn: "পুরোনো",
     hskLevel: 3,
@@ -1429,7 +1429,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "矮",
-    pinyin: "",
+    pinyin: "ǎi",
     meaningEn: "Short (height)",
     meaningBn: "নিচু/খাটো",
     hskLevel: 3,
@@ -1438,7 +1438,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "黄色",
-    pinyin: "",
+    pinyin: "huángsè",
     meaningEn: "Yellow",
     meaningBn: "হলুদ রঙ",
     hskLevel: 3,
@@ -1447,7 +1447,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "短裤",
-    pinyin: "",
+    pinyin: "duǎnkù",
     meaningEn: "Shorts",
     meaningBn: "হাফপ্যান্ট",
     hskLevel: 3,
@@ -1456,7 +1456,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "大小",
-    pinyin: "",
+    pinyin: "dàxiǎo",
     meaningEn: "Size",
     meaningBn: "সাইজ",
     hskLevel: 3,
@@ -1465,7 +1465,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "合适",
-    pinyin: "",
+    pinyin: "héshì",
     meaningEn: "Suitable",
     meaningBn: "উপযুক্ত",
     hskLevel: 3,
@@ -1474,7 +1474,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "裙子",
-    pinyin: "",
+    pinyin: "qúnzi",
     meaningEn: "Skirt",
     meaningBn: "স্কার্ট",
     hskLevel: 3,
@@ -1483,7 +1483,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "决定",
-    pinyin: "",
+    pinyin: "juédìng",
     meaningEn: "Decide",
     meaningBn: "সিদ্ধান্ত নেওয়া",
     hskLevel: 3,
@@ -1492,7 +1492,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "西瓜",
-    pinyin: "",
+    pinyin: "xīguā",
     meaningEn: "Watermelon",
     meaningBn: "তরমুজ",
     hskLevel: 3,
@@ -1501,7 +1501,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "新鲜",
-    pinyin: "",
+    pinyin: "xīnxiān",
     meaningEn: "Fresh",
     meaningBn: "তাজা",
     hskLevel: 3,
@@ -1510,7 +1510,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "甜",
-    pinyin: "",
+    pinyin: "tián",
     meaningEn: "Sweet",
     meaningBn: "মিষ্টি",
     hskLevel: 3,
@@ -1519,7 +1519,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "公斤",
-    pinyin: "",
+    pinyin: "gōngjīn",
     meaningEn: "Kilogram",
     meaningBn: "কেজি",
     hskLevel: 3,
@@ -1528,7 +1528,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "冰",
-    pinyin: "",
+    pinyin: "bīng",
     meaningEn: "Ice/Iced",
     meaningBn: "ঠান্ডা",
     hskLevel: 3,
@@ -1537,7 +1537,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "极",
-    pinyin: "",
+    pinyin: "jí",
     meaningEn: "Extremely",
     meaningBn: "অত্যন্ত",
     hskLevel: 3,
@@ -1546,7 +1546,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "香蕉",
-    pinyin: "",
+    pinyin: "xiāngjiāo",
     meaningEn: "Banana",
     meaningBn: "কলা",
     hskLevel: 3,
@@ -1555,7 +1555,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一共",
-    pinyin: "",
+    pinyin: "yígòng",
     meaningEn: "Altogether",
     meaningBn: "সর্বমোট",
     hskLevel: 3,
@@ -1564,7 +1564,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "毛",
-    pinyin: "",
+    pinyin: "máo",
     meaningEn: "Mao (1/10 yuan)",
     meaningBn: "মাও (ইউয়ানের ১/১০ অংশ)",
     hskLevel: 3,
@@ -1573,7 +1573,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "结婚",
-    pinyin: "",
+    pinyin: "jiéhūn",
     meaningEn: "Marry/Get married",
     meaningBn: "বিয়ে করা",
     hskLevel: 3,
@@ -1582,7 +1582,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "不但",
-    pinyin: "",
+    pinyin: "búdàn",
     meaningEn: "Not only",
     meaningBn: "শুধু তা-ই নয়",
     hskLevel: 3,
@@ -1591,7 +1591,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "而且",
-    pinyin: "",
+    pinyin: "érqiě",
     meaningEn: "But also",
     meaningBn: "উপরন্তু",
     hskLevel: 3,
@@ -1600,7 +1600,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "声",
-    pinyin: "",
+    pinyin: "shēng",
     meaningEn: "Sound (measure word)",
     meaningBn: "শব্দ",
     hskLevel: 3,
@@ -1639,7 +1639,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "开机",
-    pinyin: "",
+    pinyin: "kāijī",
     meaningEn: "Power on/Start up",
     meaningBn: "চালু করা",
     hskLevel: 3,
@@ -1648,7 +1648,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "最近",
-    pinyin: "",
+    pinyin: "zuìjìn",
     meaningEn: "Lately/Recently",
     meaningBn: "সম্প্রতি",
     hskLevel: 3,
@@ -1657,7 +1657,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "常",
-    pinyin: "",
+    pinyin: "cháng",
     meaningEn: "Often",
     meaningBn: "প্রায়ই",
     hskLevel: 3,
@@ -1666,7 +1666,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "体育馆",
-    pinyin: "",
+    pinyin: "tǐyùguǎn",
     meaningEn: "Gymnasium",
     meaningBn: "ব্যায়ামাগার",
     hskLevel: 3,
@@ -1675,7 +1675,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "习惯",
-    pinyin: "",
+    pinyin: "xíguàn",
     meaningEn: "Habit",
     meaningBn: "অভ্যাস",
     hskLevel: 3,
@@ -1684,7 +1684,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "胖",
-    pinyin: "",
+    pinyin: "pàng",
     meaningEn: "Fat",
     meaningBn: "মোটা",
     hskLevel: 3,
@@ -1693,7 +1693,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "健康",
-    pinyin: "",
+    pinyin: "jiànkāng",
     meaningEn: "Healthy",
     meaningBn: "স্বাস্থ্যকর",
     hskLevel: 3,
@@ -1702,7 +1702,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "以后",
-    pinyin: "",
+    pinyin: "yǐhòu",
     meaningEn: "After/Afterward",
     meaningBn: "পরে",
     hskLevel: 3,
@@ -1711,7 +1711,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "羽毛球",
-    pinyin: "",
+    pinyin: "yǔmáoqiú",
     meaningEn: "Badminton",
     meaningBn: "ব্যাডমিন্টন",
     hskLevel: 3,
@@ -1720,7 +1720,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "耳朵",
-    pinyin: "",
+    pinyin: "ěrduo",
     meaningEn: "Ear",
     meaningBn: "কান",
     hskLevel: 3,
@@ -1729,7 +1729,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "感冒",
-    pinyin: "",
+    pinyin: "gǎnmào",
     meaningEn: "Catch a cold",
     meaningBn: "ঠান্ডা লাগা",
     hskLevel: 3,
@@ -1738,7 +1738,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "发烧",
-    pinyin: "",
+    pinyin: "fāshāo",
     meaningEn: "Have a fever",
     meaningBn: "জ্বর হওয়া",
     hskLevel: 3,
@@ -1747,7 +1747,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "低",
-    pinyin: "",
+    pinyin: "dī",
     meaningEn: "Low",
     meaningBn: "কম",
     hskLevel: 3,
@@ -1776,7 +1776,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "关心",
-    pinyin: "",
+    pinyin: "guānxīn",
     meaningEn: "Be concerned",
     meaningBn: "যত্ন নেওয়া",
     hskLevel: 3,
@@ -1785,7 +1785,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "注意",
-    pinyin: "",
+    pinyin: "zhùyì",
     meaningEn: "Pay attention",
     meaningBn: "সতর্ক থাকা",
     hskLevel: 3,
@@ -1794,7 +1794,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "突然",
-    pinyin: "",
+    pinyin: "tūrán",
     meaningEn: "Sudden/Suddenly",
     meaningBn: "হঠাৎ",
     hskLevel: 3,
@@ -1803,7 +1803,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "住院",
-    pinyin: "",
+    pinyin: "zhùyuàn",
     meaningEn: "Be hospitalized",
     meaningBn: "হাসপাতালে ভর্তি",
     hskLevel: 3,
@@ -1812,7 +1812,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "担心",
-    pinyin: "",
+    pinyin: "dānxīn",
     meaningEn: "Worry",
     meaningBn: "চিন্তা করা",
     hskLevel: 3,
@@ -1821,7 +1821,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "腿",
-    pinyin: "",
+    pinyin: "tuǐ",
     meaningEn: "Leg",
     meaningBn: "পা",
     hskLevel: 3,
@@ -1830,7 +1830,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "差不多",
-    pinyin: "",
+    pinyin: "chàbuduō",
     meaningEn: "Almost",
     meaningBn: "প্রায়",
     hskLevel: 3,
@@ -1839,7 +1839,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "开心",
-    pinyin: "",
+    pinyin: "kāixīn",
     meaningEn: "Happy",
     meaningBn: "খুশি",
     hskLevel: 3,
@@ -1848,7 +1848,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "出院",
-    pinyin: "",
+    pinyin: "chūyuàn",
     meaningEn: "Leave hospital",
     meaningBn: "হাসপাতাল ত্যাগ করা",
     hskLevel: 3,
@@ -1857,7 +1857,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "种",
-    pinyin: "",
+    pinyin: "zhǒng",
     meaningEn: "Kind/Type",
     meaningBn: "প্রকার",
     hskLevel: 3,
@@ -1866,7 +1866,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "方法",
-    pinyin: "",
+    pinyin: "fāngfǎ",
     meaningEn: "Method",
     meaningBn: "পদ্ধতি",
     hskLevel: 3,
@@ -1875,7 +1875,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "其他",
-    pinyin: "",
+    pinyin: "qítā",
     meaningEn: "Other",
     meaningBn: "অন্যান্য",
     hskLevel: 3,
@@ -1884,7 +1884,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "心里",
-    pinyin: "",
+    pinyin: "xīnlǐ",
     meaningEn: "Mind/Heart",
     meaningBn: "মন",
     hskLevel: 3,
@@ -1893,7 +1893,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "校园",
-    pinyin: "",
+    pinyin: "xiàoyuán",
     meaningEn: "Campus",
     meaningBn: "ক্যাম্পাস",
     hskLevel: 3,
@@ -1902,7 +1902,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "卡",
-    pinyin: "",
+    pinyin: "kǎ",
     meaningEn: "Card",
     meaningBn: "কার্ড",
     hskLevel: 3,
@@ -1911,7 +1911,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "球场",
-    pinyin: "",
+    pinyin: "qiúchǎng",
     meaningEn: "Court/Field",
     meaningBn: "খেলার মাঠ",
     hskLevel: 3,
@@ -1920,7 +1920,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "为了",
-    pinyin: "",
+    pinyin: "wèile",
     meaningEn: "For/In order to",
     meaningBn: "জন্য",
     hskLevel: 3,
@@ -1929,7 +1929,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "运动会",
-    pinyin: "",
+    pinyin: "yùndònghuì",
     meaningEn: "Sports meet",
     meaningBn: "বার্ষিক ক্রীড়া প্রতিযোগিতা",
     hskLevel: 3,
@@ -1938,7 +1938,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "男生",
-    pinyin: "",
+    pinyin: "nánshēng",
     meaningEn: "Male student",
     meaningBn: "ছেলে",
     hskLevel: 3,
@@ -1947,7 +1947,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "练",
-    pinyin: "",
+    pinyin: "liàn",
     meaningEn: "Practice",
     meaningBn: "অনুশীলন করা",
     hskLevel: 3,
@@ -1956,7 +1956,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "参加",
-    pinyin: "",
+    pinyin: "cānjiā",
     meaningEn: "Join/Participate",
     meaningBn: "অংশগ্রহণ করা",
     hskLevel: 3,
@@ -1965,7 +1965,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "网球",
-    pinyin: "",
+    pinyin: "wǎngqiú",
     meaningEn: "Tennis",
     meaningBn: "টেনিস",
     hskLevel: 3,
@@ -1974,7 +1974,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "比赛",
-    pinyin: "",
+    pinyin: "bǐsài",
     meaningEn: "Match/Competition",
     meaningBn: "প্রতিযোগিতা",
     hskLevel: 3,
@@ -1983,7 +1983,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "练习",
-    pinyin: "",
+    pinyin: "liànxí",
     meaningEn: "Practice",
     meaningBn: "অনুশীলন",
     hskLevel: 3,
@@ -1992,7 +1992,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "好多",
-    pinyin: "",
+    pinyin: "hǎoduō",
     meaningEn: "A lot of/Many",
     meaningBn: "অনেক",
     hskLevel: 3,
@@ -2001,7 +2001,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "几乎",
-    pinyin: "",
+    pinyin: "jīhū",
     meaningEn: "Almost/Nearly",
     meaningBn: "প্রায়",
     hskLevel: 3,
@@ -2010,7 +2010,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "只是",
-    pinyin: "",
+    pinyin: "zhǐshì",
     meaningEn: "Just/Only",
     meaningBn: "শুধুমাত্র",
     hskLevel: 3,
@@ -2019,7 +2019,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "啤酒",
-    pinyin: "",
+    pinyin: "píjiǔ",
     meaningEn: "Beer",
     meaningBn: "বিয়ার",
     hskLevel: 3,
@@ -2028,7 +2028,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "紧张",
-    pinyin: "",
+    pinyin: "jǐnzhāng",
     meaningEn: "Nervous/Anxious",
     meaningBn: "নার্ভাস",
     hskLevel: 3,
@@ -2037,7 +2037,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "主要",
-    pinyin: "",
+    pinyin: "zhǔyào",
     meaningEn: "Main/Major",
     meaningBn: "প্রধান",
     hskLevel: 3,
@@ -2046,7 +2046,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "受到",
-    pinyin: "",
+    pinyin: "shòudào",
     meaningEn: "Receive/Be subjected to",
     meaningBn: "প্রভাবিত হওয়া",
     hskLevel: 3,
@@ -2055,7 +2055,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "影响",
-    pinyin: "",
+    pinyin: "yǐngxiǎng",
     meaningEn: "Effect/Affect",
     meaningBn: "প্রভাব",
     hskLevel: 3,
@@ -2064,7 +2064,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "得分",
-    pinyin: "",
+    pinyin: "défēn",
     meaningEn: "Score",
     meaningBn: "স্কোর পাওয়া",
     hskLevel: 3,
@@ -2073,7 +2073,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "体育",
-    pinyin: "",
+    pinyin: "tǐyù",
     meaningEn: "Sports",
     meaningBn: "খেলাধুলা",
     hskLevel: 3,
@@ -2082,7 +2082,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "世界",
-    pinyin: "",
+    pinyin: "shìjiè",
     meaningEn: "World",
     meaningBn: "বিশ্ব",
     hskLevel: 3,
@@ -2091,7 +2091,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "运动员",
-    pinyin: "",
+    pinyin: "yùndòngyuán",
     meaningEn: "Athlete",
     meaningBn: "অ্যাথলেট",
     hskLevel: 3,
@@ -2100,7 +2100,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "得到",
-    pinyin: "",
+    pinyin: "dédào",
     meaningEn: "Get/Obtain",
     meaningBn: "পাওয়া",
     hskLevel: 3,
@@ -2109,7 +2109,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "成绩",
-    pinyin: "",
+    pinyin: "chéngjì",
     meaningEn: "Result/Achievement",
     meaningBn: "ফলাফল",
     hskLevel: 3,
@@ -2118,7 +2118,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "数学",
-    pinyin: "",
+    pinyin: "shùxué",
     meaningEn: "Mathematics",
     meaningBn: "গণিত",
     hskLevel: 3,
@@ -2127,7 +2127,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "认真",
-    pinyin: "",
+    pinyin: "rènzhēn",
     meaningEn: "Conscientious/Serious",
     meaningBn: "মনোযোগী",
     hskLevel: 3,
@@ -2136,7 +2136,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "笔记",
-    pinyin: "",
+    pinyin: "bǐjì",
     meaningEn: "Notes",
     meaningBn: "নোট",
     hskLevel: 3,
@@ -2145,7 +2145,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "清楚",
-    pinyin: "",
+    pinyin: "qīngchu",
     meaningEn: "Clear",
     meaningBn: "স্পষ্ট",
     hskLevel: 3,
@@ -2154,7 +2154,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "黑板",
-    pinyin: "",
+    pinyin: "hēibǎn",
     meaningEn: "Blackboard",
     meaningBn: "ব্ল্যাকবোর্ড",
     hskLevel: 3,
@@ -2163,7 +2163,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "把",
-    pinyin: "",
+    pinyin: "bǎ",
     meaningEn: "Object marker (grammar)",
     meaningBn: "কর্মপদ চিহ্নিতকারী",
     hskLevel: 3,
@@ -2172,7 +2172,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "作业",
-    pinyin: "",
+    pinyin: "zuòyè",
     meaningEn: "Homework",
     meaningBn: "হোমওয়ার্ক",
     hskLevel: 3,
@@ -2181,7 +2181,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "遍",
-    pinyin: "",
+    pinyin: "biàn",
     meaningEn: "Measure word for actions",
     meaningBn: "বার",
     hskLevel: 3,
@@ -2190,7 +2190,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "提高",
-    pinyin: "",
+    pinyin: "tígāo",
     meaningEn: "Improve",
     meaningBn: "উন্নত করা",
     hskLevel: 3,
@@ -2199,7 +2199,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "历史",
-    pinyin: "",
+    pinyin: "lìshǐ",
     meaningEn: "History",
     meaningBn: "ইতিহাস",
     hskLevel: 3,
@@ -2208,7 +2208,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "难",
-    pinyin: "",
+    pinyin: "nán",
     meaningEn: "Difficult",
     meaningBn: "কঠিন",
     hskLevel: 3,
@@ -2217,7 +2217,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "要求",
-    pinyin: "",
+    pinyin: "yāoqiú",
     meaningEn: "Requirement",
     meaningBn: "নির্দেশনা",
     hskLevel: 3,
@@ -2226,7 +2226,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "差",
-    pinyin: "",
+    pinyin: "chà",
     meaningEn: "Poor",
     meaningBn: "খারাপ",
     hskLevel: 3,
@@ -2235,7 +2235,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "复习",
-    pinyin: "",
+    pinyin: "fùxí",
     meaningEn: "Review",
     meaningBn: "পুনরাবৃত্তি করা",
     hskLevel: 3,
@@ -2244,7 +2244,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "外语",
-    pinyin: "",
+    pinyin: "wàiyǔ",
     meaningEn: "Foreign language",
     meaningBn: "বিদেশি ভাষা",
     hskLevel: 3,
@@ -2253,7 +2253,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "当然",
-    pinyin: "",
+    pinyin: "dāngrán",
     meaningEn: "Of course",
     meaningBn: "অবশ্যই",
     hskLevel: 3,
@@ -2262,7 +2262,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "遇到",
-    pinyin: "",
+    pinyin: "yùdào",
     meaningEn: "Encounter",
     meaningBn: "সম্মুখীন হওয়া",
     hskLevel: 3,
@@ -2271,7 +2271,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "办公室",
-    pinyin: "",
+    pinyin: "bàngōngshì",
     meaningEn: "Office",
     meaningBn: "অফিস",
     hskLevel: 3,
@@ -2280,7 +2280,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "页",
-    pinyin: "",
+    pinyin: "yè",
     meaningEn: "Page",
     meaningBn: "পৃষ্ঠা",
     hskLevel: 3,
@@ -2289,7 +2289,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "对话",
-    pinyin: "",
+    pinyin: "duìhuà",
     meaningEn: "Dialogue",
     meaningBn: "সংলাপ",
     hskLevel: 3,
@@ -2298,7 +2298,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "明白",
-    pinyin: "",
+    pinyin: "míngbai",
     meaningEn: "Understand",
     meaningBn: "বোঝা",
     hskLevel: 3,
@@ -2307,7 +2307,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "讲",
-    pinyin: "",
+    pinyin: "jiǎng",
     meaningEn: "Explain/Speak",
     meaningBn: "ব্যাখ্যা করা",
     hskLevel: 3,
@@ -2316,7 +2316,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "句",
-    pinyin: "",
+    pinyin: "jù",
     meaningEn: "Measure word for sentences",
     meaningBn: "বাক্যের একক",
     hskLevel: 3,
@@ -2325,7 +2325,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "句子",
-    pinyin: "",
+    pinyin: "jùzi",
     meaningEn: "Sentence",
     meaningBn: "বাক্য",
     hskLevel: 3,
@@ -2334,7 +2334,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "年级",
-    pinyin: "",
+    pinyin: "niánjí",
     meaningEn: "Grade/Class year",
     meaningBn: "শ্রেণি",
     hskLevel: 3,
@@ -2343,7 +2343,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "后年",
-    pinyin: "",
+    pinyin: "hòunián",
     meaningEn: "The year after next",
     meaningBn: "আগামী পরশু বছর",
     hskLevel: 3,
@@ -2352,7 +2352,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一般",
-    pinyin: "",
+    pinyin: "yìbān",
     meaningEn: "General/Usually",
     meaningBn: "সাধারণত",
     hskLevel: 3,
@@ -2361,7 +2361,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "努力",
-    pinyin: "",
+    pinyin: "nǔlì",
     meaningEn: "Hard-working",
     meaningBn: "পরিশ্রমী",
     hskLevel: 3,
@@ -2370,7 +2370,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "会议",
-    pinyin: "",
+    pinyin: "huìyì",
     meaningEn: "Meeting",
     meaningBn: "সভা",
     hskLevel: 3,
@@ -2379,7 +2379,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "经理",
-    pinyin: "",
+    pinyin: "jīnglǐ",
     meaningEn: "Manager",
     meaningBn: "ম্যানেজার",
     hskLevel: 3,
@@ -2388,7 +2388,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "开会",
-    pinyin: "",
+    pinyin: "kāihuì",
     meaningEn: "Have a meeting",
     meaningBn: "মিটিং করা",
     hskLevel: 3,
@@ -2397,7 +2397,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "后天",
-    pinyin: "",
+    pinyin: "hòutiān",
     meaningEn: "Day after tomorrow",
     meaningBn: "আগামী পরশু",
     hskLevel: 3,
@@ -2406,7 +2406,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "地点",
-    pinyin: "",
+    pinyin: "dìdiǎn",
     meaningEn: "Place/Venue",
     meaningBn: "স্থান",
     hskLevel: 3,
@@ -2415,7 +2415,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "室",
-    pinyin: "",
+    pinyin: "shì",
     meaningEn: "Room",
     meaningBn: "কক্ষ",
     hskLevel: 3,
@@ -2424,7 +2424,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "发",
-    pinyin: "",
+    pinyin: "fā",
     meaningEn: "Send",
     meaningBn: "পাঠানো",
     hskLevel: 3,
@@ -2433,7 +2433,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "笔记本电脑",
-    pinyin: "",
+    pinyin: "bǐjìběn diànnǎo",
     meaningEn: "Laptop",
     meaningBn: "ল্যাপটপ",
     hskLevel: 3,
@@ -2442,7 +2442,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "或者",
-    pinyin: "",
+    pinyin: "huòzhě",
     meaningEn: "Or",
     meaningBn: "অথবা",
     hskLevel: 3,
@@ -2451,7 +2451,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "声音",
-    pinyin: "",
+    pinyin: "shēngyīn",
     meaningEn: "Sound/Voice",
     meaningBn: "শব্দ",
     hskLevel: 3,
@@ -2460,7 +2460,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "看来",
-    pinyin: "",
+    pinyin: "kànlái",
     meaningEn: "It seems",
     meaningBn: "মনে হচ্ছে",
     hskLevel: 3,
@@ -2469,7 +2469,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "办法",
-    pinyin: "",
+    pinyin: "bànfǎ",
     meaningEn: "Way/Method",
     meaningBn: "উপায়",
     hskLevel: 3,
@@ -2478,7 +2478,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "解决",
-    pinyin: "",
+    pinyin: "jiějué",
     meaningEn: "Solve",
     meaningBn: "সমাধান করা",
     hskLevel: 3,
@@ -2487,7 +2487,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "只能",
-    pinyin: "",
+    pinyin: "zhǐ néng",
     meaningEn: "Can only",
     meaningBn: "শুধুমাত্র পারবো",
     hskLevel: 3,
@@ -2496,7 +2496,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "别人",
-    pinyin: "",
+    pinyin: "biérén",
     meaningEn: "Someone else",
     meaningBn: "অন্য কেউ",
     hskLevel: 3,
@@ -2505,7 +2505,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "请假",
-    pinyin: "",
+    pinyin: "qǐngjià",
     meaningEn: "Ask for leave",
     meaningBn: "ছুটির আবেদন করা",
     hskLevel: 3,
@@ -2514,7 +2514,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "同事",
-    pinyin: "",
+    pinyin: "tóngshì",
     meaningEn: "Colleague",
     meaningBn: "সহকর্মী",
     hskLevel: 3,
@@ -2523,7 +2523,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "休假",
-    pinyin: "",
+    pinyin: "xiūjià",
     meaningEn: "Take a vacation",
     meaningBn: "ছুটি কাটানো",
     hskLevel: 3,
@@ -2532,7 +2532,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "怕",
-    pinyin: "",
+    pinyin: "pà",
     meaningEn: "Be afraid",
     meaningBn: "ভয় পাওয়া",
     hskLevel: 3,
@@ -2541,7 +2541,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "邮箱",
-    pinyin: "",
+    pinyin: "yóuxiāng",
     meaningEn: "Mailbox",
     meaningBn: "ইমেইল বক্স",
     hskLevel: 3,
@@ -2550,7 +2550,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "愿意",
-    pinyin: "",
+    pinyin: "yuànyì",
     meaningEn: "Be willing",
     meaningBn: "ইচ্ছুক হওয়া",
     hskLevel: 3,
@@ -2559,7 +2559,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "城市",
-    pinyin: "",
+    pinyin: "chéngshì",
     meaningEn: "City",
     meaningBn: "শহর",
     hskLevel: 3,
@@ -2568,7 +2568,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "离开",
-    pinyin: "",
+    pinyin: "líkāi",
     meaningEn: "Leave",
     meaningBn: "প্রস্থান করা",
     hskLevel: 3,
@@ -2577,7 +2577,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "机会",
-    pinyin: "",
+    pinyin: "jīhuì",
     meaningEn: "Opportunity",
     meaningBn: "সুযোগ",
     hskLevel: 3,
@@ -2586,7 +2586,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "生活",
-    pinyin: "",
+    pinyin: "shēnghuó",
     meaningEn: "Life",
     meaningBn: "জীবন",
     hskLevel: 3,
@@ -2595,7 +2595,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "为",
-    pinyin: "",
+    pinyin: "wèi",
     meaningEn: "For",
     meaningBn: "জন্য",
     hskLevel: 3,
@@ -2604,7 +2604,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "或",
-    pinyin: "",
+    pinyin: "huò",
     meaningEn: "Or",
     meaningBn: "অথবা",
     hskLevel: 3,
@@ -2613,7 +2613,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "街",
-    pinyin: "",
+    pinyin: "jiē",
     meaningEn: "Street",
     meaningBn: "রাস্তা",
     hskLevel: 3,
@@ -2622,7 +2622,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "开花",
-    pinyin: "",
+    pinyin: "kāihuā",
     meaningEn: "Bloom",
     meaningBn: "ফুল ফোটা",
     hskLevel: 3,
@@ -2631,7 +2631,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "公园",
-    pinyin: "",
+    pinyin: "gōngyuán",
     meaningEn: "Park",
     meaningBn: "পার্ক",
     hskLevel: 3,
@@ -2640,7 +2640,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "船",
-    pinyin: "",
+    pinyin: "chuán",
     meaningEn: "Boat",
     meaningBn: "নৌকা",
     hskLevel: 3,
@@ -2649,7 +2649,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "工作日",
-    pinyin: "",
+    pinyin: "gōngzuòrì",
     meaningEn: "Workday",
     meaningBn: "কর্মদিবস",
     hskLevel: 3,
@@ -2658,7 +2658,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "地方",
-    pinyin: "",
+    pinyin: "dìfang",
     meaningEn: "Place",
     meaningBn: "জায়গা",
     hskLevel: 3,
@@ -2667,7 +2667,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "刚才",
-    pinyin: "",
+    pinyin: "gāngcái",
     meaningEn: "Just now",
     meaningBn: "এইমাত্র",
     hskLevel: 3,
@@ -2676,7 +2676,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "刮",
-    pinyin: "",
+    pinyin: "guā",
     meaningEn: "Blow (wind)",
     meaningBn: "বয়ে যাওয়া",
     hskLevel: 3,
@@ -2685,7 +2685,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "风",
-    pinyin: "",
+    pinyin: "fēng",
     meaningEn: "Wind",
     meaningBn: "বাতাস",
     hskLevel: 3,
@@ -2694,7 +2694,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "新闻",
-    pinyin: "",
+    pinyin: "xīnwén",
     meaningEn: "News",
     meaningBn: "খবর",
     hskLevel: 3,
@@ -2703,7 +2703,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "伞",
-    pinyin: "",
+    pinyin: "sǎn",
     meaningEn: "Umbrella",
     meaningBn: "ছাতা",
     hskLevel: 3,
@@ -2712,7 +2712,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "借",
-    pinyin: "",
+    pinyin: "jiè",
     meaningEn: "Lend/Borrow",
     meaningBn: "ধার দেওয়া",
     hskLevel: 3,
@@ -2721,7 +2721,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "雨衣",
-    pinyin: "",
+    pinyin: "yǔyī",
     meaningEn: "Raincoat",
     meaningBn: "রেইনকোট",
     hskLevel: 3,
@@ -2730,7 +2730,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "变",
-    pinyin: "",
+    pinyin: "biàn",
     meaningEn: "Change",
     meaningBn: "পরিবর্তিত হওয়া",
     hskLevel: 3,
@@ -2739,7 +2739,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "季节",
-    pinyin: "",
+    pinyin: "jìjié",
     meaningEn: "Season",
     meaningBn: "ঋতু",
     hskLevel: 3,
@@ -2748,7 +2748,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "变化",
-    pinyin: "",
+    pinyin: "biànhuà",
     meaningEn: "Change",
     meaningBn: "পরিবর্তন",
     hskLevel: 3,
@@ -2757,7 +2757,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "冬天",
-    pinyin: "",
+    pinyin: "dōngtiān",
     meaningEn: "Winter",
     meaningBn: "শীতকাল",
     hskLevel: 3,
@@ -2766,7 +2766,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "常常",
-    pinyin: "",
+    pinyin: "chángcháng",
     meaningEn: "Often",
     meaningBn: "প্রায়ই",
     hskLevel: 3,
@@ -2775,7 +2775,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "关注",
-    pinyin: "",
+    pinyin: "guānzhù",
     meaningEn: "Pay attention",
     meaningBn: "নজর রাখা",
     hskLevel: 3,
@@ -2784,7 +2784,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "四季",
-    pinyin: "",
+    pinyin: "sìjì",
     meaningEn: "Four seasons",
     meaningBn: "চার ঋতু",
     hskLevel: 3,
@@ -2793,7 +2793,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "春天",
-    pinyin: "",
+    pinyin: "chūntiān",
     meaningEn: "Spring",
     meaningBn: "বসন্তকাল",
     hskLevel: 3,
@@ -2802,7 +2802,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "夏天",
-    pinyin: "",
+    pinyin: "xiàtiān",
     meaningEn: "Summer",
     meaningBn: "গ্রীষ্মকাল",
     hskLevel: 3,
@@ -2811,7 +2811,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "凉快",
-    pinyin: "",
+    pinyin: "liángkuai",
     meaningEn: "Comfortably cool",
     meaningBn: "আরামদায়ক শীতল",
     hskLevel: 3,
@@ -2820,7 +2820,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "秋天",
-    pinyin: "",
+    pinyin: "qiūtiān",
     meaningEn: "Autumn",
     meaningBn: "শরৎকাল",
     hskLevel: 3,
@@ -2829,7 +2829,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "叶子",
-    pinyin: "",
+    pinyin: "yèzi",
     meaningEn: "Leaf",
     meaningBn: "গাছের পাতা",
     hskLevel: 3,
@@ -2838,7 +2838,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "变成",
-    pinyin: "",
+    pinyin: "biànchéng",
     meaningEn: "Become/Turn into",
     meaningBn: "রূপান্তরিত হওয়া",
     hskLevel: 3,
@@ -2847,7 +2847,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "请客",
-    pinyin: "",
+    pinyin: "qǐngkè",
     meaningEn: "Treat/Invite guests",
     meaningBn: "নিমন্ত্রণ করা",
     hskLevel: 3,
@@ -2856,7 +2856,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "南方",
-    pinyin: "",
+    pinyin: "nánfāng",
     meaningEn: "South",
     meaningBn: "দক্ষিণ অঞ্চল",
     hskLevel: 3,
@@ -2865,7 +2865,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "北方",
-    pinyin: "",
+    pinyin: "běifāng",
     meaningEn: "North",
     meaningBn: "উত্তর অঞ্চল",
     hskLevel: 3,
@@ -2874,7 +2874,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "做法",
-    pinyin: "",
+    pinyin: "zuòfǎ",
     meaningEn: "Way of doing",
     meaningBn: "রান্নার প্রণালী",
     hskLevel: 3,
@@ -2883,7 +2883,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "不同",
-    pinyin: "",
+    pinyin: "bù tóng",
     meaningEn: "Different",
     meaningBn: "ভিন্ন",
     hskLevel: 3,
@@ -2892,7 +2892,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "加",
-    pinyin: "",
+    pinyin: "jiā",
     meaningEn: "Add",
     meaningBn: "যোগ করা",
     hskLevel: 3,
@@ -2901,7 +2901,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "的话",
-    pinyin: "",
+    pinyin: "dehuà",
     meaningEn: "Conditional particle",
     meaningBn: "হলে",
     hskLevel: 3,
@@ -2910,7 +2910,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "做客",
-    pinyin: "",
+    pinyin: "zuòkè",
     meaningEn: "Be a guest",
     meaningBn: "অতিথি হওয়া",
     hskLevel: 3,
@@ -2919,7 +2919,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "邻居",
-    pinyin: "",
+    pinyin: "línjū",
     meaningEn: "Neighbor",
     meaningBn: "প্রতিবেশী",
     hskLevel: 3,
@@ -2928,7 +2928,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "放心",
-    pinyin: "",
+    pinyin: "fàngxīn",
     meaningEn: "Feel at ease",
     meaningBn: "নিশ্চিন্ত হওয়া",
     hskLevel: 3,
@@ -2937,7 +2937,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "酒",
-    pinyin: "",
+    pinyin: "jiǔ",
     meaningEn: "Alcohol/Wine",
     meaningBn: "মদ",
     hskLevel: 3,
@@ -2946,7 +2946,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "放",
-    pinyin: "",
+    pinyin: "fàng",
     meaningEn: "Put",
     meaningBn: "রাখা",
     hskLevel: 3,
@@ -2985,7 +2985,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "客人",
-    pinyin: "",
+    pinyin: "kèrén",
     meaningEn: "Guest",
     meaningBn: "অতিথি",
     hskLevel: 3,
@@ -2994,7 +2994,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "晚会",
-    pinyin: "",
+    pinyin: "wǎnhuì",
     meaningEn: "Evening party",
     meaningBn: "সন্ধ্যার অনুষ্ঠান",
     hskLevel: 3,
@@ -3003,7 +3003,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "画家",
-    pinyin: "",
+    pinyin: "huàjiā",
     meaningEn: "Painter",
     meaningBn: "চিত্রশিল্পী",
     hskLevel: 3,
@@ -3012,7 +3012,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "盘子",
-    pinyin: "",
+    pinyin: "pánzi",
     meaningEn: "Plate",
     meaningBn: "থালা",
     hskLevel: 3,
@@ -3021,7 +3021,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一边",
-    pinyin: "",
+    pinyin: "yìbiān",
     meaningEn: "At the same time",
     meaningBn: "একসাথে",
     hskLevel: 3,
@@ -3030,7 +3030,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "聊天儿",
-    pinyin: "",
+    pinyin: "liáotiānr",
     meaningEn: "Chat",
     meaningBn: "আড্ডা দেওয়া",
     hskLevel: 3,
@@ -3039,7 +3039,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "来自",
-    pinyin: "",
+    pinyin: "láizì",
     meaningEn: "Come from",
     meaningBn: "থেকে আসা",
     hskLevel: 3,
@@ -3048,7 +3048,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "夫妻",
-    pinyin: "",
+    pinyin: "fūqī",
     meaningEn: "Husband and wife",
     meaningBn: "দম্পতি",
     hskLevel: 3,
@@ -3057,7 +3057,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "直到",
-    pinyin: "",
+    pinyin: "zhídào",
     meaningEn: "Until",
     meaningBn: "পর্যন্ত",
     hskLevel: 3,
@@ -3066,7 +3066,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "地图",
-    pinyin: "",
+    pinyin: "dìtú",
     meaningEn: "Map",
     meaningBn: "মানচিত্র",
     hskLevel: 3,
@@ -3075,7 +3075,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "感到",
-    pinyin: "",
+    pinyin: "gǎndào",
     meaningEn: "Feel",
     meaningBn: "অনুভব করা",
     hskLevel: 3,
@@ -3084,7 +3084,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "东方",
-    pinyin: "",
+    pinyin: "dōngfāng",
     meaningEn: "East",
     meaningBn: "প্রাচ্য",
     hskLevel: 3,
@@ -3093,7 +3093,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "文化",
-    pinyin: "",
+    pinyin: "wénhuà",
     meaningEn: "Culture",
     meaningBn: "সংস্কৃতি",
     hskLevel: 3,
@@ -3102,7 +3102,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "词典",
-    pinyin: "",
+    pinyin: "cídiǎn",
     meaningEn: "Dictionary",
     meaningBn: "অভিধান",
     hskLevel: 3,
@@ -3111,7 +3111,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "最好",
-    pinyin: "",
+    pinyin: "zuìhǎo",
     meaningEn: "Had better",
     meaningBn: "সবচেয়ে ভালো হয়",
     hskLevel: 3,
@@ -3120,7 +3120,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "节",
-    pinyin: "",
+    pinyin: "jié",
     meaningEn: "Measure word for classes",
     meaningBn: "ক্লাসের পিরিয়ড",
     hskLevel: 3,
@@ -3129,7 +3129,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "图书馆",
-    pinyin: "",
+    pinyin: "túshūguǎn",
     meaningEn: "Library",
     meaningBn: "লাইব্রেরি",
     hskLevel: 3,
@@ -3138,7 +3138,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "被",
-    pinyin: "",
+    pinyin: "bèi",
     meaningEn: "Passive marker",
     meaningBn: "দ্বারা",
     hskLevel: 3,
@@ -3147,7 +3147,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "名人",
-    pinyin: "",
+    pinyin: "míngrén",
     meaningEn: "Celebrity",
     meaningBn: "প্রখ্যাত ব্যক্তিত্ব",
     hskLevel: 3,
@@ -3156,7 +3156,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "故事",
-    pinyin: "",
+    pinyin: "gùshi",
     meaningEn: "Story",
     meaningBn: "গল্প",
     hskLevel: 3,
@@ -3165,7 +3165,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "然后",
-    pinyin: "",
+    pinyin: "ránhòu",
     meaningEn: "Then",
     meaningBn: "তারপর",
     hskLevel: 3,
@@ -3174,7 +3174,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "报纸",
-    pinyin: "",
+    pinyin: "bàozhǐ",
     meaningEn: "Newspaper",
     meaningBn: "খবরের কাগজ",
     hskLevel: 3,
@@ -3183,7 +3183,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "电子书",
-    pinyin: "",
+    pinyin: "diànzǐshū",
     meaningEn: "E-book",
     meaningBn: "ই-বুক",
     hskLevel: 3,
@@ -3192,7 +3192,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "女生",
-    pinyin: "",
+    pinyin: "nǚshēng",
     meaningEn: "Girl student",
     meaningBn: "ছাত্রী",
     hskLevel: 3,
@@ -3201,7 +3201,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "表演",
-    pinyin: "",
+    pinyin: "biǎoyǎn",
     meaningEn: "Perform",
     meaningBn: "পারফর্ম করা",
     hskLevel: 3,
@@ -3210,7 +3210,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "节目",
-    pinyin: "",
+    pinyin: "jiémù",
     meaningEn: "Program",
     meaningBn: "অনুষ্ঠান",
     hskLevel: 3,
@@ -3219,7 +3219,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "怎么办",
-    pinyin: "",
+    pinyin: "zěnme bàn",
     meaningEn: "What to do",
     meaningBn: "কী করব",
     hskLevel: 3,
@@ -3228,7 +3228,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "校长",
-    pinyin: "",
+    pinyin: "xiàozhǎng",
     meaningEn: "Principal",
     meaningBn: "অধ্যক্ষ",
     hskLevel: 3,
@@ -3237,7 +3237,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "面前",
-    pinyin: "",
+    pinyin: "miànqián",
     meaningEn: "Presence",
     meaningBn: "সামনে",
     hskLevel: 3,
@@ -3246,7 +3246,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "相信",
-    pinyin: "",
+    pinyin: "xiāngxìn",
     meaningEn: "Believe",
     meaningBn: "বিশ্বাস করা",
     hskLevel: 3,
@@ -3255,7 +3255,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "班级",
-    pinyin: "",
+    pinyin: "bānjí",
     meaningEn: "Class",
     meaningBn: "শ্রেণী",
     hskLevel: 3,
@@ -3264,7 +3264,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "跳",
-    pinyin: "",
+    pinyin: "tiào",
     meaningEn: "Dance",
     meaningBn: "নাচা",
     hskLevel: 3,
@@ -3273,7 +3273,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "留学生",
-    pinyin: "",
+    pinyin: "liúxuéshēng",
     meaningEn: "International student",
     meaningBn: "বিদেশী ছাত্র",
     hskLevel: 3,
@@ -3282,7 +3282,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "最后",
-    pinyin: "",
+    pinyin: "zuìhòu",
     meaningEn: "In the end",
     meaningBn: "অবশেষে",
     hskLevel: 3,
@@ -3291,7 +3291,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "一块儿",
-    pinyin: "",
+    pinyin: "yíkuàir",
     meaningEn: "Together",
     meaningBn: "একসাথে",
     hskLevel: 3,
@@ -3300,7 +3300,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "网站",
-    pinyin: "",
+    pinyin: "wǎngzhàn",
     meaningEn: "Website",
     meaningBn: "ওয়েবসাইট",
     hskLevel: 3,
@@ -3309,7 +3309,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "视频",
-    pinyin: "",
+    pinyin: "shìpín",
     meaningEn: "Video",
     meaningBn: "ভিডিও",
     hskLevel: 3,
@@ -3318,7 +3318,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "蓝",
-    pinyin: "",
+    pinyin: "lán",
     meaningEn: "Blue",
     meaningBn: "নীল",
     hskLevel: 3,
@@ -3327,7 +3327,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "段",
-    pinyin: "",
+    pinyin: "duàn",
     meaningEn: "Period/Section",
     meaningBn: "সময়/অংশ",
     hskLevel: 3,
@@ -3336,7 +3336,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "附近",
-    pinyin: "",
+    pinyin: "fùjìn",
     meaningEn: "Nearby",
     meaningBn: "কাছাকাছি",
     hskLevel: 3,
@@ -3345,7 +3345,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "马路",
-    pinyin: "",
+    pinyin: "mǎlù",
     meaningEn: "Road",
     meaningBn: "রাস্তা",
     hskLevel: 3,
@@ -3354,7 +3354,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "平时",
-    pinyin: "",
+    pinyin: "píngshí",
     meaningEn: "Usually",
     meaningBn: "সাধারণত",
     hskLevel: 3,
@@ -3363,7 +3363,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "放学",
-    pinyin: "",
+    pinyin: "fàngxué",
     meaningEn: "School lets out",
     meaningBn: "স্কুল ছুটি হওয়া",
     hskLevel: 3,
@@ -3372,7 +3372,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "游戏",
-    pinyin: "",
+    pinyin: "yóuxì",
     meaningEn: "Game",
     meaningBn: "খেলাধুলা",
     hskLevel: 3,
@@ -3381,7 +3381,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "老人",
-    pinyin: "",
+    pinyin: "lǎorén",
     meaningEn: "Elderly",
     meaningBn: "বয়স্ক",
     hskLevel: 3,
@@ -3390,7 +3390,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "根据",
-    pinyin: "",
+    pinyin: "gēnjù",
     meaningEn: "According to",
     meaningBn: "অনুযায়ী",
     hskLevel: 3,
@@ -3399,7 +3399,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "了解",
-    pinyin: "",
+    pinyin: "liǎojiě",
     meaningEn: "Understand",
     meaningBn: "ধারণা থাকা",
     hskLevel: 3,
@@ -3408,7 +3408,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "可是",
-    pinyin: "",
+    pinyin: "kěshì",
     meaningEn: "But",
     meaningBn: "কিন্তু",
     hskLevel: 3,
@@ -3417,7 +3417,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "以上",
-    pinyin: "",
+    pinyin: "yǐshàng",
     meaningEn: "More than",
     meaningBn: "বেশি",
     hskLevel: 3,
@@ -3426,7 +3426,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "有名",
-    pinyin: "",
+    pinyin: "yǒumíng",
     meaningEn: "Famous",
     meaningBn: "বিখ্যাত",
     hskLevel: 3,
@@ -3435,7 +3435,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "景点",
-    pinyin: "",
+    pinyin: "jǐngdiǎn",
     meaningEn: "Scenic spot",
     meaningBn: "দর্শনীয় স্থান",
     hskLevel: 3,
@@ -3444,7 +3444,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "游客",
-    pinyin: "",
+    pinyin: "yóukè",
     meaningEn: "Tourist",
     meaningBn: "পর্যটক",
     hskLevel: 3,
@@ -3453,7 +3453,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "外地",
-    pinyin: "",
+    pinyin: "wàidì",
     meaningEn: "Other place",
     meaningBn: "বাইরের এলাকা",
     hskLevel: 3,
@@ -3462,7 +3462,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "聊",
-    pinyin: "",
+    pinyin: "liáo",
     meaningEn: "Chat",
     meaningBn: "গল্প করা",
     hskLevel: 3,
@@ -3471,7 +3471,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "河",
-    pinyin: "",
+    pinyin: "hé",
     meaningEn: "River",
     meaningBn: "নদী",
     hskLevel: 3,
@@ -3480,7 +3480,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "关系",
-    pinyin: "",
+    pinyin: "guānxi",
     meaningEn: "Relationship",
     meaningBn: "সম্পর্ক",
     hskLevel: 3,
@@ -3489,7 +3489,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "养",
-    pinyin: "",
+    pinyin: "yǎng",
     meaningEn: "Nurture",
     meaningBn: "লালন-পালন করা",
     hskLevel: 3,
@@ -3498,7 +3498,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "西北",
-    pinyin: "",
+    pinyin: "xīběi",
     meaningEn: "Northwest",
     meaningBn: "উত্তর-পশ্চিম",
     hskLevel: 3,
@@ -3507,7 +3507,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "经过",
-    pinyin: "",
+    pinyin: "jīngguò",
     meaningEn: "Pass by",
     meaningBn: "বয়ে যাওয়া",
     hskLevel: 3,
@@ -3516,7 +3516,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "草地",
-    pinyin: "",
+    pinyin: "cǎodì",
     meaningEn: "Meadow",
     meaningBn: "ঘাসের মাঠ",
     hskLevel: 3,
@@ -3525,7 +3525,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "遇见",
-    pinyin: "",
+    pinyin: "yùjiàn",
     meaningEn: "Meet",
     meaningBn: "দেখা হওয়া",
     hskLevel: 3,
@@ -3534,7 +3534,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "脏",
-    pinyin: "",
+    pinyin: "zāng",
     meaningEn: "Dirty",
     meaningBn: "নোংরা",
     hskLevel: 3,
@@ -3543,7 +3543,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "可爱",
-    pinyin: "",
+    pinyin: "kě'ài",
     meaningEn: "Cute",
     meaningBn: "কিউট",
     hskLevel: 3,
@@ -3552,7 +3552,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "脚",
-    pinyin: "",
+    pinyin: "jiǎo",
     meaningEn: "Foot",
     meaningBn: "পা",
     hskLevel: 3,
@@ -3561,7 +3561,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "照顾",
-    pinyin: "",
+    pinyin: "zhàogù",
     meaningEn: "Take care of",
     meaningBn: "যত্ন নেওয়া",
     hskLevel: 3,
@@ -3570,7 +3570,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "认得",
-    pinyin: "",
+    pinyin: "rènde",
     meaningEn: "Recognize",
     meaningBn: "চিনতে পারা",
     hskLevel: 3,
@@ -3579,7 +3579,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "周末",
-    pinyin: "",
+    pinyin: "zhōumò",
     meaningEn: "Weekend",
     meaningBn: "সপ্তাহান্ত",
     hskLevel: 3,
@@ -3588,7 +3588,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "动物园",
-    pinyin: "",
+    pinyin: "dòngwùyuán",
     meaningEn: "Zoo",
     meaningBn: "চিড়িয়াখানা",
     hskLevel: 3,
@@ -3597,7 +3597,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "动物",
-    pinyin: "",
+    pinyin: "dòngwù",
     meaningEn: "Animal",
     meaningBn: "প্রাণী",
     hskLevel: 3,
@@ -3606,7 +3606,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "大熊猫",
-    pinyin: "",
+    pinyin: "dàxióngmāo",
     meaningEn: "Giant panda",
     meaningBn: "জায়ান্ট প্যান্ডা",
     hskLevel: 3,
@@ -3615,7 +3615,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "奇怪",
-    pinyin: "",
+    pinyin: "qíguài",
     meaningEn: "Strange",
     meaningBn: "অদ্ভুত",
     hskLevel: 3,
@@ -3624,7 +3624,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "其实",
-    pinyin: "",
+    pinyin: "qíshí",
     meaningEn: "Actually",
     meaningBn: "আসলে",
     hskLevel: 3,
@@ -3633,7 +3633,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "竹子",
-    pinyin: "",
+    pinyin: "zhúzi",
     meaningEn: "Bamboo",
     meaningBn: "বাঁশ",
     hskLevel: 3,
@@ -3642,7 +3642,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "国宝",
-    pinyin: "",
+    pinyin: "guóbǎo",
     meaningEn: "National treasure",
     meaningBn: "জাতীয় সম্পদ",
     hskLevel: 3,
@@ -3651,7 +3651,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "全",
-    pinyin: "",
+    pinyin: "quán",
     meaningEn: "Whole",
     meaningBn: "সম্পূর্ণ",
     hskLevel: 3,
@@ -3660,7 +3660,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "野生",
-    pinyin: "",
+    pinyin: "yěshēng",
     meaningEn: "Wild",
     meaningBn: "বুনো",
     hskLevel: 3,
@@ -3669,7 +3669,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "关于",
-    pinyin: "",
+    pinyin: "guānyú",
     meaningEn: "About",
     meaningBn: "সম্পর্কে",
     hskLevel: 3,
@@ -3678,7 +3678,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "饱",
-    pinyin: "",
+    pinyin: "bǎo",
     meaningEn: "Full (from eating)",
     meaningBn: "পেট ভরা",
     hskLevel: 3,
@@ -3687,7 +3687,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "嘴",
-    pinyin: "",
+    pinyin: "zuǐ",
     meaningEn: "Mouth",
     meaningBn: "মুখ",
     hskLevel: 3,
@@ -3696,7 +3696,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "身边",
-    pinyin: "",
+    pinyin: "shēnbiān",
     meaningEn: "One's side",
     meaningBn: "পাশে",
     hskLevel: 3,
@@ -3705,7 +3705,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "半天",
-    pinyin: "",
+    pinyin: "bàntiān",
     meaningEn: "Quite a while",
     meaningBn: "দীর্ঘক্ষণ",
     hskLevel: 3,
@@ -3714,7 +3714,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "脸",
-    pinyin: "",
+    pinyin: "liǎn",
     meaningEn: "Face",
     meaningBn: "মুখমণ্ডল",
     hskLevel: 3,
@@ -3723,7 +3723,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "大人",
-    pinyin: "",
+    pinyin: "dàren",
     meaningEn: "Adult",
     meaningBn: "বড়রা",
     hskLevel: 3,
@@ -3732,7 +3732,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "喜爱",
-    pinyin: "",
+    pinyin: "xǐ'ài",
     meaningEn: "Love/Be fond of",
     meaningBn: "ভালোবাসা",
     hskLevel: 3,
@@ -3741,7 +3741,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "向",
-    pinyin: "",
+    pinyin: "xiàng",
     meaningEn: "To/Toward",
     meaningBn: "দিকে",
     hskLevel: 3,
@@ -3750,7 +3750,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "楼梯",
-    pinyin: "",
+    pinyin: "lóutī",
     meaningEn: "Stairs",
     meaningBn: "সিঁড়ি",
     hskLevel: 3,
@@ -3759,7 +3759,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "害怕",
-    pinyin: "",
+    pinyin: "hàipà",
     meaningEn: "Be afraid",
     meaningBn: "ভয় পাওয়া",
     hskLevel: 3,
@@ -3768,7 +3768,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "生气",
-    pinyin: "",
+    pinyin: "shēngqì",
     meaningEn: "Get angry",
     meaningBn: "রাগ করা",
     hskLevel: 3,
@@ -3777,7 +3777,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "常见",
-    pinyin: "",
+    pinyin: "chángjiàn",
     meaningEn: "Common",
     meaningBn: "সাধারণ",
     hskLevel: 3,
@@ -3786,7 +3786,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "聪明",
-    pinyin: "",
+    pinyin: "cōngmíng",
     meaningEn: "Smart",
     meaningBn: "বুদ্ধিমান",
     hskLevel: 3,
@@ -3795,7 +3795,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "认为",
-    pinyin: "",
+    pinyin: "rènwéi",
     meaningEn: "Think",
     meaningBn: "মনে করা",
     hskLevel: 3,
@@ -3804,7 +3804,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "到处",
-    pinyin: "",
+    pinyin: "dàochù",
     meaningEn: "Everywhere",
     meaningBn: "সর্বত্র",
     hskLevel: 3,
@@ -3813,7 +3813,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "继续",
-    pinyin: "",
+    pinyin: "jìxù",
     meaningEn: "Continue",
     meaningBn: "চালিয়ে যাওয়া",
     hskLevel: 3,
@@ -3822,7 +3822,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "同意",
-    pinyin: "",
+    pinyin: "tóngyì",
     meaningEn: "Agree",
     meaningBn: "একমত হওয়া",
     hskLevel: 3,
@@ -3831,7 +3831,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "可",
-    pinyin: "",
+    pinyin: "kě",
     meaningEn: "But",
     meaningBn: "কিন্তু",
     hskLevel: 3,
@@ -3840,7 +3840,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "屋子",
-    pinyin: "",
+    pinyin: "wūzi",
     meaningEn: "Room",
     meaningBn: "ঘর",
     hskLevel: 3,
@@ -3849,7 +3849,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "有关",
-    pinyin: "",
+    pinyin: "yǒuguān",
     meaningEn: "Related to",
     meaningBn: "সম্পর্কিত",
     hskLevel: 3,
@@ -3858,7 +3858,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "关机",
-    pinyin: "",
+    pinyin: "guānjī",
     meaningEn: "Turn off phone",
     meaningBn: "ফোন বন্ধ করা",
     hskLevel: 3,
@@ -3867,7 +3867,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "前天",
-    pinyin: "",
+    pinyin: "qiántiān",
     meaningEn: "Day before yesterday",
     meaningBn: "পরশুদিন",
     hskLevel: 3,
@@ -3876,7 +3876,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "留学",
-    pinyin: "",
+    pinyin: "liúxué",
     meaningEn: "Study abroad",
     meaningBn: "বিদেশে পড়াশোনা",
     hskLevel: 3,
@@ -3885,7 +3885,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "国家",
-    pinyin: "",
+    pinyin: "guójiā",
     meaningEn: "Country",
     meaningBn: "দেশ",
     hskLevel: 3,
@@ -3894,7 +3894,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "比如",
-    pinyin: "",
+    pinyin: "bǐrú",
     meaningEn: "For example",
     meaningBn: "উদাহরণস্বরূপ",
     hskLevel: 3,
@@ -3903,7 +3903,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "查",
-    pinyin: "",
+    pinyin: "chá",
     meaningEn: "Look up",
     meaningBn: "খোঁজা",
     hskLevel: 3,
@@ -3912,7 +3912,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "有用",
-    pinyin: "",
+    pinyin: "yǒuyòng",
     meaningEn: "Useful",
     meaningBn: "দরকারী",
     hskLevel: 3,
@@ -3921,7 +3921,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "容易",
-    pinyin: "",
+    pinyin: "róngyì",
     meaningEn: "Easy",
     meaningBn: "সহজ",
     hskLevel: 3,
@@ -3930,7 +3930,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "回答",
-    pinyin: "",
+    pinyin: "huídá",
     meaningEn: "Answer",
     meaningBn: "উত্তর দেওয়া",
     hskLevel: 3,
@@ -3939,7 +3939,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "方向",
-    pinyin: "",
+    pinyin: "fāngxiàng",
     meaningEn: "Direction",
     meaningBn: "দিক",
     hskLevel: 3,
@@ -3948,7 +3948,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "只有",
-    pinyin: "",
+    pinyin: "zhǐyǒu",
     meaningEn: "Only",
     meaningBn: "একমাত্র",
     hskLevel: 3,
@@ -3957,7 +3957,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "真正",
-    pinyin: "",
+    pinyin: "zhēnzhèng",
     meaningEn: "Really",
     meaningBn: "সত্যিই",
     hskLevel: 3,
@@ -3966,7 +3966,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "难题",
-    pinyin: "",
+    pinyin: "nántí",
     meaningEn: "Difficult problem",
     meaningBn: "কঠিন সমস্যা",
     hskLevel: 3,
@@ -3975,7 +3975,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "怎样",
-    pinyin: "",
+    pinyin: "zěnyàng",
     meaningEn: "How",
     meaningBn: "কীভাবে",
     hskLevel: 3,
@@ -3984,7 +3984,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "过节",
-    pinyin: "",
+    pinyin: "guòjié",
     meaningEn: "Celebrate a festival",
     meaningBn: "উৎসব উদযাপন করা",
     hskLevel: 3,
@@ -3993,7 +3993,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "节日",
-    pinyin: "",
+    pinyin: "jiérì",
     meaningEn: "Festival",
     meaningBn: "ছুটির দিন",
     hskLevel: 3,
@@ -4002,7 +4002,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "联欢",
-    pinyin: "",
+    pinyin: "liánhuān",
     meaningEn: "Have a get-together",
     meaningBn: "আনন্দ-উৎসব",
     hskLevel: 3,
@@ -4011,7 +4011,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "大概",
-    pinyin: "",
+    pinyin: "dàgài",
     meaningEn: "About",
     meaningBn: "প্রায়",
     hskLevel: 3,
@@ -4020,7 +4020,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "阿姨",
-    pinyin: "",
+    pinyin: "āyí",
     meaningEn: "Aunt",
     meaningBn: "খালাম্মা",
     hskLevel: 3,
@@ -4029,7 +4029,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "叔叔",
-    pinyin: "",
+    pinyin: "shūshu",
     meaningEn: "Uncle",
     meaningBn: "খালু",
     hskLevel: 3,
@@ -4038,7 +4038,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "收",
-    pinyin: "",
+    pinyin: "shōu",
     meaningEn: "Accept/Receive",
     meaningBn: "গ্রহণ করা",
     hskLevel: 3,
@@ -4047,7 +4047,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "总",
-    pinyin: "",
+    pinyin: "zǒng",
     meaningEn: "Always",
     meaningBn: "সবসময়",
     hskLevel: 3,
@@ -4056,7 +4056,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "起",
-    pinyin: "",
+    pinyin: "qǐ",
     meaningEn: "Used after verb",
     meaningBn: "উঠে আসা",
     hskLevel: 3,
@@ -4095,7 +4095,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "见面",
-    pinyin: "",
+    pinyin: "jiànmiàn",
     meaningEn: "Meet",
     meaningBn: "সাক্ষাৎ করা",
     hskLevel: 3,
@@ -4104,7 +4104,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "矿泉水",
-    pinyin: "",
+    pinyin: "kuàngquánshuǐ",
     meaningEn: "Mineral water",
     meaningBn: "মিনারেল ওয়াটার",
     hskLevel: 3,
@@ -4113,7 +4113,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "刚刚",
-    pinyin: "",
+    pinyin: "gānggāng",
     meaningEn: "Just now",
     meaningBn: "এইমাত্র",
     hskLevel: 3,
@@ -4122,7 +4122,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "出发",
-    pinyin: "",
+    pinyin: "chūfā",
     meaningEn: "Depart",
     meaningBn: "রওয়ানা হওয়া",
     hskLevel: 3,
@@ -4131,7 +4131,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "不久",
-    pinyin: "",
+    pinyin: "bùjiǔ",
     meaningEn: "Soon",
     meaningBn: "কিছুদিন আগে",
     hskLevel: 3,
@@ -4140,7 +4140,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "发生",
-    pinyin: "",
+    pinyin: "fāshēng",
     meaningEn: "Happen",
     meaningBn: "ঘটা",
     hskLevel: 3,
@@ -4149,7 +4149,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "刚",
-    pinyin: "",
+    pinyin: "gāng",
     meaningEn: "Just",
     meaningBn: "এইমাত্র",
     hskLevel: 3,
@@ -4158,7 +4158,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "只要",
-    pinyin: "",
+    pinyin: "zhǐyào",
     meaningEn: "As long as",
     meaningBn: "যতক্ষণ না",
     hskLevel: 3,
@@ -4167,7 +4167,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "学期",
-    pinyin: "",
+    pinyin: "xuéqī",
     meaningEn: "Semester",
     meaningBn: "সেমিস্টার",
     hskLevel: 3,
@@ -4176,7 +4176,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "毕业",
-    pinyin: "",
+    pinyin: "bìyè",
     meaningEn: "Graduate",
     meaningBn: "গ্র্যাজুয়েশন সম্পন্ন করা",
     hskLevel: 3,
@@ -4185,7 +4185,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "出生",
-    pinyin: "",
+    pinyin: "chūshēng",
     meaningEn: "Be born",
     meaningBn: "জন্মগ্রহণ করা",
     hskLevel: 3,
@@ -4194,7 +4194,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "懂得",
-    pinyin: "",
+    pinyin: "dǒngde",
     meaningEn: "Understand",
     meaningBn: "বুঝতে পারা",
     hskLevel: 3,
@@ -4203,7 +4203,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "坚持",
-    pinyin: "",
+    pinyin: "jiānchí",
     meaningEn: "Persevere",
     meaningBn: "লেগে থাকা",
     hskLevel: 3,
@@ -4212,7 +4212,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "完成",
-    pinyin: "",
+    pinyin: "wánchéng",
     meaningEn: "Complete",
     meaningBn: "সম্পন্ন করা",
     hskLevel: 3,
@@ -4221,7 +4221,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "目标",
-    pinyin: "",
+    pinyin: "mùbiāo",
     meaningEn: "Goal",
     meaningBn: "লক্ষ্য",
     hskLevel: 3,
@@ -4230,7 +4230,7 @@ export const HSK3_WORDS: ChineseWordEntry[] = [
   },
   {
     character: "发展",
-    pinyin: "",
+    pinyin: "fāzhǎn",
     meaningEn: "Develop",
     meaningBn: "উন্নতি করা",
     hskLevel: 3,

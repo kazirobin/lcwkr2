@@ -61,6 +61,16 @@ export default function TextPicker({ detail }: { detail: LessonDetail }) {
               />
             );
           })}
+
+          {/* the whole lesson on one page — dialogues first, then all words */}
+          <NumberedRow
+            href={`/hsk/${detail.level}/lesson/${detail.lesson}/all`}
+            index="全"
+            title={c.allTexts}
+            meta={c.allTextsMeta}
+            cta={c.open}
+            ariaLabel={`${levelLabel} ${lessonLabel} ${c.allTexts} — ${c.open}`}
+          />
         </NumberedList>
       </div>
     </PaperPage>

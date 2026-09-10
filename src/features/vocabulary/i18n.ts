@@ -70,6 +70,13 @@ export const vocabularyCopy = {
     errorTitle: "This page didn’t load",
     errorBody: "Try again, or head back to the level list.",
     errorRetry: "Try again",
+    allTexts: "All texts",
+    allTextsMeta:
+      "Read every dialogue of the lesson in order, then study the full word list — the whole lesson on one page.",
+    allTextsHeading: "Dialogues, text by text",
+    allWordsHeading: "All words in this lesson",
+    allChip: "All",
+    backToLesson: "Back to the lesson",
   },
   bn: {
     section: "এইচএসকে ট্র্যাক",
@@ -121,6 +128,13 @@ export const vocabularyCopy = {
     errorTitle: "পেজটি লোড হয়নি",
     errorBody: "আবার চেষ্টা করুন, অথবা লেভেল তালিকায় ফিরে যান।",
     errorRetry: "আবার চেষ্টা করুন",
+    allTexts: "সব টেক্সট একসাথে",
+    allTextsMeta:
+      "পাঠের সব কথোপকথন ক্রমানুসারে আগে পড়ুন, তারপর পুরো শব্দতালিকা দেখুন — পুরো পাঠ এক পেজে।",
+    allTextsHeading: "টেক্সট ধরে কথোপকথন",
+    allWordsHeading: "এই পাঠের সব শব্দ",
+    allChip: "সব",
+    backToLesson: "পাঠে ফিরে যান",
   },
 } as const;
 
