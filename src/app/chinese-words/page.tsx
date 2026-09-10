@@ -15,6 +15,7 @@ import {
   stripTones,
 } from "@/features/chinese-words";
 import { PracticeGame } from "@/features/chinese-words";
+import ProGate from "@/features/chinese-words/components/ProGate";
 import type { LessonWord } from "@/features/chinese-words";
 
 const READ_KEY = "cw:read";
@@ -123,11 +124,12 @@ export default function ChineseWordBuilderPage() {
   );
 
   return (
-    <div
-      className={`min-h-screen bg-background text-text py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-        language === "bn" ? "font-bn" : "font-en"
-      }`}
-    >
+    <ProGate>
+      <div
+        className={`min-h-screen bg-background text-text py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
+          language === "bn" ? "font-bn" : "font-en"
+        }`}
+      >
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-3">
@@ -554,6 +556,7 @@ export default function ChineseWordBuilderPage() {
           ↑
         </button>
       )}
-    </div>
+      </div>
+    </ProGate>
   );
 }

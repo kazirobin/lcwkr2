@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Copy, Check, Send, Sparkles, AlertCircle, Eye, EyeOff, KeyRound, ShieldCheck } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { isValidProPassword } from "../data/pro-passwords";
 
-export default function ProSubscriptionForm() {
+export default function ProSubscriptionForm({ onUnlock }: { onUnlock?: () => void }) {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
@@ -42,9 +43,10 @@ export default function ProSubscriptionForm() {
 
     // এখানে আপনার এডমিন পাসওয়ার্ড বা নির্দিষ্ট কোড দিয়ে চেক করতে পারেন
     // উদাহরণস্বরূপ পাসওয়ার্ড "PRO-2026" বা আপনার কোনো সিক্রেট কোড হতে পারে
-    if (accessPassword.trim() === "LCWKR-PRO" || accessPassword.trim() === process.env.NEXT_PUBLIC_ADMIN_PASSCODE) {
+    if (isValidProPassword(accessPassword)) {
       setPasswordStatus("success");
       setError("");
+      onUnlock?.();
     } else {
       setPasswordStatus("error");
       setError(
@@ -108,6 +110,22 @@ export default function ProSubscriptionForm() {
           )}
         </p>
 
+        {/* Quick 3-step guide */}
+        <div className="pt-2 flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
+          {[
+            t("১. বিকাশে পাঠান", "1. Send via bKash"),
+            t("২. ফর্ম জমা দিন", "2. Submit form"),
+            t("৩. পাসওয়ার্ড নিন", "3. Get password"),
+          ].map((step, i) => (
+            <React.Fragment key={step}>
+              {i > 0 && <span className="text-text/30">→</span>}
+              <span className="px-2.5 py-1 rounded-full bg-background border border-border text-text/70 font-medium">
+                {step}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+
         {/* ডেমো টগল বাটন */}
         <div className="pt-2 flex items-center justify-center gap-2">
           <button
@@ -166,10 +184,21 @@ export default function ProSubscriptionForm() {
         </form>
 
         {passwordStatus === "success" && (
-          <p className="text-xs text-ok flex items-center gap-1 font-medium">
-            <ShieldCheck className="w-4 h-4" />
-            {t("সফল! আপনার পাসওয়ার্ডটি সঠিক আছে।", "Success! Your password is valid.")}
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs text-ok flex items-center gap-1 font-medium">
+              <ShieldCheck className="w-4 h-4" />
+              {t("সফল! আপনার পাসওয়ার্ডটি সঠিক আছে।", "Success! Your password is valid.")}
+            </p>
+            {onUnlock && (
+              <button
+                type="button"
+                onClick={onUnlock}
+                className="w-full py-3 bg-ok text-background font-bold rounded-xl text-sm hover:opacity-90 transition shadow-md"
+              >
+                🎉 {t("আনলক করে চালিয়ে যান", "Unlock & Continue")}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
