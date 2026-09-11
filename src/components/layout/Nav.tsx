@@ -75,6 +75,12 @@ apps: {
         bn: "হোমওয়ার্ক ও প্র্যাকটিস",
         isProtected: true, // চাইলে ফলস করে দিতে পারেন
       },
+      {
+        href: "/hanzi-pro",
+        en: "Hanzi Pro Challenge",
+        bn: "হানজি প্রো চ্যালেঞ্জ",
+        isProtected: true,
+      },
       { href: "/apps", en: "Suggested Apps", bn: "প্রস্তাবিত অ্যাপস" },
       { href: "/pdf", en: "PDF", bn: "পিডিএফ" },
     ],

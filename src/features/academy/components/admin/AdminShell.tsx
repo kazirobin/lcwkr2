@@ -10,6 +10,7 @@ import {
   Languages,
   LogOut,
   ShieldCheck,
+  Trophy,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const ADMIN_MODULES = [
   { href: "/admin/class-logs", bn: "ক্লাস লগ", en: "Class logs", icon: CalendarCheck },
   { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen },
   { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
+  { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
   { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },
 ] as const;
 
@@ -239,6 +241,8 @@ function AdminQuickBar() {
         return c.courses;
       case "/admin/chinese-words":
         return c.chineseWords;
+      case "/admin/hanzi-pro":
+        return c.hanziPro;
       case "/admin/donations":
         return c.donations;
       default:

@@ -21,6 +21,7 @@ export type AdminCounts = {
   pendingClasses: number;
   courses: number;
   chineseWords: number;
+  hanziPro: number;
   donations: number;
 };
 
@@ -30,6 +31,7 @@ const EMPTY: AdminCounts = {
   pendingClasses: 0,
   courses: 0,
   chineseWords: 0,
+  hanziPro: 0,
   donations: 0,
 };
 
@@ -52,12 +54,13 @@ export function AdminStatsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [pStu, aStu, logs, crs, words, donate] = await Promise.all([
+      const [pStu, aStu, logs, crs, words, hp, donate] = await Promise.all([
         fetch("/api/academy/students?status=Pending", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/classes/pending", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/chinese-words", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/hanzi-pro", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/donations", { cache: "no-store" }).then((r) => r.json()),
       ]);
       setCounts({
@@ -66,6 +69,7 @@ export function AdminStatsProvider({ children }: { children: ReactNode }) {
         pendingClasses: logs.pendingClasses?.length || 0,
         courses: crs.courses?.length || 0,
         chineseWords: words.data?.length || 0,
+        hanziPro: hp.students?.length || 0,
         donations: donate.donations?.length || 0,
       });
     } catch (err) {

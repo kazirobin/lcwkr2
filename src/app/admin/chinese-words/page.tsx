@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, X } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, RefreshCw, Search, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import {
@@ -62,8 +62,23 @@ export default function AdminChineseWordsPage() {
   }, [t, toast]);
 
   useEffect(() => {
-    loadWords();
+    queueMicrotask(() => loadWords());
   }, [loadWords]);
+
+  // search existing words (hanzi / pinyin / meaning / level)
+  const [query, setQuery] = useState("");
+  const filteredWords = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return words;
+    return words.filter(
+      (w) =>
+        w.character.includes(query) ||
+        w.pinyin.toLowerCase().includes(q) ||
+        w.meaningEn.toLowerCase().includes(q) ||
+        w.meaningBn.includes(query) ||
+        String(w.hskLevel) === q,
+    );
+  }, [words, query]);
 
   const reset = () => {
     setEditId(null);
@@ -254,14 +269,34 @@ export default function AdminChineseWordsPage() {
       </Card>
 
       <section className="mt-10">
-        <h2 className="text-base font-bold text-text">
-          {t(`বিদ্যমান কোর ওয়ার্ডস (${words.length})`, `Existing core words (${words.length})`)}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-text">
+            {t(`বিদ্যমান কোর ওয়ার্ডস (${words.length})`, `Existing core words (${words.length})`)}
+          </h2>
+          <div className="relative w-full sm:w-72">
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-text/40"
+              aria-hidden="true"
+            />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("খুঁজুন (学 / xue / meaning)…", "Search (学 / xue / meaning)…")}
+              className="w-full rounded-xl border border-text/15 bg-card py-2.5 pl-10 pr-3.5 text-sm text-text placeholder:text-text/35 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+            />
+          </div>
+        </div>
         <div className="mt-4">
           {loading ? (
             <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={3} />
           ) : words.length === 0 ? (
             <EmptyState title={t("কোনো শব্দ নেই", "No words yet")} />
+          ) : filteredWords.length === 0 ? (
+            <EmptyState
+              title={t("ম্যাচ পাওয়া যায়নি", "No matches")}
+              description={t("অন্য কিছু দিয়ে খুঁজে দেখুন।", "Try a different search.")}
+            />
           ) : (
             <TableFrame
               caption={t("কোর ওয়ার্ডসের তালিকা", "Core words")}
@@ -277,7 +312,7 @@ export default function AdminChineseWordsPage() {
                 </>
               }
             >
-              {words.map((w) => (
+              {filteredWords.map((w) => (
                 <tr key={w._id}>
                   <Td lang="zh" className="text-xl font-bold text-text">
                     {w.character}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { ArrowRightLeft, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowRightLeft, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import {
@@ -84,6 +84,20 @@ export default function AdminStudentsPage() {
       ),
     [students, filter],
   );
+
+  // search by name / roll / phone / track
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (s) =>
+        s.nameEnglish.toLowerCase().includes(q) ||
+        String(s.rollNumber).includes(q) ||
+        String(s.whatsapp).includes(q) ||
+        trackOf(s).toLowerCase().includes(q),
+    );
+  }, [rows, query]);
 
   const toggleGroup = async (s: Student) => {
     setBusy(s.rollNumber);
@@ -192,10 +206,30 @@ export default function AdminStudentsPage() {
         </>
       }
     >
+      {/* search */}
+      <div className="relative mb-4">
+        <Search
+          className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-text/40"
+          aria-hidden="true"
+        />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("নাম, রোল, ফোন বা ট্র্যাক দিয়ে খুঁজুন…", "Search by name, roll, phone or track…")}
+          className="w-full rounded-xl border border-text/15 bg-card py-2.5 pl-10 pr-3.5 text-sm text-text placeholder:text-text/35 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+        />
+      </div>
+
       {loading ? (
         <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={3} />
       ) : rows.length === 0 ? (
         <EmptyState title={t("কোনো শিক্ষার্থী নেই", "No students")} />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          title={t("ম্যাচ পাওয়া যায়নি", "No matches")}
+          description={t("অন্য কিছু দিয়ে খুঁজে দেখুন।", "Try a different search.")}
+        />
       ) : (
         <TableFrame
           caption={t("অনুমোদিত শিক্ষার্থীর তালিকা", "Approved students")}
@@ -211,12 +245,21 @@ export default function AdminStudentsPage() {
             </>
           }
         >
-          {rows.map((s) => (
+          {filtered.map((s) => (
             <tr key={s.rollNumber}>
               <Td className="tabular-nums text-text/60">#{s.rollNumber}</Td>
               <Td className="font-semibold text-text">{s.nameEnglish}</Td>
               <Td className="tabular-nums">{trackOf(s)}</Td>
-              <Td className="tabular-nums">{s.whatsapp}</Td>
+              <Td className="tabular-nums">
+                <a
+                  href={`https://wa.me/${String(s.whatsapp).replace(/[^0-9]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-text/25 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary/50"
+                >
+                  {s.whatsapp}
+                </a>
+              </Td>
               <Td>
                 <button
                   type="button"
