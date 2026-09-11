@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -7,9 +8,11 @@ import {
   MessageCircle,
   Mic,
   ShieldCheck,
+  Volume2,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { finals, initials, type PinyinSound } from "@/features/marketing/data/pinyin";
+import { speakChinese } from "@/lib/chinese-speech";
 
 type Step = {
   title: string;
@@ -205,6 +208,17 @@ function SoundGroup({
   exampleLabel,
   columnsClass,
 }: SoundGroupProps) {
+  const [playing, setPlaying] = useState<string | null>(null);
+
+  const play = (s: PinyinSound) => {
+    if (!speakChinese(s.hanzi)) return;
+    setPlaying(s.sound);
+    setTimeout(
+      () => setPlaying((cur) => (cur === s.sound ? null : cur)),
+      1400,
+    );
+  };
+
   return (
     <div>
       <div className="mb-4 flex items-baseline gap-3">
@@ -219,48 +233,68 @@ function SoundGroup({
       </div>
 
       <ul className={`grid gap-x-1.5 gap-y-4 ${columnsClass}`}>
-        {sounds.map((s) => (
-          <li
-            key={s.sound}
-            className="flex flex-col items-center gap-1.5 rounded-md px-0.5 py-1 transition-colors hover:bg-text/4 motion-reduce:transition-none"
-          >
-            <span className="relative flex h-13 w-full items-end justify-center">
-              <svg
-                viewBox="0 0 100 52"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-                className="absolute inset-0 h-full w-full"
+        {sounds.map((s) => {
+          const isPlaying = playing === s.sound;
+          return (
+            <li key={s.sound}>
+              <button
+                type="button"
+                onClick={() => play(s)}
+                aria-label={`Pronounce ${s.sound} — ${s.hanzi} (${s.reading})`}
+                className="group flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-md px-0.5 py-1 transition-colors hover:bg-primary/8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none"
               >
-                <line x1="0" y1="6" x2="100" y2="6" strokeWidth="1" className="stroke-primary/30" />
-                <line
-                  x1="0"
-                  y1="29"
-                  x2="100"
-                  y2="29"
-                  strokeWidth="1"
-                  strokeDasharray="3 4"
-                  className="stroke-primary/30"
-                />
-                <line x1="0" y1="46" x2="100" y2="46" strokeWidth="1" className="stroke-primary/45" />
-              </svg>
-              <span
-                lang="zh-Latn"
-                className="font-en relative pb-[5px] text-[1.7rem] font-medium leading-none text-text"
-              >
-                {s.sound}
-              </span>
-            </span>
+                <span className="relative flex h-13 w-full items-end justify-center">
+                  <svg
+                    viewBox="0 0 100 52"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full"
+                  >
+                    <line x1="0" y1="6" x2="100" y2="6" strokeWidth="1" className="stroke-primary/30" />
+                    <line
+                      x1="0"
+                      y1="29"
+                      x2="100"
+                      y2="29"
+                      strokeWidth="1"
+                      strokeDasharray="3 4"
+                      className="stroke-primary/30"
+                    />
+                    <line x1="0" y1="46" x2="100" y2="46" strokeWidth="1" className="stroke-primary/45" />
+                  </svg>
+                  <span
+                    lang="zh-Latn"
+                    className={`font-en relative pb-[5px] text-[1.7rem] font-medium leading-none transition-colors ${
+                      isPlaying ? "text-primary" : "text-text group-hover:text-primary"
+                    }`}
+                  >
+                    {s.sound}
+                  </span>
+                  <Volume2
+                    aria-hidden="true"
+                    className={`absolute right-0 top-0 size-3.5 text-primary transition-opacity ${
+                      isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-70"
+                    }`}
+                  />
+                </span>
 
-            <span lang="zh" className="text-lg leading-none text-text/70">
-              {s.hanzi}
-            </span>
+                <span
+                  lang="zh"
+                  className={`text-lg leading-none transition-colors ${
+                    isPlaying ? "text-primary" : "text-text/70 group-hover:text-text"
+                  }`}
+                >
+                  {s.hanzi}
+                </span>
 
-            <span className="font-en text-[0.65rem] leading-none tracking-wide text-text/45">
-              <span className="sr-only">{exampleLabel}: </span>
-              {s.reading}
-            </span>
-          </li>
-        ))}
+                <span className="font-en text-[0.65rem] leading-none tracking-wide text-text/45">
+                  <span className="sr-only">{exampleLabel}: </span>
+                  {s.reading}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

@@ -18,6 +18,7 @@ import { PracticeGame } from "@/features/chinese-words";
 import { SelectableText } from "@/features/chinese-words";
 import ProGate from "@/features/chinese-words/components/ProGate";
 import SpeakerButton from "@/components/ui/SpeakerButton";
+import StrokeOrderButton from "@/components/ui/StrokeOrderButton";
 import type { LessonWord } from "@/features/chinese-words";
 
 const READ_KEY = "cw:read";
@@ -297,6 +298,10 @@ export default function ChineseWordBuilderPage() {
                                 text={item.character}
                                 className="size-7"
                               />
+                              <StrokeOrderButton
+                                hanzi={item.character}
+                                className="size-7"
+                              />
                             </div>
                           </div>
 
@@ -358,6 +363,7 @@ export default function ChineseWordBuilderPage() {
                                         {rw.pinyin}
                                       </span>
                                       <SpeakerButton text={rw.word} className="size-6" />
+                                      <StrokeOrderButton hanzi={rw.word} className="size-6" />
                                     </span>
                                   </div>
 
@@ -524,6 +530,7 @@ export default function ChineseWordBuilderPage() {
                                 {w.hanzi}
                               </SelectableText>
                               <SpeakerButton text={w.hanzi} className="size-7" />
+                              <StrokeOrderButton hanzi={w.hanzi} className="size-7" />
                             </div>
                           </div>
                           <span

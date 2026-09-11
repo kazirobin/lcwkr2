@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import type { VocabularyItem } from "@/features/vocabulary/types";
 import type { VocabularyCopy } from "@/features/vocabulary/i18n";
 import SpeakerButton from "@/components/ui/SpeakerButton";
+import StrokeOrderButton from "@/components/ui/StrokeOrderButton";
 
 /**
  * One glossary entry in the reader. Everything a learner needs to read is
@@ -33,6 +34,7 @@ export default function VocabularyCard({
             {item.hanzi}
           </p>
           <SpeakerButton text={item.hanzi} className="mt-0.5 size-8" />
+          <StrokeOrderButton hanzi={item.hanzi} className="mt-0.5 size-8" />
         </div>
         <p
           data-pinyin
