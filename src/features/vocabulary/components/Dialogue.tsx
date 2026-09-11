@@ -1,5 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
+import { Eye, EyeOff } from "lucide-react";
+
+import { useLanguage } from "@/i18n";
 import type { Dialogue as DialogueType } from "@/features/vocabulary/types";
 import SpeakerButton from "@/components/ui/SpeakerButton";
 
@@ -23,6 +28,10 @@ export default function Dialogue({
   dialogue: DialogueType;
   speakersLabel: string;
 }) {
+  const { language } = useLanguage();
+  const t = (bn: string, en: string) => (language === "bn" ? bn : en);
+  const [showEnglish, setShowEnglish] = useState(true);
+
   const speakers: string[] = [];
   const firstLineOf = new Map<string, number>();
   dialogue.lines.forEach((line, i) => {
@@ -36,8 +45,30 @@ export default function Dialogue({
 
   return (
     <figure className="mt-3">
-      <figcaption className="font-serif text-base font-medium text-text">
-        {dialogue.title}
+      <figcaption className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-serif text-base font-medium text-text">
+          {dialogue.title}
+        </span>
+
+        {/* self-testing toggle: hide/show the English lines */}
+        <button
+          type="button"
+          onClick={() => setShowEnglish((v) => !v)}
+          aria-pressed={!showEnglish}
+          title={showEnglish ? t("ইংরেজি লুকান", "Hide English") : t("ইংরেজি দেখান", "Show English")}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+            showEnglish
+              ? "border-text/15 text-text/55 hover:border-text/40 hover:text-text"
+              : "border-primary/50 bg-primary/10 text-primary"
+          }`}
+        >
+          {showEnglish ? (
+            <Eye className="size-3.5" aria-hidden="true" />
+          ) : (
+            <EyeOff className="size-3.5" aria-hidden="true" />
+          )}
+          {showEnglish ? t("ইংরেজি লুকান", "Hide English") : t("ইংরেজি দেখান", "Show English")}
+        </button>
       </figcaption>
 
       <ol aria-label={speakersLabel} className="mt-4 space-y-1.5">
@@ -51,9 +82,13 @@ export default function Dialogue({
                 <p lang="zh" className="font-chinese text-4xl leading-relaxed text-text/60">
                   {line.hanzi}
                 </p>
-                <p className="mt-0.5 text-[12px] italic leading-5 text-text/45">
-                  {line.english}
-                </p>
+                {(showEnglish || line.bangla) && (
+                  <p className="mt-0.5 text-[12px] italic leading-5 text-text/45">
+                    {showEnglish && line.english}
+                    {showEnglish && line.bangla ? " · " : ""}
+                    {line.bangla}
+                  </p>
+                )}
               </li>
             );
           }
@@ -113,12 +148,13 @@ export default function Dialogue({
                 >
                   {line.pinyin}
                 </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-text/70">
-                  {line.english}
-                  {line.bangla && (
-                    <span className="text-text/85"> · {line.bangla}</span>
-                  )}
-                </p>
+                {(showEnglish || line.bangla) && (
+                  <p className="mt-1 text-[13px] leading-relaxed text-text/70">
+                    {showEnglish && line.english}
+                    {showEnglish && line.bangla ? " · " : ""}
+                    {line.bangla}
+                  </p>
+                )}
               </div>
             </li>
           );

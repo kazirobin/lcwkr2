@@ -105,6 +105,7 @@ export default function Nav() {
 
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileToggleRef = useRef<HTMLButtonElement>(null);
 
   const t = useCallback(
     (en: string, bn: string) => (language === "en" ? en : bn),
@@ -199,7 +200,8 @@ export default function Nav() {
       if (
         isMobileMenuOpen &&
         mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target as Node)
+        !mobileMenuRef.current.contains(event.target as Node) &&
+        !mobileToggleRef.current?.contains(event.target as Node)
       ) {
         setIsMobileMenuOpen(false);
         setOpenDropdown(null);
@@ -224,8 +226,10 @@ export default function Nav() {
   };
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-    if (isMobileMenuOpen) setOpenDropdown(null);
+    // functional update: the click-outside handler may have already closed
+    // the menu in the same tap sequence (mousedown fires before click)
+    setIsMobileMenuOpen((v) => !v);
+    setOpenDropdown(null);
   };
 
   // Protected Link Click Handler
@@ -553,6 +557,7 @@ export default function Nav() {
               <ThemeButton />
               <button
                 type="button"
+                ref={mobileToggleRef}
                 onClick={toggleMobileMenu}
                 className="p-2 rounded-full text-text/80 hover:text-secondary hover:bg-secondary/7 transition-colors"
                 aria-label={t("Toggle navigation menu", "নেভিগেশন মেনু টগল করুন")}

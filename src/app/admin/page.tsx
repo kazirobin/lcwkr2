@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { useCallback } from "react";
+import {
+  BookOpen,
+  GraduationCap,
+  HandCoins,
+  Languages,
+  RefreshCw,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { useLanguage } from "@/i18n";
-import { AdminShell } from "@/features/academy";
-import { Card, IconButton } from "@/components/ui";
+import { AdminShell, useAdminStats } from "@/features/academy";
+import { IconButton } from "@/components/ui";
+
+type LucideIcon = typeof Users;
 
 export default function AdminDashboardPage() {
   const { language } = useLanguage();
@@ -14,83 +23,15 @@ export default function AdminDashboardPage() {
     [language],
   );
 
-  const [stats, setStats] = useState({
-    pendingStudents: 0,
-    approvedStudents: 0,
-    pendingClasses: 0,
-    courses: 0,
-    chineseWords: 0,
-    donations: 0,
-  });
-  const [loading, setLoading] = useState(false);
+  const { counts, loading, refresh } = useAdminStats();
 
-  const fetchStats = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [pStu, aStu, logs, crs, words, donate] = await Promise.all([
-        fetch("/api/academy/students?status=Pending", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/classes/pending", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/chinese-words", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/donations", { cache: "no-store" }).then((r) => r.json()),
-      ]);
-      setStats({
-        pendingStudents: pStu.students?.length || 0,
-        approvedStudents: aStu.students?.length || 0,
-        pendingClasses: logs.pendingClasses?.length || 0,
-        courses: crs.courses?.length || 0,
-        chineseWords: words.data?.length || 0,
-        donations: donate.donations?.length || 0,
-      });
-    } catch (err) {
-      console.error("Failed to load admin stats:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
-
-  const modules = [
-    {
-      title: t("অপেক্ষমাণ ভর্তি", "Pending admissions"),
-      desc: t("শিক্ষার্থীর রেজিস্ট্রেশন অনুমোদন বা প্রত্যাখ্যান করুন।", "Approve or reject student registration requests."),
-      count: stats.pendingStudents,
-      href: "/admin/admissions",
-    },
-    {
-      title: t("শিক্ষার্থী ও ট্র্যাক", "Students & tracks"),
-      desc: t("গ্রুপ স্ট্যাটাস, ট্র্যাক পরিবর্তন বা শিক্ষার্থী অপসারণ।", "Group status, track transfers, or removing a student."),
-      count: stats.approvedStudents,
-      href: "/admin/students",
-    },
-    {
-      title: t("ক্লাস লগ অনুমোদন", "Class log approvals"),
-      desc: t("শিক্ষকের জমা দেওয়া উপস্থিতি সেশন পর্যালোচনা করুন।", "Review attendance sessions submitted by teachers."),
-      count: stats.pendingClasses,
-      href: "/admin/class-logs",
-    },
-    {
-      title: t("কোর্স ট্র্যাক", "Course tracks"),
-      desc: t("নতুন কোর্স তৈরি করুন, ব্যাচের সময়সূচি সম্পাদনা করুন।", "Create courses and edit cohort schedules."),
-      count: stats.courses,
-      href: "/admin/courses",
-    },
-    {
-      title: t("চাইনিজ কোর ওয়ার্ডস", "Chinese core words"),
-      desc: t("কোর ক্যারেক্টার ও শব্দ পরিবার যোগ, সম্পাদনা বা মুছুন।", "Add, edit, or remove core characters and word families."),
-      count: stats.chineseWords,
-      href: "/admin/chinese-words",
-    },
-    {
-      title: t("অনুদান রেকর্ড", "Donation records"),
-      desc: t("অনুদান পরিচালনা করুন, বিকাশ TrxID ট্র্যাক করুন ও দাতার তথ্য হালনাগাদ করুন।", "Manage donations, track bKash TrxIDs, and update contributor details."),
-      count: stats.donations,
-      href: "/admin/donations",
-    },
+  const overview: { label: string; count: number; icon: LucideIcon; tone: string }[] = [
+    { label: t("অপেক্ষমাণ ভর্তি", "Pending admissions"), count: counts.pendingStudents, icon: UserPlus, tone: "text-warn" },
+    { label: t("শিক্ষার্থী", "Students"), count: counts.approvedStudents, icon: GraduationCap, tone: "text-primary" },
+    { label: t("অপেক্ষমাণ লগ", "Pending logs"), count: counts.pendingClasses, icon: RefreshCw, tone: "text-warn" },
+    { label: t("কোর্স", "Courses"), count: counts.courses, icon: BookOpen, tone: "text-primary" },
+    { label: t("কোর ওয়ার্ডস", "Core words"), count: counts.chineseWords, icon: Languages, tone: "text-ok" },
+    { label: t("অনুদান", "Donations"), count: counts.donations, icon: HandCoins, tone: "text-ok" },
   ];
 
   return (
@@ -98,39 +39,57 @@ export default function AdminDashboardPage() {
       title={t("অ্যাডমিন কনসোল", "Admin console")}
       crumb={t("ড্যাশবোর্ড", "Dashboard")}
       seal="政"
-      lede={t("একাডেমির ভর্তি, শিক্ষার্থী, ক্লাস লগ ও কোর্স পরিচালনা।", "Manage the academy's admissions, students, class logs, and courses.")}
+      lede={t(
+        "একাডেমির ভর্তি, শিক্ষার্থী, ক্লাস লগ, কোর্স, কোর ওয়ার্ডস ও অনুদান — সব এক জায়গায়।",
+        "Admissions, students, class logs, courses, core words and donations — all in one place."
+      )}
       actions={
         <IconButton
           label={t("পরিসংখ্যান রিফ্রেশ করুন", "Refresh metrics")}
           size="sm"
           spinning={loading}
-          onClick={fetchStats}
+          onClick={() => refresh()}
         >
           <RefreshCw className="h-4 w-4" />
         </IconButton>
       }
     >
-      <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {modules.map((m) => (
-          <li key={m.href}>
-            <Link href={m.href} className="group block h-full focus-visible:outline-none">
-              <Card interactive className="flex h-full flex-col p-6 group-focus-visible:border-text group-focus-visible:ring-2 group-focus-visible:ring-text">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-base font-bold text-text">{m.title}</h2>
-                  <span className="rounded-full border border-text/10 bg-text/5 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-text/70">
-                    {loading ? "—" : m.count}
+      {/* ── overview metrics ── */}
+      <section aria-label={t("সারসংক্ষেপ", "Overview")}>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text/45">
+          {t("সারসংক্ষেপ", "Overview")}
+        </h2>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {overview.map((o) => {
+            const Icon = o.icon;
+            return (
+              <div
+                key={o.label}
+                className="rounded-2xl border border-text/10 bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <Icon className={`size-4 ${o.tone}`} aria-hidden="true" />
+                  <span className="font-mono text-xl font-bold tabular-nums text-text">
+                    {loading ? "—" : o.count}
                   </span>
                 </div>
-                <p className="mt-2 flex-1 text-sm text-text/60">{m.desc}</p>
-                <span className="mt-4 inline-flex items-center gap-1 border-t border-text/10 pt-3 text-sm font-semibold text-text">
-                  {t("খুলুন", "Open")}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
-                </span>
-              </Card>
-            </Link>
-          </li>
-        ))}
-      </ul>
+                <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-text/50">
+                  {o.label}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── quick hint ── */}
+      <p className="mt-10 border-t border-text/10 pt-6 text-sm text-text/55">
+        {t(
+          "উপরের বার থেকে যেকোনো মডিউলে এক ক্লিকে যান — বর্তমান পেজটি হাইলাইট থাকে।",
+          "Use the bar above to jump to any module in one click — the current page stays highlighted."
+        )}
+      </p>
     </AdminShell>
   );
 }

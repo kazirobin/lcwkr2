@@ -120,6 +120,22 @@ function Field({
 export default function DonatePage() {
   const [donors, setDonors] = useState<Donor[]>(seedDonors);
   const [fetching, setFetching] = useState(true);
+  const [targetGoal, setTargetGoal] = useState<number>(DONATION.targetGoal);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetch("/api/donations/target", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && typeof d.target === "number" && d.target > 0) {
+            setTargetGoal(d.target);
+          }
+        })
+        .catch(() => {
+          /* keep the seeded default */
+        });
+    });
+  }, []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -154,15 +170,21 @@ export default function DonatePage() {
   };
 
   useEffect(() => {
-    loadDonations();
+    queueMicrotask(() => loadDonations());
   }, []);
 
   const totalRaised = donors.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  const remainingNeeded = Math.max(0, DONATION.targetGoal - totalRaised);
-  const progressPercent = Math.min(
-    100,
-    Math.round((totalRaised / DONATION.targetGoal) * 100)
-  );
+  // rolling target: how many full rounds are done, and what's left in the
+  // current round ("last target")
+  const timesFilled =
+    targetGoal > 0 ? Math.floor(totalRaised / targetGoal) : 0;
+  const justFilled =
+    totalRaised > 0 && targetGoal > 0 && totalRaised % targetGoal === 0;
+  const cycleRemaining =
+    targetGoal > 0 ? targetGoal - (totalRaised % targetGoal) : 0;
+  const cyclePercent =
+    targetGoal > 0 ? Math.round(((totalRaised % targetGoal) / targetGoal) * 100) : 0;
+  const barPercent = justFilled ? 100 : Math.min(100, cyclePercent);
 
   const setField = (k: keyof typeof formData) => (v: string) => {
     setFormData((prev) => ({ ...prev, [k]: v }));
@@ -265,20 +287,22 @@ export default function DonatePage() {
             <div className="mt-8 max-w-lg rounded-2xl border border-text/15 bg-card/60 p-5 backdrop-blur-sm">
               <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-text/60">
                 <span className="flex items-center gap-1.5">
-                  <Target className="size-4 text-secondary" /> লক্ষ্যমাত্রা: ৳
-                  {DONATION.targetGoal.toLocaleString()}
+                  <Target className="size-4 text-secondary" /> চলতি লক্ষ্যমাত্রা: ৳
+                  {targetGoal.toLocaleString()}
                 </span>
-                <span className="font-mono text-text">{progressPercent}% অর্জিত</span>
+                <span className="font-mono text-text">
+                  {justFilled ? "100%" : `${cyclePercent}% অর্জিত`}
+                </span>
               </div>
 
               <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-text/10">
                 <div
                   className="h-full rounded-full bg-secondary transition-all duration-700 ease-out"
-                  style={{ width: `${progressPercent}%` }}
+                  style={{ width: `${barPercent}%` }}
                 />
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-text/10 pt-3 text-sm">
+              <div className="mt-4 grid grid-cols-3 gap-3 border-t border-text/10 pt-3 text-sm">
                 <div>
                   <span className="text-xs text-text/50">মোট সংগৃহীত:</span>
                   <p className="font-mono text-lg font-bold text-ok">
@@ -286,11 +310,15 @@ export default function DonatePage() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-text/50">আর প্রয়োজন:</span>
+                  <span className="text-xs text-text/50">চলতি রাউন্ডে বাকি:</span>
                   <p className="font-mono text-lg font-bold text-secondary">
-                    {remainingNeeded === 0
-                      ? "লক্ষ্য পূরণ হয়েছে! 🎉"
-                      : `৳${remainingNeeded.toLocaleString()}`}
+                    {justFilled ? "পূরণ! 🎉" : `৳${cycleRemaining.toLocaleString()}`}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-text/50">টার্গেট পূরণ:</span>
+                  <p className="font-mono text-lg font-bold text-text">
+                    {timesFilled} {timesFilled === 1 ? "বার" : "বার"}
                   </p>
                 </div>
               </div>

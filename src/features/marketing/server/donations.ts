@@ -106,3 +106,38 @@ export async function deleteDonation(id: string) {
   }
   return true;
 }
+
+/* ══ Donation goal (site setting) ════════════════════════ */
+
+const SettingSchema = new Schema<{ key: string; value: number }>(
+  {
+    key: { type: String, required: true, unique: true },
+    value: { type: Number, required: true },
+  },
+  { collection: "site_settings" },
+);
+
+export const SiteSettingModel: Model<{ key: string; value: number }> =
+  mongoose.models.SiteSetting ||
+  mongoose.model<{ key: string; value: number }>("SiteSetting", SettingSchema);
+
+const TARGET_KEY = "donation_target";
+
+/** Current donation goal; falls back to the seeded default (5000). */
+export async function getDonationTarget(): Promise<number> {
+  await connectDB();
+  const doc = await SiteSettingModel.findOne({ key: TARGET_KEY }).lean();
+  const value = doc?.value;
+  return typeof value === "number" && value > 0 ? value : 5000;
+}
+
+/** Admin: update the donation goal. */
+export async function setDonationTarget(value: number): Promise<number> {
+  await connectDB();
+  await SiteSettingModel.findOneAndUpdate(
+    { key: TARGET_KEY },
+    { key: TARGET_KEY, value },
+    { upsert: true, new: true },
+  );
+  return value;
+}

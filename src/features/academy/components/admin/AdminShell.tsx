@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { LogOut, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  BookOpen,
+  CalendarCheck,
+  HandCoins,
+  Languages,
+  LogOut,
+  ShieldCheck,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
@@ -14,10 +24,21 @@ import {
   SectionHanzi,
   useConfirm,
 } from "@/components/ui";
+import { AdminStatsProvider, useAdminStats } from "./AdminStats";
 
 const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 const PIN_KEY = "academy_admin_pin";
 const UNLOCK_KEY = "academy_admin_unlocked";
+
+/** Every admin module — rendered as the persistent quick-access bar. */
+const ADMIN_MODULES = [
+  { href: "/admin/admissions", bn: "ভর্তি", en: "Admissions", icon: UserPlus },
+  { href: "/admin/students", bn: "শিক্ষার্থী", en: "Students", icon: Users },
+  { href: "/admin/class-logs", bn: "ক্লাস লগ", en: "Class logs", icon: CalendarCheck },
+  { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen },
+  { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
+  { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },
+] as const;
 
 /**
  * Shared gate + chrome for every /admin page. NOTE: the passcode check
@@ -149,7 +170,8 @@ export function AdminShell({
   }
 
   return (
-    <div className="relative isolate mx-auto max-w-5xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+    <AdminStatsProvider>
+      <div className="relative isolate mx-auto max-w-5xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
       <SectionHanzi char={seal} className="-top-10 right-0" />
 
       <Breadcrumb
@@ -185,7 +207,84 @@ export function AdminShell({
         }
       />
 
+      {/* persistent quick-access bar — visible on every /admin page */}
+      <AdminQuickBar />
+
       <div className="mt-10">{children}</div>
-    </div>
+      </div>
+    </AdminStatsProvider>
+  );
+}
+
+/** The sticky module bar — counters come from the shared admin stats. */
+function AdminQuickBar() {
+  const { language } = useLanguage();
+  const pathname = usePathname();
+  const { counts, loading } = useAdminStats();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
+
+  const countFor = (href: string): number | null => {
+    const c = counts;
+    switch (href) {
+      case "/admin/admissions":
+        return c.pendingStudents;
+      case "/admin/students":
+        return c.approvedStudents;
+      case "/admin/class-logs":
+        return c.pendingClasses;
+      case "/admin/courses":
+        return c.courses;
+      case "/admin/chinese-words":
+        return c.chineseWords;
+      case "/admin/donations":
+        return c.donations;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <nav
+      aria-label={t("অ্যাডমিন মডিউল", "Admin modules")}
+      className="sticky top-16 z-30 border-b border-text/10 bg-background/90 backdrop-blur-sm"
+    >
+      <ul className="mx-auto flex max-w-5xl items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] sm:px-6 lg:px-8 [&::-webkit-scrollbar]:hidden">
+        {ADMIN_MODULES.map((m) => {
+          const Icon = m.icon;
+          const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
+          const count = countFor(m.href);
+          return (
+            <li key={m.href} className="shrink-0">
+              <Link
+                href={m.href}
+                aria-current={active ? "page" : undefined}
+                className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                  active
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
+                }`}
+              >
+                <Icon className="size-4" aria-hidden="true" />
+                {t(m.bn, m.en)}
+                {count != null && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                      active
+                        ? "bg-primary/15 text-primary"
+                        : "bg-text/8 text-text/60"
+                    }`}
+                  >
+                    {loading ? "—" : count}
+                  </span>
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }

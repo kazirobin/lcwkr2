@@ -3,3 +3,4 @@
 export * from "./types";
 export { default as CourseCard } from "./components/CourseCard";
 export { AdminShell } from "./components/admin/AdminShell";
+export { AdminStatsProvider, useAdminStats } from "./components/admin/AdminStats";

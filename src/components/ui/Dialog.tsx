@@ -38,9 +38,16 @@ export function Dialog({
   const title_id = useId();
   const desc_id = useId();
 
+  // Latest handlers via refs so the open-effect below doesn't re-run (and
+  // re-focus the first input) on every parent re-render while typing.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const dismissableRef = useRef(dismissable);
+  dismissableRef.current = dismissable;
+
   const close = useCallback(() => {
-    if (dismissable) onClose();
-  }, [dismissable, onClose]);
+    if (dismissableRef.current) onCloseRef.current();
+  }, []);
 
   useEffect(() => {
     if (!open) return;

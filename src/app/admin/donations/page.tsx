@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import {
-  ArrowLeft,
-  HeartHandshake,
   Plus,
   Pencil,
   Trash2,
@@ -15,6 +12,8 @@ import {
   MapPin,
   CreditCard,
 } from "lucide-react";
+import { useLanguage } from "@/i18n";
+import { AdminShell } from "@/features/academy";
 
 interface Donation {
   _id: string;
@@ -26,6 +25,11 @@ interface Donation {
 }
 
 export default function AdminDonationsPage() {
+  const { language } = useLanguage();
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +44,56 @@ export default function AdminDonationsPage() {
     trxId: "",
     amount: 200,
   });
+
+  // donation goal (site setting)
+  const [target, setTarget] = useState<string>("5000");
+  const [targetLoading, setTargetLoading] = useState(true);
+  const [targetSaving, setTargetSaving] = useState(false);
+  const [targetMsg, setTargetMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const fetchTarget = useCallback(async () => {
+    try {
+      const res = await fetch("/api/donations/target", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok && typeof data.target === "number") setTarget(String(data.target));
+    } catch {
+      /* fall back to default */
+    } finally {
+      setTargetLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchTarget());
+  }, [fetchTarget]);
+
+  const saveTarget = async () => {
+    const value = Number(target);
+    if (!Number.isFinite(value) || value <= 0) {
+      setTargetMsg({ ok: false, text: "Target must be a positive number." });
+      return;
+    }
+    setTargetSaving(true);
+    setTargetMsg(null);
+    try {
+      const res = await fetch("/api/donations/target", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: value, adminPasscode: process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTarget(String(data.target));
+        setTargetMsg({ ok: true, text: "Target updated — the donate page shows the new goal instantly." });
+      } else {
+        setTargetMsg({ ok: false, text: data.error || "Failed to update target." });
+      }
+    } catch {
+      setTargetMsg({ ok: false, text: "Network error while saving." });
+    } finally {
+      setTargetSaving(false);
+    }
+  };
 
   const fetchDonations = useCallback(async () => {
     setLoading(true);
@@ -63,12 +117,14 @@ export default function AdminDonationsPage() {
   }, []);
 
   useEffect(() => {
-    fetchDonations();
+    queueMicrotask(() => fetchDonations());
   }, [fetchDonations]);
 
   const totalAmount = Array.isArray(donations)
     ? donations.reduce((sum, d) => sum + (Number(d.amount) || 0), 0)
     : 0;
+
+  const targetNum = Number(target) || 0;
 
   const handleResetForm = () => {
     setEditingId(null);
@@ -142,34 +198,102 @@ export default function AdminDonationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text py-10 px-4 sm:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-text/10 pb-5">
-          <div>
-            <Link
-              href="/admin"
-              className="text-xs text-text/50 hover:underline flex items-center gap-1 mb-1"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin Console
-            </Link>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <HeartHandshake className="w-6 h-6 text-secondary" /> Manage Donors & Contributions
-            </h1>
+    <AdminShell
+      title={t("অনুদান ব্যবস্থাপনা", "Donation records")}
+      crumb={t("অনুদান", "Donations")}
+      seal="捐"
+      lede={t(
+        "অনুদান পরিচালনা করুন, বিকাশ TrxID ট্র্যাক করুন ও দাতার তথ্য হালনাগাদ করুন।",
+        "Manage donations, track bKash TrxIDs, and update contributor details."
+      )}
+    >
+      <div className="space-y-8">
+        {/* Goal progress + stats */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {[
+            { label: "মোট সংগৃহীত / Total raised", value: `৳${totalAmount.toLocaleString()}`, tone: "text-ok" },
+            { label: "টার্গেট / Target", value: `৳${targetNum.toLocaleString()}`, tone: "text-primary" },
+            {
+              label: "অগ্রগতি / Progress",
+              value: `${targetNum > 0 ? Math.min(100, Math.round((totalAmount / targetNum) * 100)) : 0}%`,
+              tone: "text-primary",
+            },
+            {
+              label: "টার্গেট পূরণ / Filled",
+              value: `${targetNum > 0 ? Math.floor(totalAmount / targetNum) : 0} বার`,
+              tone: "text-ok",
+            },
+            {
+              label: "চলতি রাউন্ডে বাকি / Left",
+              value:
+                totalAmount > 0 && targetNum > 0 && totalAmount % targetNum === 0
+                  ? "পূরণ! 🎉"
+                  : `৳${(targetNum > 0 ? targetNum - (totalAmount % targetNum) : 0).toLocaleString()}`,
+              tone: "text-warn",
+            },
+          ].map((tile) => (
+            <div key={tile.label} className="rounded-2xl border border-text/10 bg-card p-4 shadow-sm">
+              <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-text/50">
+                {tile.label}
+              </p>
+              <p className={`mt-1.5 font-mono text-lg font-bold tabular-nums ${tile.tone}`}>
+                {tile.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-text/10 bg-card/60 p-4">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-text/10">
+            <div
+              className="h-full rounded-full bg-secondary transition-all duration-700 ease-out"
+              style={{
+                width: `${targetNum > 0 ? Math.min(100, Math.round((totalAmount / targetNum) * 100)) : 0}%`,
+              }}
+            />
           </div>
-          <div className="flex gap-3">
-            <div className="text-xs font-mono bg-text/5 border border-text/10 px-4 py-2 rounded-xl">
-              Total Raised:{" "}
-              <span className="font-bold text-emerald-500">
-                ৳{totalAmount.toLocaleString()}
-              </span>
+          <p className="mt-2 text-xs text-text/50">
+            {donations.length} {t("টি রেকর্ড", "records")}
+          </p>
+        </div>
+
+        {/* Donation goal editor */}
+        <div className="p-6 rounded-3xl border border-primary/25 bg-primary/[0.05] space-y-3">
+          <h2 className="text-base font-bold flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" /> Donation Target (Goal)
+          </h2>
+          <p className="text-xs text-text/55">
+            The goal shown on the public donate page progress bar. Changes go live immediately.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-text/50">৳</span>
+              <input
+                type="number"
+                min={1}
+                value={target}
+                disabled={targetLoading || targetSaving}
+                onChange={(e) => {
+                  setTarget(e.target.value);
+                  setTargetMsg(null);
+                }}
+                className="w-44 rounded-xl border border-text/15 bg-card pl-8 pr-3.5 py-2.5 text-sm font-mono tabular-nums text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text disabled:opacity-60"
+                aria-label="Donation target amount"
+              />
             </div>
-            <div className="text-xs font-mono bg-text/5 border border-text/10 px-4 py-2 rounded-xl">
-              Records:{" "}
-              <span className="font-bold text-secondary">
-                {donations.length}
+            <button
+              type="button"
+              onClick={saveTarget}
+              disabled={targetLoading || targetSaving}
+              className="inline-flex items-center gap-2 rounded-xl bg-text px-5 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-55"
+            >
+              {targetSaving ? "Saving..." : "Save target"}
+            </button>
+            {targetMsg && (
+              <span className={`text-xs font-medium ${targetMsg.ok ? "text-ok" : "text-danger"}`} role="status">
+                {targetMsg.text}
               </span>
-            </div>
+            )}
           </div>
         </div>
 
@@ -351,6 +475,6 @@ export default function AdminDonationsPage() {
           )}
         </div>
       </div>
-    </div>
+    </AdminShell>
   );
 }
