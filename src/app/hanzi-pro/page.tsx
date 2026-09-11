@@ -16,6 +16,7 @@ import {
 import { useLanguage } from "@/i18n";
 import { LESSON_WORDS } from "@/features/chinese-words";
 import { Button, Field } from "@/components/ui";
+import { StrokeTrainer, WordStrokePractice } from "@/features/hanzi-pro";
 
 const BKASH_NUMBER = "01787881334";
 const ADMIN_WHATSAPP = "8801787881334";
@@ -572,6 +573,38 @@ export default function HanziProPage() {
           </div>
         </section>
       )}
+
+      {/* ═══════════ STROKE LEARNING & PRACTICE ═══════════ */}
+      <section className="border-t border-text/10 bg-background py-14 md:py-20">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-text sm:text-3xl">
+            {t("স্ট্রোক শেখা ও অনুশীলন", "Stroke learning & practice")}
+          </h2>
+          <p className="mt-2 text-sm text-text/60">
+            {t(
+              "৮টি মৌলিক স্ট্রোকের নাম শিখুন, কুইজে নিজেকে যাচাই করুন — আর নিচে চ্যালেঞ্জের প্রতিটি শব্দের স্ট্রোক অ্যানিমেশন দেখে লিখে অনুশীলন করুন।",
+              "Learn the 8 basic stroke names, test yourself in the quiz — then watch each challenge word's stroke animation and practice writing it.",
+            )}
+          </p>
+
+          <div className="mt-6">
+            <StrokeTrainer />
+          </div>
+
+          <h3 className="mt-10 flex items-center gap-2 text-lg font-bold text-text">
+            {t("শব্দে স্ট্রোক অনুশীলন", "Word stroke practice")}
+          </h3>
+          <p className="mt-1 text-xs text-text/55">
+            {t(
+              "লেসন খুলে যেকোনো শব্দের পাশে 🎬 চাপুন — স্ট্রোক অ্যানিমেশন, পজ/প্লে আর লিখে অনুশীলন।",
+              "Open a lesson and tap 🎬 beside any word — stroke animation, pause/play and writing practice.",
+            )}
+          </p>
+          <div className="mt-4">
+            <WordStrokePractice />
+          </div>
+        </div>
+      </section>
 
       {/* ═══════════ CHALLENGER ACTIVITY ═══════════ */}
       <section className="border-t border-text/10 bg-background py-14 md:py-20">
