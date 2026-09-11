@@ -20,7 +20,7 @@ export async function GET() {
 /** POST /api/hanzi-pro — public registration (৳200 bKash + TrxID). */
 export async function POST(req: Request) {
   try {
-    const { name, phone, trxId } = await req.json();
+    const { name, phone, location, trxId } = await req.json();
 
     if (!name || !phone || !trxId) {
       return NextResponse.json(
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const student = await createHanziProStudent({ name, phone, trxId, amount: 200 });
+    const student = await createHanziProStudent({ name, phone, location, trxId, amount: 200 });
     return NextResponse.json({ success: true, student }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to register";

@@ -113,3 +113,15 @@ export async function registerStudent(
 
   return { kind: "created", student };
 }
+
+/** Admin: set a student's enrolled courses (supports multiple). */
+export async function setStudentCourses(rollNumber: unknown, courseIds: string[]) {
+  await connectDB();
+  const clean = [...new Set(courseIds.map((c) => String(c).trim()).filter(Boolean))];
+  const student = await Student.findOneAndUpdate(
+    { rollNumber: Number(rollNumber) },
+    { enrolledCourseIds: clean, enrolledCourseId: clean[0] ?? undefined },
+    { new: true },
+  );
+  return student;
+}

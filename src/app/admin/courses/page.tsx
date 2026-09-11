@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Check, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Pencil, Plus, Radio, RefreshCw, Trash2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import {
@@ -132,9 +132,101 @@ export default function AdminCoursesPage() {
     }
   }, [t, toast]);
 
+  // ── live class sessions ──────────────────────────────────────────────
+  const [liveSessions, setLiveSessions] = useState<
+    { _id: string; courseId: string; meetLink: string; date: string; time?: string; open: boolean; attendance: { rollNumber: number; name: string }[] }[]
+  >([]);
+  const [liveOpen, setLiveOpen] = useState<Course | null>(null); // course being turned on
+  const [liveForm, setLiveForm] = useState({
+    meetLink: "",
+    date: new Date().toISOString().slice(0, 10),
+    time: "",
+  });
+  const [liveSaving, setLiveSaving] = useState(false);
+  const [busyLive, setBusyLive] = useState<string | null>(null);
+
+  const fetchLive = useCallback(async () => {
+    try {
+      const res = await fetch("/api/academy/live", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success) setLiveSessions(data.sessions || []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const openLive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!liveOpen || !liveForm.meetLink.trim()) return;
+    setLiveSaving(true);
+    try {
+      const res = await fetch("/api/academy/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "open",
+          courseId: liveOpen.courseId,
+          meetLink: liveForm.meetLink,
+          date: liveForm.date,
+          time: liveForm.time,
+          adminPasscode: ADMIN_PASSCODE,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(t("ক্লাস চালু হয়েছে — একাডেমি পেজে লাইভ বাটন দেখা যাবে।", "Class is live — the academy page now shows the live button."), "success");
+        setLiveOpen(null);
+        setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "" });
+        fetchLive();
+      } else {
+        toast(data.error || t("চালু হয়নি।", "Failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setLiveSaving(false);
+    }
+  };
+
+  const closeLive = async (courseId: string) => {
+    const session = liveSessions.find((s) => s.courseId === courseId && s.open);
+    if (!session) return;
+    const ok = await confirm({
+      title: t("ক্লাস শেষ করবেন?", "End this live class?"),
+      message: t(
+        "একাডেমি পেজ থেকে লাইভ বাটন সরে যাবে।",
+        "The live button will be removed from the academy page.",
+      ),
+      confirmLabel: t("শেষ করুন", "End class"),
+    });
+    if (!ok) return;
+    setBusyLive(`live-${courseId}`);
+    try {
+      const res = await fetch("/api/academy/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "close", id: session._id, adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(t("ক্লাস বন্ধ হয়েছে।", "Class ended."), "success");
+        fetchLive();
+      } else {
+        toast(data.error || t("বন্ধ হয়নি।", "Failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setBusyLive(null);
+    }
+  };
+
   useEffect(() => {
-    queueMicrotask(() => fetchAll());
-  }, [fetchAll]);
+    queueMicrotask(() => {
+      fetchAll();
+      fetchLive();
+    });
+  }, [fetchAll, fetchLive]);
 
   const set = <K extends keyof Course>(key: K, value: Course[K]) =>
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -431,6 +523,37 @@ export default function AdminCoursesPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const live = liveSessions.find((s) => s.courseId === c.courseId && s.open);
+                      return live ? (
+                        <>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-danger/40 bg-danger/10 px-2.5 py-1 text-[11px] font-bold text-danger">
+                            <span className="size-1.5 animate-pulse rounded-full bg-danger" />
+                            LIVE
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            disabled={busyLive === `live-${c.courseId}`}
+                            onClick={() => closeLive(c.courseId)}
+                          >
+                            {t("ক্লাস শেষ", "End class")}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          iconLeft={<Radio className="h-4 w-4" />}
+                          onClick={() => {
+                            setLiveOpen(c);
+                            setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "" });
+                          }}
+                        >
+                          {t("ক্লাস অন", "Class on")}
+                        </Button>
+                      );
+                    })()}
                     <StatusPill
                       tone={c.status === "Running" ? "done" : c.status === "Completed" ? "neutral" : "pending"}
                     >
@@ -649,6 +772,56 @@ export default function AdminCoursesPage() {
                   set("totalClassesPlanned", e.target.value === "" ? ("" as unknown as number) : Number(e.target.value))
                 }
                 className="tabular-nums"
+              />
+            </div>
+          </form>
+        )}
+      </Dialog>
+
+      {/* ── class-on dialog (live session) ── */}
+      <Dialog
+        open={liveOpen !== null}
+        onClose={() => setLiveOpen(null)}
+        title={t("ক্লাস চালু করুন", "Start live class")}
+        description={
+          liveOpen
+            ? `${liveOpen.courseName} (${liveOpen.courseId}) — ${t("একাডেমি পেজে লাইভ বাটন দেখা যাবে", "the academy page will show a live button")}`
+            : undefined
+        }
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setLiveOpen(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" loading={liveSaving} onClick={openLive}>
+              {t("চালু করুন", "Go live")}
+            </Button>
+          </>
+        }
+      >
+        {liveOpen && (
+          <form onSubmit={openLive} className="space-y-4">
+            <Field
+              label={t("Google Meet লিংক", "Google Meet link")}
+              required
+              placeholder="https://meet.google.com/xxx-xxxx-xxx"
+              value={liveForm.meetLink}
+              onChange={(e) => setLiveForm({ ...liveForm, meetLink: e.target.value })}
+              hint={t("শিক্ষার্থীরা একাডেমি পেজ থেকে এই লিংকে যাবে।", "Students will open this link from the academy page.")}
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                type="date"
+                label={t("ক্লাসের তারিখ", "Class date")}
+                value={liveForm.date}
+                onChange={(e) => setLiveForm({ ...liveForm, date: e.target.value })}
+              />
+              <Field
+                label={t("ক্লাসের সময়", "Class time")}
+                hint={t("যেমন: 9:00 PM - 10:10 PM", "e.g. 9:00 PM - 10:10 PM")}
+                value={liveForm.time}
+                onChange={(e) => setLiveForm({ ...liveForm, time: e.target.value })}
               />
             </div>
           </form>

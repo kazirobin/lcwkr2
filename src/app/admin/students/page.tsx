@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { ArrowRightLeft, RefreshCw, Search, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Check, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import {
@@ -47,7 +47,7 @@ export default function AdminStudentsPage() {
   const [filter, setFilter] = useState<"all" | "joined" | "pending">("all");
 
   const [transferring, setTransferring] = useState<Student | null>(null);
-  const [newTrack, setNewTrack] = useState("");
+  const [newTracks, setNewTracks] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
 
@@ -155,7 +155,11 @@ export default function AdminStudentsPage() {
 
   const saveTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transferring || !newTrack) return;
+    if (!transferring) return;
+    if (newTracks.length === 0) {
+      toast(t("অন্তত একটি কোর্স সিলেক্ট করুন।", "Select at least one course."), "error");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/academy/students/change-course", {
@@ -163,13 +167,13 @@ export default function AdminStudentsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rollNumber: Number(transferring.rollNumber),
-          newCourseId: newTrack,
+          courseIds: newTracks,
           adminPasscode: ADMIN_PASSCODE,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        toast(t("ট্র্যাক পরিবর্তিত হয়েছে।", "Track updated."), "success");
+        toast(t("কোর্স এনরোলমেন্ট আপডেট হয়েছে।", "Enrollment updated."), "success");
         setTransferring(null);
         fetchData();
       } else {
@@ -275,11 +279,16 @@ export default function AdminStudentsPage() {
               <Td className="text-right">
                 <div className="flex justify-end gap-1.5">
                   <IconButton
-                    label={t("ট্র্যাক পরিবর্তন", "Change track")}
+                    label={t("কোর্স এনরোলমেন্ট", "Manage enrollment")}
                     size="sm"
                     onClick={() => {
                       setTransferring(s);
-                      setNewTrack(trackOf(s) === "—" ? courses[0]?.courseId ?? "" : trackOf(s));
+                      const current = s.enrolledCourseIds?.length
+                        ? s.enrolledCourseIds
+                        : s.enrolledCourseId
+                          ? [s.enrolledCourseId]
+                          : [];
+                      setNewTracks(current);
                     }}
                   >
                     <ArrowRightLeft className="h-4 w-4" />
@@ -317,17 +326,39 @@ export default function AdminStudentsPage() {
         }
       >
         <form onSubmit={saveTransfer}>
-          <SelectField
-            label={t("নতুন কোর্স ট্র্যাক", "New course track")}
-            value={newTrack}
-            onChange={(e) => setNewTrack(e.target.value)}
-          >
-            {courses.map((c) => (
-              <option key={c.courseId} value={c.courseId}>
-                {c.courseId} — {c.courseName}
-              </option>
-            ))}
-          </SelectField>
+          <p className="mb-2 text-[13px] font-semibold text-text">
+            {t("কোন কোন কোর্সে এনরোল করবেন (একাধিক সিলেক্ট করা যায়)", "Which courses to enroll in (multiple allowed)")}
+          </p>
+          <div className="space-y-2">
+            {courses.map((c) => {
+              const checked = newTracks.includes(c.courseId);
+              return (
+                <label
+                  key={c.courseId}
+                  className={`flex cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-text ${
+                    checked ? "border-ok/40 bg-ok-surface" : "border-text/12 bg-card hover:border-text/25"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setNewTracks((prev) =>
+                          checked ? prev.filter((id) => id !== c.courseId) : [...prev, c.courseId],
+                        )
+                      }
+                      className="accent-ok size-4"
+                    />
+                    <span className="font-semibold text-text">{c.courseId} — {c.courseName}</span>
+                  </span>
+                  {checked && (
+                    <Check className="size-4 text-ok" aria-hidden="true" />
+                  )}
+                </label>
+              );
+            })}
+          </div>
         </form>
       </Dialog>
     </AdminShell>

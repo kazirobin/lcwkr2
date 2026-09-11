@@ -7,6 +7,7 @@ import {
   HandCoins,
   Languages,
   RefreshCw,
+  Trophy,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -28,9 +29,9 @@ export default function AdminDashboardPage() {
   const overview: { label: string; count: number; icon: LucideIcon; tone: string }[] = [
     { label: t("অপেক্ষমাণ ভর্তি", "Pending admissions"), count: counts.pendingStudents, icon: UserPlus, tone: "text-warn" },
     { label: t("শিক্ষার্থী", "Students"), count: counts.approvedStudents, icon: GraduationCap, tone: "text-primary" },
-    { label: t("অপেক্ষমাণ লগ", "Pending logs"), count: counts.pendingClasses, icon: RefreshCw, tone: "text-warn" },
     { label: t("কোর্স", "Courses"), count: counts.courses, icon: BookOpen, tone: "text-primary" },
     { label: t("কোর ওয়ার্ডস", "Core words"), count: counts.chineseWords, icon: Languages, tone: "text-ok" },
+    { label: t("হানজি প্রো", "Hanzi Pro"), count: counts.hanziPro, icon: Trophy, tone: "text-ok" },
     { label: t("অনুদান", "Donations"), count: counts.donations, icon: HandCoins, tone: "text-ok" },
   ];
 

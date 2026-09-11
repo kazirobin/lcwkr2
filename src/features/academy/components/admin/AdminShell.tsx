@@ -35,7 +35,6 @@ const UNLOCK_KEY = "academy_admin_unlocked";
 const ADMIN_MODULES = [
   { href: "/admin/admissions", bn: "ভর্তি", en: "Admissions", icon: UserPlus },
   { href: "/admin/students", bn: "শিক্ষার্থী", en: "Students", icon: Users },
-  { href: "/admin/class-logs", bn: "ক্লাস লগ", en: "Class logs", icon: CalendarCheck },
   { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen },
   { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
   { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
@@ -235,8 +234,6 @@ function AdminQuickBar() {
         return c.pendingStudents;
       case "/admin/students":
         return c.approvedStudents;
-      case "/admin/class-logs":
-        return c.pendingClasses;
       case "/admin/courses":
         return c.courses;
       case "/admin/chinese-words":

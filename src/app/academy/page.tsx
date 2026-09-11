@@ -7,16 +7,21 @@ import {
   ArrowRight,
   ArrowUpRight,
   CalendarDays,
+  Check,
   Clock,
+  Lock,
   RefreshCw,
+  Trophy,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { ICourse, IStudent } from "@/features/academy";
 import {
   Breadcrumb,
+  Button,
   ButtonLink,
   Card,
   Eyebrow,
+  Field,
   IconButton,
   LoadingBlock,
   PageHeader,
@@ -61,8 +66,153 @@ export default function AcademyHubPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    queueMicrotask(() => fetchData());
   }, [fetchData]);
+
+  // ── Hanzi Pro challenge live stats ───────────────────────────────────
+  const [hpStats, setHpStats] = useState({ enrolled: 0, learned: 0 });
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetch("/api/hanzi-pro", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && Array.isArray(d.students)) {
+            const active = d.students.filter((s: { status: string }) => s.status === "Active");
+            setHpStats({
+              enrolled: active.length,
+              learned: active.reduce((n: number, s: { learnedCount: number }) => n + (Number(s.learnedCount) || 0), 0),
+            });
+          }
+        })
+        .catch(() => {
+          /* keep defaults */
+        });
+    });
+  }, []);
+
+  // ── live class sessions ──────────────────────────────────────────────
+  type LiveSession = {
+    _id: string;
+    courseId: string;
+    meetLink: string;
+    date: string;
+    time?: string;
+    open: boolean;
+    attendance: { rollNumber: number; name: string }[];
+  };
+  const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
+  const [attendBusy, setAttendBusy] = useState<string | null>(null);
+  const [attendMsg, setAttendMsg] = useState<Record<string, { ok: boolean; text: string }>>({});
+  const [endPass, setEndPass] = useState<Record<string, string>>({});
+  const [endBusy, setEndBusy] = useState<string | null>(null);
+  const [endMsg, setEndMsg] = useState<Record<string, { ok: boolean; text: string }>>({});
+  const [showMeet, setShowMeet] = useState<Record<string, boolean>>({});
+  const [lessonForm, setLessonForm] = useState({ fromLesson: 1, fromText: 1, toLesson: 1, toText: 1 });
+  // time auto-fills from the session (set at "Class on"); user can override
+  const [timeOverride, setTimeOverride] = useState<Record<string, string>>({});
+
+  const fetchLive = useCallback(async () => {
+    try {
+      const res = await fetch("/api/academy/live", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success) setLiveSessions(data.sessions || []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchLive());
+  }, [fetchLive]);
+
+  // open sessions WITH a meet link — only those are joinable
+  const openSessions = useMemo(
+    () => liveSessions.filter((s) => s.open && s.meetLink),
+    [liveSessions],
+  );
+  const selected = useMemo(
+    () => openSessions.find((s) => s._id === selectedSessionId) ?? openSessions[0] ?? null,
+    [openSessions, selectedSessionId],
+  );
+
+  const enrolledFor = useCallback(
+    (courseId: string) =>
+      students.filter((s) => {
+        if (Array.isArray(s.enrolledCourseIds))
+          return s.enrolledCourseIds.some((id) => id.toLowerCase() === courseId.toLowerCase());
+        const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
+        return legacy ? legacy.toLowerCase() === courseId.toLowerCase() : false;
+      }),
+    [students],
+  );
+
+  const markAttendance = async (courseId: string, roll: string) => {
+    if (!roll.trim()) {
+      setAttendMsg((prev) => ({ ...prev, [courseId]: { ok: false, text: t("রোল নম্বর লিখুন।", "Enter your roll number.") } }));
+      return;
+    }
+    setAttendBusy(courseId);
+    try {
+      const res = await fetch("/api/academy/live/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId, rollNumber: Number(roll) }),
+      });
+      const data = await res.json();
+      setAttendMsg((prev) => ({
+        ...prev,
+        [courseId]: data.success
+          ? { ok: true, text: data.duplicate ? t("আপনার হাজিরা আগেই হয়ে গেছে।", "Attendance already marked.") : t("হাজিরা হয়ে গেছে — ধন্যবাদ!", "Attendance marked — thank you!") }
+          : { ok: false, text: data.error || t("হাজিরা হয়নি।", "Failed to mark attendance.") },
+      }));
+      if (data.success) fetchLive();
+    } catch {
+      setAttendMsg((prev) => ({ ...prev, [courseId]: { ok: false, text: t("সমস্যা হয়েছে।", "Something went wrong.") } }));
+    } finally {
+      setAttendBusy(null);
+    }
+  };
+
+  const endLiveClass = async (session: LiveSession, passcode: string) => {
+    setEndBusy(session._id);
+    try {
+      const res = await fetch("/api/academy/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "close-merge",
+          id: session._id,
+          contentCovered: {
+            fromLesson: lessonForm.fromLesson,
+            fromText: lessonForm.fromText,
+            toLesson: lessonForm.toLesson,
+            toText: lessonForm.toText,
+            time: timeOverride[session._id] || session.time || "Live class",
+          },
+          adminPasscode: passcode,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEndMsg((prev) => ({
+          ...prev,
+          [session._id]: {
+            ok: true,
+            text: t("সাবমিট হয়েছে — হাজিরা ক্লাস লগে যুক্ত হয়ে ক্লাস বন্ধ হয়ে গেছে।", "Submitted — attendance merged into the class log and the class ended."),
+          },
+        }));
+        fetchData();
+        fetchLive();
+      } else {
+        setEndMsg((prev) => ({ ...prev, [session._id]: { ok: false, text: data.error || t("হয়নি।", "Failed.") } }));
+      }
+    } catch {
+      setEndMsg((prev) => ({ ...prev, [session._id]: { ok: false, text: t("সমস্যা হয়েছে।", "Something went wrong.") } }));
+    } finally {
+      setEndBusy(null);
+    }
+  };
 
   const openBatch = useMemo(
     () => courses.find((c) => c.status === "Coming Soon"),
@@ -162,6 +312,247 @@ export default function AcademyHubPage() {
         }
       />
 
+      {/* ═══════════ LIVE CLASS PANEL ═══════════ */}
+      {openSessions.length > 0 && selected && (
+        <section className="mt-8" aria-live="polite">
+          <div className="relative overflow-hidden rounded-3xl border-2 border-danger/50 bg-danger/[0.05] p-6 sm:p-8">
+            <span
+              aria-hidden="true"
+              lang="zh"
+              className="font-chinese pointer-events-none absolute -top-4 right-2 select-none text-[9rem] leading-none font-bold text-danger/[0.05]"
+            >
+              直播
+            </span>
+
+            <div className="relative">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full bg-danger px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white">
+                  <span className="size-2 animate-pulse rounded-full bg-white" />
+                  {t("লাইভ ক্লাস চলছে", "Live class running")}
+                </span>
+                <span className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1 text-[11px] font-bold text-danger">
+                  {openSessions.length} {t("টি ক্লাস চালু", "class(es) live")}
+                </span>
+              </div>
+
+              {/* course selector — changes students + meet link */}
+              <div className="mt-5 max-w-md">
+                <label
+                  htmlFor="live-course-select"
+                  className="block text-[11px] font-bold uppercase tracking-[0.12em] text-text/55"
+                >
+                  {t("কোন ক্লাসে যোগ দেবেন সিলেক্ট করুন", "Select which class to join")}
+                </label>
+                <select
+                  id="live-course-select"
+                  value={selected._id}
+                  onChange={(e) => setSelectedSessionId(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-text/20 bg-card px-3.5 py-2.5 text-sm font-semibold text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+                >
+                  {openSessions.map((s) => {
+                    const c = courses.find((x) => x.courseId === s.courseId);
+                    return (
+                      <option key={s._id} value={s._id}>
+                        {c?.courseName ?? s.courseId} · {s.date}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <h2 className="mt-4 text-xl font-bold text-text sm:text-2xl">
+                {courses.find((c) => c.courseId === selected.courseId)?.courseName ?? selected.courseId}
+              </h2>
+              <p className="mt-1 text-xs tabular-nums text-text/55">
+                {selected.date} · {(selected.attendance ?? []).length} {t("জন উপস্থিত", "attended")}
+              </p>
+
+              <div className="mt-5 flex flex-col gap-5">
+                {/* join + reveal link */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <a
+                    href={selected.meetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-danger px-6 py-3.5 text-sm font-bold text-white shadow-md transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+                  >
+                    ▶ {t("লাইভ ক্লাসে যোগ দিন", "Join live class")}
+                  </a>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowMeet((prev) => ({ ...prev, [selected._id]: !prev[selected._id] }))}
+                  >
+                    {t("মিট লিংক দেখুন", "Show Meet link")}
+                  </Button>
+                  {showMeet[selected._id] && (
+                    <code className="max-w-full truncate rounded-lg border border-text/15 bg-background px-3 py-2 font-mono text-xs text-text/80 select-all">
+                      {selected.meetLink}
+                    </code>
+                  )}
+                </div>
+
+                {/* attendance: roll-number grid */}
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-text/55">
+                      {t("রোল নম্বরে ক্লিক করে হাজিরা দিন", "Tap your roll number to mark attendance")}
+                    </p>
+                    <span className="text-[11px] font-mono tabular-nums text-text/50">
+                      {(selected.attendance ?? []).length} {t("জন উপস্থিত", "attended")}
+                    </span>
+                  </div>
+
+                  {(() => {
+                    const roster = enrolledFor(selected.courseId);
+                    if (roster.length === 0) {
+                      return (
+                        <p className="mt-2 text-xs text-text/50">
+                          {t("এই কোর্সে এখনো শিক্ষার্থী নেই।", "No students enrolled in this course yet.")}
+                        </p>
+                      );
+                    }
+                    return (
+                      <ul className="mt-2 flex flex-wrap gap-2">
+                        {roster.map((s) => {
+                          const marked = (selected.attendance ?? []).some(
+                            (a) => a.rollNumber === s.rollNumber,
+                          );
+                          return (
+                            <li key={s.rollNumber}>
+                              <button
+                                type="button"
+                                disabled={attendBusy === selected.courseId}
+                                onClick={() => markAttendance(selected.courseId, String(s.rollNumber))}
+                                title={s.nameEnglish}
+                                aria-pressed={marked}
+                                className={`flex flex-col items-center gap-0.5 rounded-xl border px-3.5 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text disabled:opacity-60 ${
+                                  marked
+                                    ? "border-ok/50 bg-ok/10 text-ok"
+                                    : "border-text/15 bg-card text-text/70 hover:border-ok/50 hover:text-ok"
+                                }`}
+                              >
+                                <span className="font-mono text-sm font-bold tabular-nums">
+                                  #{s.rollNumber}
+                                </span>
+                                <span className="max-w-20 truncate text-[10px]">{s.nameEnglish}</span>
+                                {marked && (
+                                  <Check className="size-3" strokeWidth={3} aria-hidden="true" />
+                                )}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })()}
+
+                  {attendMsg[selected.courseId] && (
+                    <p
+                      role="status"
+                      className={`mt-2 text-xs font-medium ${attendMsg[selected.courseId].ok ? "text-ok" : "text-danger"}`}
+                    >
+                      {attendMsg[selected.courseId].text}
+                    </p>
+                  )}
+                </div>
+
+                {/* Admin submit (passcode) — same fields as the class-log form */}
+                <details className="w-full rounded-2xl border border-text/12 bg-card/80 open:border-primary/30">
+                  <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-text/70 transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text">
+                    <Lock className="size-4 text-text/40" aria-hidden="true" />
+                    {t("অ্যাডমিন সাবমিট — ক্লাস লগ পূরণ করুন", "Admin submit — fill the class log")}
+                    <span aria-hidden="true" className="ml-auto text-xs text-text/40 group-open/adm:hidden">
+                      ▼
+                    </span>
+                  </summary>
+
+                  <div className="mt-1 space-y-4 border-t border-text/10 px-4 pb-5 pt-4 sm:px-5">
+                    <p className="text-xs font-semibold text-text">
+                      {t(
+                        "ক্লাস লগ পূরণ করে পাসকোড দিয়ে সাবমিট করুন — হাজিরা লগে যুক্ত হবে।",
+                        "Fill the class log and submit with the passcode — attendance merges into the log.",
+                      )}
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field type="date" label={t("তারিখ", "Date")} value={selected.date} disabled />
+                      <Field
+                        label={t("সময়", "Time")}
+                        hint={t("যেমন: 9:00 PM", "e.g. 9:00 PM")}
+                        value={timeOverride[selected._id] ?? selected.time ?? ""}
+                        onChange={(e) =>
+                          setTimeOverride((prev) => ({ ...prev, [selected._id]: e.target.value }))
+                        }
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <Field
+                        type="number"
+                        min={1}
+                        label={t("পাঠ থেকে", "From lesson")}
+                        value={lessonForm.fromLesson}
+                        onChange={(e) => setLessonForm({ ...lessonForm, fromLesson: Number(e.target.value) })}
+                        className="tabular-nums"
+                      />
+                      <Field
+                        type="number"
+                        min={1}
+                        label={t("টেক্সট থেকে", "From text")}
+                        value={lessonForm.fromText}
+                        onChange={(e) => setLessonForm({ ...lessonForm, fromText: Number(e.target.value) })}
+                        className="tabular-nums"
+                      />
+                      <Field
+                        type="number"
+                        min={1}
+                        label={t("পাঠ পর্যন্ত", "To lesson")}
+                        value={lessonForm.toLesson}
+                        onChange={(e) => setLessonForm({ ...lessonForm, toLesson: Number(e.target.value) })}
+                        className="tabular-nums"
+                      />
+                      <Field
+                        type="number"
+                        min={1}
+                        label={t("টেক্সট পর্যন্ত", "To text")}
+                        value={lessonForm.toText}
+                        onChange={(e) => setLessonForm({ ...lessonForm, toText: Number(e.target.value) })}
+                        className="tabular-nums"
+                      />
+                    </div>
+
+                    <Field
+                      type="password"
+                      label={t("অ্যাডমিন পাসকোড", "Admin passcode")}
+                      value={endPass[selected._id] ?? ""}
+                      error={endMsg[selected._id] && !endMsg[selected._id].ok ? endMsg[selected._id].text : undefined}
+                      onChange={(e) => setEndPass((prev) => ({ ...prev, [selected._id]: e.target.value }))}
+                      className="text-center tracking-widest"
+                    />
+
+                    <Button
+                      variant="danger"
+                      className="w-full"
+                      loading={endBusy === selected._id}
+                      onClick={() => endLiveClass(selected, endPass[selected._id] ?? "")}
+                    >
+                      {t("সাবমিট ও ক্লাস বন্ধ করুন", "Submit & end class")}
+                    </Button>
+
+                    {endMsg[selected._id]?.ok && (
+                      <p className="text-xs font-medium text-ok" role="status">
+                        {endMsg[selected._id].text}
+                      </p>
+                    )}
+                   </div>
+                 </details>
+               </div>
+             </div>
+           </div>
+         </section>
+       )}
+
       {/* Stat row */}
       <dl className="mt-10 grid grid-cols-2 divide-text/10 rounded-2xl border border-text/10 bg-card sm:grid-cols-4 sm:divide-x">
         {(
@@ -180,6 +571,46 @@ export default function AcademyHubPage() {
           </div>
         ))}
       </dl>
+
+      {/* Hanzi Pro paid class */}
+      {!loading && (
+        <section className="mt-10">
+          <Card className="flex flex-col gap-5 border-secondary/30 bg-secondary/[0.05] p-6 sm:flex-row sm:items-center">
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-secondary/30 bg-secondary/10">
+              <Trophy className="h-7 w-7 text-secondary" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-bold text-text">
+                  {t("হানজি প্রো — ৩০০ শব্দের চ্যালেঞ্জ", "Hanzi Pro — the 300-word challenge")}
+                </h2>
+                <span className="rounded bg-secondary/15 px-1.5 py-0.5 text-[10px] font-bold text-secondary">
+                  PRO
+                </span>
+              </div>
+              <p className="mt-1 text-sm leading-6 text-text/65">
+                {t(
+                  "HSK 1 এর লেসন-ভিত্তিক সব শব্দ এক চ্যালেঞ্জে — ২০ তারিখ থেকে ক্লাস, ফি মাত্র ৳২০০। ভর্তি হয়ে নিজের অগ্রগতি ট্র্যাক করুন।",
+                  "Every HSK 1 lesson word in one paid challenge — classes start on the 20th, fee ৳200. Enroll and track your progress.",
+                )}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+              <ButtonLink href="/hanzi-pro" size="sm" iconRight={<ArrowRight className="h-4 w-4" />}>
+                {t("বিস্তারিত ও ভর্তি", "Details & enroll")}
+              </ButtonLink>
+              {hpStats.enrolled > 0 && (
+                <p className="text-[11px] font-mono text-text/55">
+                  {t(
+                    `${hpStats.enrolled} জন ভর্তি · ${hpStats.learned} শব্দ শেখা হয়েছে`,
+                    `${hpStats.enrolled} enrolled · ${hpStats.learned} words learned`,
+                  )}
+                </p>
+              )}
+            </div>
+          </Card>
+        </section>
+      )}
 
       {/* Tracks */}
       <section className="mt-16">
@@ -212,9 +643,10 @@ export default function AcademyHubPage() {
                 const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
                 return legacy ? legacy.toLowerCase() === cid : false;
               }).length;
+              const isLive = openSessions.some((s) => s.courseId === course.courseId);
 
               return (
-                <Card key={course._id ? String(course._id) : course.courseId} className="flex flex-col p-6">
+                <Card key={course._id ? String(course._id) : course.courseId} className={`flex flex-col p-6 ${isLive ? "border-danger/50" : ""}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-md border border-text/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-text/70">
@@ -222,9 +654,17 @@ export default function AcademyHubPage() {
                       </span>
                       <span className="text-xs text-text/50">{course.targetLevel}</span>
                     </div>
-                    <StatusPill tone={running ? "done" : "pending"}>
-                      {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
-                    </StatusPill>
+                    <div className="flex items-center gap-2">
+                      {isLive && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-danger px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                          <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                          LIVE
+                        </span>
+                      )}
+                      <StatusPill tone={running ? "done" : "pending"}>
+                        {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
+                      </StatusPill>
+                    </div>
                   </div>
 
                   <h3 className="mt-4 text-lg font-bold text-text">{course.courseName}</h3>
@@ -268,54 +708,69 @@ export default function AcademyHubPage() {
                     <ProgressBar value={done} max={planned} label={t("ক্লাস সম্পন্ন", "Classes completed")} />
                   </div>
 
-                  <Link
-                    href={`/academy/courses/${course.courseId}`}
-                    className="mt-5 inline-flex items-center gap-1 self-start border-t border-text/10 pt-4 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
-                  >
-                    {t("সিলেবাস ও ক্লাস লগ", "Curriculum & class logs")}
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Link>
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/academy/courses/${course.courseId}`}
+                      className="inline-flex items-center gap-1 self-start border-t border-text/10 pt-4 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                    >
+                      {t("সিলেবাস ও ক্লাস লগ", "Curriculum & class logs")}
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                    {isLive && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s = openSessions.find((x) => x.courseId === course.courseId);
+                          if (s) setSelectedSessionId(s._id);
+                          document.getElementById("live-course-select")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                        className="inline-flex items-center gap-1 self-start rounded-xl bg-danger px-4 py-2 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
+                      >
+                        ▶ {t("লাইভ ক্লাসে যান", "Go to live class")}
+                      </button>
+                    )}
+                  </div>
                 </Card>
               );
             })}
           </div>
         )}
-
-        {/* Admission notice */}
-        {!loading && (
-          <Card className="mt-6 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-bold text-text">
-                {openBatch
-                  ? t("নতুন ব্যাচের ভর্তি চলছে", "Admission is open for the next cohort")
-                  : t("সব ব্যাচে ক্লাস চলছে (ভর্তি বন্ধ)", "All cohorts are currently running (Admission closed)")}
-              </p>
-              <p className="mt-1 text-sm text-text/60">
-                {openBatch
-                  ? t(
-                      `${openBatch.courseName} — এখনই আসন সংরক্ষণ করুন।`,
-                      `${openBatch.courseName} — reserve a seat now.`,
-                    )
-                  : t(
-                      `পরবর্তী ব্যাচে ভর্তি শুরু হবে: ${nextIntake}`,
-                      `Next batch admission starts: ${nextIntake}`,
-                    )}
-              </p>
-            </div>
-            
-            {openBatch ? (
-              <ButtonLink href="/academy/admission" size="sm" iconRight={<ArrowRight className="h-4 w-4" />}>
-                {t("আবেদন করুন", "Apply now")}
-              </ButtonLink>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-text/15 bg-text/5 px-4 py-2 text-xs font-semibold text-text/70">
-                <span>{t("আগামী ভর্তি:", "Next Intake:")}</span>
-                <span className="font-mono text-primary font-bold">{nextIntake}</span>
-              </div>
-            )}
-          </Card>
-        )}
       </section>
+
+      {/* Admission notice */}
+      {!loading && (
+        <Card className="mt-6 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-text">
+              {openBatch
+                ? t("নতুন ব্যাচের ভর্তি চলছে", "Admission is open for the next cohort")
+                : t("সব ব্যাচে ক্লাস চলছে (ভর্তি বন্ধ)", "All cohorts are currently running (Admission closed)")}
+            </p>
+            <p className="mt-1 text-sm text-text/60">
+              {openBatch
+                ? t(
+                    `${openBatch.courseName} — এখনই আসন সংরক্ষণ করুন।`,
+                    `${openBatch.courseName} — reserve a seat now.`,
+                  )
+                : t(
+                    `পরবর্তী ব্যাচে ভর্তি শুরু হবে: ${nextIntake}`,
+                    `Next batch admission starts: ${nextIntake}`,
+                  )}
+            </p>
+          </div>
+
+          {openBatch ? (
+            <ButtonLink href="/academy/admission" size="sm" iconRight={<ArrowRight className="h-4 w-4" />}>
+              {t("আবেদন করুন", "Apply now")}
+            </ButtonLink>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-text/15 bg-text/5 px-4 py-2 text-xs font-semibold text-text/70">
+              <span>{t("আগামী ভর্তি:", "Next Intake:")}</span>
+              <span className="font-mono font-bold text-primary">{nextIntake}</span>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Regular scholars */}
       {!loading && topScholars.length > 0 && (
