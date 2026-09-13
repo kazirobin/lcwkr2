@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/i18n";
+import { classifyStrokeByMedian } from "@/features/hanzi-pro/lib/classifyStroke";
 
 type QuizCallbacks = {
   onCorrectStroke?: (e: { strokeNum: number }) => void;
@@ -57,7 +58,9 @@ export default function StrokeOrderButton({
   const [charIdx, setCharIdx] = useState(0);
   const [animStroke, setAnimStroke] = useState(0);
   const [totalStrokes, setTotalStrokes] = useState<number | null>(null);
-  const [strokeTypes, setStrokeTypes] = useState<string[]>([]);
+  const [strokeInfo, setStrokeInfo] = useState<
+    { zh: string; bn: string; en: string }[]
+  >([]);
   const [quizCorrect, setQuizCorrect] = useState(0);
   const [quizMistakes, setQuizMistakes] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
@@ -88,9 +91,9 @@ export default function StrokeOrderButton({
       pausedRef.current = false;
       setLooping(false);
       setMode("animate");
-      setAnimStroke(0);
+setAnimStroke(0);
       setTotalStrokes(null);
-      setStrokeTypes([]);
+      setStrokeInfo([]);
       setQuizCorrect(0);
       setQuizMistakes(0);
       setQuizDone(false);
@@ -100,16 +103,23 @@ export default function StrokeOrderButton({
         // hanzi-writer-data থেকে ক্যারেক্টার ডেটা ফেচ করা
         const data = (await HW.loadCharacterData(char)) as {
           strokes: unknown[];
-          strokeTypes?: string[];
+          medians?: number[][][];
         };
         if (!boxRef.current) return;
         
         const strokesArr = Array.isArray(data.strokes) ? data.strokes : [];
         setTotalStrokes(strokesArr.length);
         
-        // সিডিএন থেকে আসা আসল স্ট্রোক টাইপ বা নামগুলো নেওয়া (না থাকলে ফাঁকা রাখা)
-        const apiTypes = Array.isArray(data.strokeTypes) ? data.strokeTypes : [];
-        setStrokeTypes(apiTypes);
+        // মিডিয়ান (স্ট্রোকের গড় রেখা) থেকে স্ট্রোকের নাম শনাক্ত করা
+        const mediansArr = Array.isArray(data.medians) ? data.medians : [];
+        setStrokeInfo(
+          mediansArr.map((median) => {
+            const found = classifyStrokeByMedian(median);
+            return found
+              ? { zh: found.zh, bn: found.bn, en: found.en }
+              : { zh: "", bn: "", en: "" };
+          }),
+        );
         
         boxRef.current.innerHTML = "";
         const writer = HW.create(boxRef.current, char, {
@@ -252,10 +262,11 @@ export default function StrokeOrderButton({
     totalStrokes != null ? Math.max(0, totalStrokes - animStroke) : null;
 
   // শুধু তখনই স্ট্রোকের নাম দেখাবে যদি অফিশিয়াল ডেটায় সেটি থাকে, না থাকলে সিম্পল স্ট্রোক নম্বর দেখাবে
-  const currentStrokeName =
-    animStroke > 0 && strokeTypes[animStroke - 1]
-      ? strokeTypes[animStroke - 1]
-      : null;
+  const currentStroke =
+    animStroke > 0 ? strokeInfo[animStroke - 1] : undefined;
+  const currentStrokeName = currentStroke?.zh
+    ? `${currentStroke.zh} · ${t(currentStroke.bn, currentStroke.en)}`
+    : null;
 
   return (
     <>
