@@ -13,12 +13,6 @@ import {
 
 import { useLanguage } from "@/i18n";
 
-/**
- * Video-style button that opens a Hanzi Writer modal — animated stroke
- * order with play / pause / loop / practice controls and a live stroke
- * counter along with authentic stroke type names.
- */
-
 type QuizCallbacks = {
   onCorrectStroke?: (e: { strokeNum: number }) => void;
   onMistake?: (e: { mistakesOnStroke: number }) => void;
@@ -39,18 +33,6 @@ type Writer = {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-// স্ট্যান্ডার্ড চাইনিজ স্ট্রোকের নামগুলোর তালিকা (ফলব্যাক হিসেবে বা কমন স্ট্রোকের জন্য)
-const STANDARD_STROKE_NAMES = [
-  "Heng (横 - Horizontal)",
-  "Shu (竖 - Vertical)",
-  "Pie (撇 - Slash/Left-falling)",
-  "Na (捺 - Press/Right-falling)",
-  "Dian (点 - Dot)",
-  "Ti (提 - Rising)",
-  "Zhe (折 - Turning)",
-  "Gou (钩 - Hook)",
-];
 
 export default function StrokeOrderButton({
   hanzi,
@@ -80,7 +62,6 @@ export default function StrokeOrderButton({
   const [quizMistakes, setQuizMistakes] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
 
-  // split the word into individual CJK characters
   const chars = useMemo(() => {
     const list = Array.from(hanzi).filter((c) =>
       /[\u3400-\u9fff\uf900-\ufaff]/.test(c),
@@ -115,6 +96,8 @@ export default function StrokeOrderButton({
       setQuizDone(false);
       try {
         const HW = (await import("hanzi-writer")).default;
+        
+        // hanzi-writer-data থেকে ক্যারেক্টার ডেটা ফেচ করা
         const data = (await HW.loadCharacterData(char)) as {
           strokes: unknown[];
           strokeTypes?: string[];
@@ -124,13 +107,9 @@ export default function StrokeOrderButton({
         const strokesArr = Array.isArray(data.strokes) ? data.strokes : [];
         setTotalStrokes(strokesArr.length);
         
-        // যদি সিডিএন ডেটাতে স্ট্রোকের নাম থাকে তা নেব, না থাকলে স্ট্যান্ডার্ড তালিকা থেকে সাইকেল করে নাম দেব
+        // সিডিএন থেকে আসা আসল স্ট্রোক টাইপ বা নামগুলো নেওয়া (না থাকলে ফাঁকা রাখা)
         const apiTypes = Array.isArray(data.strokeTypes) ? data.strokeTypes : [];
-        const fallbackMapped = strokesArr.map((_, idx) => 
-          apiTypes[idx] || STANDARD_STROKE_NAMES[idx % STANDARD_STROKE_NAMES.length]
-        );
-        
-        setStrokeTypes(fallbackMapped);
+        setStrokeTypes(apiTypes);
         
         boxRef.current.innerHTML = "";
         const writer = HW.create(boxRef.current, char, {
@@ -272,6 +251,7 @@ export default function StrokeOrderButton({
   const animRemaining =
     totalStrokes != null ? Math.max(0, totalStrokes - animStroke) : null;
 
+  // শুধু তখনই স্ট্রোকের নাম দেখাবে যদি অফিশিয়াল ডেটায় সেটি থাকে, না থাকলে সিম্পল স্ট্রোক নম্বর দেখাবে
   const currentStrokeName =
     animStroke > 0 && strokeTypes[animStroke - 1]
       ? strokeTypes[animStroke - 1]
@@ -373,7 +353,7 @@ export default function StrokeOrderButton({
                     </p>
                     <p className="mt-1 text-xs text-text/50">
                       {t(
-                        "ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন።",
+                        "ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।",
                         "Check your internet connection and try again.",
                       )}
                     </p>
@@ -397,7 +377,7 @@ export default function StrokeOrderButton({
               )}
             </div>
 
-            {/* stroke counter & authentic stroke name display */}
+            {/* stroke counter */}
             <div className="mt-4 rounded-xl border border-text/12 bg-background px-4 py-3 text-center">
               {mode === "quiz" ? (
                 <p className="text-sm font-semibold tabular-nums text-text">
@@ -418,7 +398,7 @@ export default function StrokeOrderButton({
                       <span className="flex items-center gap-1.5">
                         <span>{t("স্ট্রোক", "Stroke")} #{animStroke}:</span>
                         <strong className="text-xs font-bold uppercase tracking-wider text-text">
-                          {currentStrokeName ?? `${t("স্ট্রোক", "Stroke")} ${animStroke}`}
+                          {currentStrokeName ? currentStrokeName : `${t("স্ট্রোক", "Stroke")} ${animStroke}`}
                         </strong>
                       </span>
                     ) : (
