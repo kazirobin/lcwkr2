@@ -16,7 +16,7 @@ import { useLanguage } from "@/i18n";
 /**
  * Video-style button that opens a Hanzi Writer modal — animated stroke
  * order with play / pause / loop / practice controls and a live stroke
- * counter (shown / remaining) along with authentic stroke type names.
+ * counter along with authentic stroke type names.
  */
 
 type QuizCallbacks = {
@@ -39,6 +39,18 @@ type Writer = {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// স্ট্যান্ডার্ড চাইনিজ স্ট্রোকের নামগুলোর তালিকা (ফলব্যাক হিসেবে বা কমন স্ট্রোকের জন্য)
+const STANDARD_STROKE_NAMES = [
+  "Heng (横 - Horizontal)",
+  "Shu (竖 - Vertical)",
+  "Pie (撇 - Slash/Left-falling)",
+  "Na (捺 - Press/Right-falling)",
+  "Dian (点 - Dot)",
+  "Ti (提 - Rising)",
+  "Zhe (折 - Turning)",
+  "Gou (钩 - Hook)",
+];
 
 export default function StrokeOrderButton({
   hanzi,
@@ -103,14 +115,22 @@ export default function StrokeOrderButton({
       setQuizDone(false);
       try {
         const HW = (await import("hanzi-writer")).default;
-        // preload character data including strokes and authentic stroke types
         const data = (await HW.loadCharacterData(char)) as {
           strokes: unknown[];
           strokeTypes?: string[];
         };
         if (!boxRef.current) return;
-        setTotalStrokes(Array.isArray(data.strokes) ? data.strokes.length : null);
-        setStrokeTypes(Array.isArray(data.strokeTypes) ? data.strokeTypes : []);
+        
+        const strokesArr = Array.isArray(data.strokes) ? data.strokes : [];
+        setTotalStrokes(strokesArr.length);
+        
+        // যদি সিডিএন ডেটাতে স্ট্রোকের নাম থাকে তা নেব, না থাকলে স্ট্যান্ডার্ড তালিকা থেকে সাইকেল করে নাম দেব
+        const apiTypes = Array.isArray(data.strokeTypes) ? data.strokeTypes : [];
+        const fallbackMapped = strokesArr.map((_, idx) => 
+          apiTypes[idx] || STANDARD_STROKE_NAMES[idx % STANDARD_STROKE_NAMES.length]
+        );
+        
+        setStrokeTypes(fallbackMapped);
         
         boxRef.current.innerHTML = "";
         const writer = HW.create(boxRef.current, char, {
@@ -252,7 +272,6 @@ export default function StrokeOrderButton({
   const animRemaining =
     totalStrokes != null ? Math.max(0, totalStrokes - animStroke) : null;
 
-  // বর্তমান স্ট্রোকের নাম বের করার নিরাপদ লজিক (ডেটা না থাকলে সাধারণ কাউন্ট দেখাবে)
   const currentStrokeName =
     animStroke > 0 && strokeTypes[animStroke - 1]
       ? strokeTypes[animStroke - 1]
@@ -354,7 +373,7 @@ export default function StrokeOrderButton({
                     </p>
                     <p className="mt-1 text-xs text-text/50">
                       {t(
-                        "ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।",
+                        "ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন።",
                         "Check your internet connection and try again.",
                       )}
                     </p>
