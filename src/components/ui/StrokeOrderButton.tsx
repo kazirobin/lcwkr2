@@ -16,9 +16,7 @@ import { useLanguage } from "@/i18n";
 /**
  * Video-style button that opens a Hanzi Writer modal — animated stroke
  * order with play / pause / loop / practice controls and a live stroke
- * counter (shown / remaining). Multi-character words get ‹ › navigation
- * so every character animates one at a time. Character data is fetched
- * from the public hanzi-writer-data CDN on demand.
+ * counter (shown / remaining) along with authentic stroke type names.
  */
 
 type QuizCallbacks = {
@@ -65,19 +63,12 @@ export default function StrokeOrderButton({
   const [charIdx, setCharIdx] = useState(0);
   const [animStroke, setAnimStroke] = useState(0);
   const [totalStrokes, setTotalStrokes] = useState<number | null>(null);
+  const [strokeTypes, setStrokeTypes] = useState<string[]>([]);
   const [quizCorrect, setQuizCorrect] = useState(0);
   const [quizMistakes, setQuizMistakes] = useState(0);
   const [quizDone, setQuizDone] = useState(false);
-  const [lessonForm, setLessonForm] = useState({
-    fromLesson: 1,
-    fromText: 1,
-    toLesson: 1,
-    toText: 1,
-  });
-  const [endPass, setEndPass] = useState("");
 
-  // split the word into individual CJK characters — Hanzi Writer animates
-  // one character at a time, so multi-character words get ‹ › navigation
+  // split the word into individual CJK characters
   const chars = useMemo(() => {
     const list = Array.from(hanzi).filter((c) =>
       /[\u3400-\u9fff\uf900-\ufaff]/.test(c),
@@ -106,17 +97,21 @@ export default function StrokeOrderButton({
       setMode("animate");
       setAnimStroke(0);
       setTotalStrokes(null);
+      setStrokeTypes([]);
       setQuizCorrect(0);
       setQuizMistakes(0);
       setQuizDone(false);
       try {
         const HW = (await import("hanzi-writer")).default;
-        // preload character data — gives us the total stroke count
+        // preload character data including strokes and authentic stroke types
         const data = (await HW.loadCharacterData(char)) as {
           strokes: unknown[];
+          strokeTypes?: string[];
         };
         if (!boxRef.current) return;
         setTotalStrokes(Array.isArray(data.strokes) ? data.strokes.length : null);
+        setStrokeTypes(Array.isArray(data.strokeTypes) ? data.strokeTypes : []);
+        
         boxRef.current.innerHTML = "";
         const writer = HW.create(boxRef.current, char, {
           width: 280,
@@ -136,7 +131,6 @@ export default function StrokeOrderButton({
     [],
   );
 
-  // build / rebuild the writer when the dialog opens or the character changes
   useEffect(() => {
     if (open && currentChar) {
       queueMicrotask(() => loadWriter(currentChar));
@@ -148,7 +142,6 @@ export default function StrokeOrderButton({
     };
   }, [open, currentChar, loadWriter]);
 
-  /** Stroke-by-stroke sequencer with pause support. Returns false if cancelled. */
   const runSequence = useCallback(
     async (from: number, parent?: { cancelled: boolean }): Promise<boolean> => {
       const token = { cancelled: false };
@@ -174,7 +167,7 @@ export default function StrokeOrderButton({
           };
           try {
             writerRef.current?.animateStroke(i, { onComplete: finish });
-            setTimeout(finish, 4000); // safety timeout per stroke
+            setTimeout(finish, 4000);
           } catch {
             finish();
           }
@@ -259,6 +252,12 @@ export default function StrokeOrderButton({
   const animRemaining =
     totalStrokes != null ? Math.max(0, totalStrokes - animStroke) : null;
 
+  // বর্তমান স্ট্রোকের নাম বের করার নিরাপদ লজিক (ডেটা না থাকলে সাধারণ কাউন্ট দেখাবে)
+  const currentStrokeName =
+    animStroke > 0 && strokeTypes[animStroke - 1]
+      ? strokeTypes[animStroke - 1]
+      : null;
+
   return (
     <>
       <button
@@ -318,7 +317,7 @@ export default function StrokeOrderButton({
               </p>
             </div>
 
-            {/* writer canvas + ‹ › navigation for multi-char words */}
+            {/* writer canvas + ‹ › navigation */}
             <div className="relative mx-auto mt-4 flex max-w-[340px] items-center justify-center gap-2 rounded-2xl border border-text/12 bg-background p-2">
               {isMulti && (
                 <button
@@ -379,7 +378,7 @@ export default function StrokeOrderButton({
               )}
             </div>
 
-            {/* stroke counter */}
+            {/* stroke counter & authentic stroke name display */}
             <div className="mt-4 rounded-xl border border-text/12 bg-background px-4 py-3 text-center">
               {mode === "quiz" ? (
                 <p className="text-sm font-semibold tabular-nums text-text">
@@ -394,17 +393,23 @@ export default function StrokeOrderButton({
                   )}
                 </p>
               ) : (
-                <p className="text-sm font-semibold tabular-nums text-text">
-                  {t("স্ট্রোক দেখানো হয়েছে", "Strokes shown")}:{" "}
-                  <span className="text-primary">
-                    {status === "ready" ? animStroke : 0}/
-                    {totalStrokes ?? "—"}
-                  </span>{" "}
-                  · {t("বাকি", "Remaining")}:{" "}
-                  <span className="text-warn">
-                    {animRemaining ?? "—"}
-                  </span>
-                </p>
+                <div className="flex flex-col items-center justify-center gap-0.5">
+                  <p className="text-xs font-medium text-primary">
+                    {status === "ready" && animStroke > 0 ? (
+                      <span className="flex items-center gap-1.5">
+                        <span>{t("স্ট্রোক", "Stroke")} #{animStroke}:</span>
+                        <strong className="text-xs font-bold uppercase tracking-wider text-text">
+                          {currentStrokeName ?? `${t("স্ট্রোক", "Stroke")} ${animStroke}`}
+                        </strong>
+                      </span>
+                    ) : (
+                      <span>{t("স্ট্রোক দেখানো হয়েছে", "Strokes shown")}: {status === "ready" ? animStroke : 0}/{totalStrokes ?? "—"}</span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-text/55">
+                    {t("বাকি", "Remaining")}: <span className="text-warn">{animRemaining ?? "—"}</span>
+                  </p>
+                </div>
               )}
             </div>
 
