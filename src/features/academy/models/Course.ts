@@ -7,6 +7,12 @@ export interface ICourseDoc {
   status: "Running" | "Coming Soon" | "Completed";
   startDate?: string;
   nextBatchRegistrationDate?: string;
+  // ── new professional LMS fields ──
+  lessons: Array<{ lessonNumber: number; title: string; description?: string }>;
+  nextClassTopic?: string;
+  topics?: string[];
+  registrationOpen: boolean;
+  registrationLastDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
   completedClassesCount: number;
@@ -53,6 +59,18 @@ const CourseSchema = new Schema<ICourseDoc>(
     },
     startDate: { type: String },
     nextBatchRegistrationDate: { type: String },
+    // ── new professional LMS fields ──
+    lessons: [
+      {
+        lessonNumber: { type: Number, required: true },
+        title: { type: String, required: true },
+        description: { type: String },
+      },
+    ],
+    nextClassTopic: { type: String, default: "" },
+    topics: { type: [String], default: [] },
+    registrationOpen: { type: Boolean, default: false },
+    registrationLastDate: { type: String },
     totalLessons: { type: Number, default: 15 },
     totalClassesPlanned: { type: Number, default: 24 },
     completedClassesCount: { type: Number, default: 0 },

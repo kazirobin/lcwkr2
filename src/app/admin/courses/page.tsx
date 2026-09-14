@@ -1,7 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Check, Pencil, Plus, Radio, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Pencil,
+  Plus,
+  Radio,
+  RefreshCw,
+  Trash2,
+  Users,
+  BookOpen,
+  ClipboardList,
+  Link2,
+  Save,
+  GraduationCap,
+  Tags,
+} from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import {
@@ -14,6 +29,7 @@ import {
   LoadingBlock,
   SelectField,
   StatusPill,
+  TextArea,
   useConfirm,
   useToast,
 } from "@/components/ui";
@@ -43,6 +59,11 @@ type Course = {
   status: string;
   startDate?: string;
   nextBatchRegistrationDate?: string;
+  lessons: { lessonNumber: number; title: string; description?: string }[];
+  nextClassTopic?: string;
+  topics: string[];
+  registrationOpen: boolean;
+  registrationLastDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
   classes?: ClassRow[];
@@ -83,6 +104,11 @@ const EMPTY_COURSE: Course = {
   status: "Coming Soon",
   startDate: "",
   nextBatchRegistrationDate: "",
+  lessons: [],
+  nextClassTopic: "",
+  topics: [],
+  registrationOpen: false,
+  registrationLastDate: "",
   totalLessons: 15,
   totalClassesPlanned: 24,
 };
@@ -103,6 +129,8 @@ export default function AdminCoursesPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [pendingLogs, setPendingLogs] = useState<PendingLog[]>([]);
   const [loading, setLoading] = useState(true);
+  // collapse state for the (often long) class-log lists, keyed by courseId
+  const [logOpen, setLogOpen] = useState<Record<string, boolean>>({});
 
   // course dialog
   const [form, setForm] = useState<Course | null>(null);
@@ -134,16 +162,91 @@ export default function AdminCoursesPage() {
 
   // ── live class sessions ──────────────────────────────────────────────
   const [liveSessions, setLiveSessions] = useState<
-    { _id: string; courseId: string; meetLink: string; date: string; time?: string; open: boolean; attendance: { rollNumber: number; name: string }[] }[]
+    { _id: string; courseId: string; meetLink: string; topic?: string; assignmentPrompt?: string; date: string; time?: string; open: boolean; attendance: { rollNumber: number; name: string }[] }[]
   >([]);
   const [liveOpen, setLiveOpen] = useState<Course | null>(null); // course being turned on
   const [liveForm, setLiveForm] = useState({
     meetLink: "",
     date: new Date().toISOString().slice(0, 10),
     time: "",
+    topic: "",
+    assignmentPrompt: "",
   });
   const [liveSaving, setLiveSaving] = useState(false);
   const [busyLive, setBusyLive] = useState<string | null>(null);
+
+  // ── end-class dialog (fill class log, then close) ─────────────────────
+  const [closeOpen, setCloseOpen] = useState<{
+    session: { _id: string; courseId: string; date: string; time?: string; attendance: { rollNumber: number; name: string }[]; open: boolean };
+    course: Course;
+  } | null>(null);
+  const [closeForm, setCloseForm] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    time: "",
+    fromLesson: 1,
+    fromText: 1,
+    toLesson: 1,
+    toText: 1,
+    presentStudents: [] as string[],
+  });
+  const [closeBusy, setCloseBusy] = useState(false);
+
+  // ── new LMS controls ──────────────────────────────────────────────────
+  const [topicsOpen, setTopicsOpen] = useState<Course | null>(null);
+  const [topicsForm, setTopicsForm] = useState<string[]>([]);
+
+  const [lessonsOpen, setLessonsOpen] = useState<Course | null>(null);
+  const [lessonsForm, setLessonsForm] = useState<{ lessonNumber: number; title: string; description: string }[]>([]);
+
+  const [groupsOpen, setGroupsOpen] = useState<Course | null>(null);
+  const [groups, setGroups] = useState<{ _id: string; courseId: string; label: string; memberRolls: number[] }[]>([]);
+  const [groupLabel, setGroupLabel] = useState("");
+  const [groupMembers, setGroupMembers] = useState<number[]>([]);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [groupsBusy, setGroupsBusy] = useState(false);
+
+  const [markOpen, setMarkOpen] = useState<{ course: Course; session: { _id: string; topic?: string } } | null>(null);
+  const [markMap, setMarkMap] = useState<Record<string, { mark: string; feedback: string }>>({});
+  const [markBusy, setMarkBusy] = useState(false);
+
+  const [regOpen, setRegOpen] = useState<Course | null>(null); // registration dialog
+
+  // edit an already-live class (fix Meet link / topic / assignment)
+  const [liveEdit, setLiveEdit] = useState<{ course: Course; session: { _id: string; meetLink: string; topic?: string; assignmentPrompt?: string } } | null>(null);
+  const [liveEditForm, setLiveEditForm] = useState({ meetLink: "", topic: "", assignmentPrompt: "" });
+  const [liveEditBusy, setLiveEditBusy] = useState(false);
+
+  const saveLiveMeta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!liveEdit) return;
+    setLiveEditBusy(true);
+    try {
+      const res = await fetch("/api/academy/live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set-meta",
+          id: liveEdit.session._id,
+          newMeetLink: liveEditForm.meetLink,
+          topic: liveEditForm.topic,
+          assignmentPrompt: liveEditForm.assignmentPrompt,
+          adminPasscode: ADMIN_PASSCODE,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(t("লাইভ ক্লাস আপডেট হয়েছে।", "Live class updated."), "success");
+        setLiveEdit(null);
+        fetchLive();
+      } else {
+        toast(data.error || t("আপডেট হয়নি।", "Update failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setLiveEditBusy(false);
+    }
+  };
 
   const fetchLive = useCallback(async () => {
     try {
@@ -169,6 +272,8 @@ export default function AdminCoursesPage() {
           meetLink: liveForm.meetLink,
           date: liveForm.date,
           time: liveForm.time,
+          topic: liveForm.topic,
+          assignmentPrompt: liveForm.assignmentPrompt,
           adminPasscode: ADMIN_PASSCODE,
         }),
       });
@@ -176,7 +281,7 @@ export default function AdminCoursesPage() {
       if (data.success) {
         toast(t("ক্লাস চালু হয়েছে — একাডেমি পেজে লাইভ বাটন দেখা যাবে।", "Class is live — the academy page now shows the live button."), "success");
         setLiveOpen(null);
-        setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "" });
+        setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "", topic: "", assignmentPrompt: "" });
         fetchLive();
       } else {
         toast(data.error || t("চালু হয়নি।", "Failed."), "error");
@@ -188,36 +293,256 @@ export default function AdminCoursesPage() {
     }
   };
 
-  const closeLive = async (courseId: string) => {
+  const openClose = (courseId: string) => {
     const session = liveSessions.find((s) => s.courseId === courseId && s.open);
     if (!session) return;
-    const ok = await confirm({
-      title: t("ক্লাস শেষ করবেন?", "End this live class?"),
-      message: t(
-        "একাডেমি পেজ থেকে লাইভ বাটন সরে যাবে।",
-        "The live button will be removed from the academy page.",
-      ),
-      confirmLabel: t("শেষ করুন", "End class"),
+    setCloseForm({
+      date: session.date || new Date().toISOString().slice(0, 10),
+      time: session.time || "",
+      fromLesson: 1,
+      fromText: 1,
+      toLesson: 1,
+      toText: 1,
+      presentStudents: (session.attendance ?? []).map((a) => String(a.rollNumber).trim()),
     });
-    if (!ok) return;
-    setBusyLive(`live-${courseId}`);
+    setCloseOpen({ session, course: courses.find((c) => c.courseId === courseId) as Course });
+  };
+
+  const saveClose = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!closeOpen) return;
+    const enrolled = enrolledFor(closeOpen.course.courseId).map((s) => String(s.rollNumber).trim());
+    const absent = enrolled.filter((r) => !closeForm.presentStudents.includes(r));
+    setCloseBusy(true);
     try {
       const res = await fetch("/api/academy/live", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "close", id: session._id, adminPasscode: ADMIN_PASSCODE }),
+        body: JSON.stringify({
+          action: "close-merge",
+          id: closeOpen.session._id,
+          contentCovered: {
+            date: closeForm.date,
+            time: closeForm.time,
+            fromLesson: closeForm.fromLesson,
+            fromText: closeForm.fromText,
+            toLesson: closeForm.toLesson,
+            toText: closeForm.toText,
+          },
+          presentStudents: closeForm.presentStudents,
+          absentStudents: absent,
+          adminPasscode: ADMIN_PASSCODE,
+        }),
       });
       const data = await res.json();
       if (data.success) {
-        toast(t("ক্লাস বন্ধ হয়েছে।", "Class ended."), "success");
+        toast(t("ক্লাস বন্ধ হয়েছে এবং ক্লাস লগ সংরক্ষিত হয়েছে।", "Class ended and the class log was saved."), "success");
+        setCloseOpen(null);
         fetchLive();
+        fetchAll();
       } else {
         toast(data.error || t("বন্ধ হয়নি।", "Failed."), "error");
       }
     } catch {
       toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
     } finally {
-      setBusyLive(null);
+      setCloseBusy(false);
+    }
+  };
+
+  // ── study groups ───────────────────────────────────────────────────────
+  const openGroups = async (course: Course) => {
+    setGroupsOpen(course);
+    setGroupLabel("");
+    setGroupMembers([]);
+    setEditingGroupId(null);
+    setGroupsBusy(true);
+    try {
+      const res = await fetch(`/api/academy/groups?courseId=${encodeURIComponent(course.courseId)}`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (data.success) setGroups(data.groups || []);
+    } catch {
+      /* ignore */
+    } finally {
+      setGroupsBusy(false);
+    }
+  };
+
+  const editGroup = (g: { _id: string; label: string; memberRolls: number[] }) => {
+    setEditingGroupId(g._id);
+    setGroupLabel(g.label);
+    setGroupMembers([...g.memberRolls]);
+  };
+
+  const saveGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupsOpen) return;
+    if (groupMembers.length === 0) {
+      toast(t("কমপক্ষে একজন শিক্ষার্থী সিলেক্ট করুন।", "Select at least one student."), "error");
+      return;
+    }
+    setGroupsBusy(true);
+    try {
+      const isEdit = editingGroupId !== null;
+      const res = await fetch(
+        isEdit ? `/api/academy/groups/${editingGroupId}` : "/api/academy/groups",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseId: groupsOpen.courseId,
+            label: groupLabel,
+            memberRolls: groupMembers,
+            adminPasscode: ADMIN_PASSCODE,
+          }),
+        },
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast(
+          isEdit
+            ? t("স্টাডি গ্রুপ আপডেট হয়েছে।", "Study group updated.")
+            : t("স্টাডি গ্রুপ তৈরি হয়েছে।", "Study group created."),
+          "success",
+        );
+        setGroupLabel("");
+        setGroupMembers([]);
+        setEditingGroupId(null);
+        openGroups(groupsOpen);
+      } else {
+        toast(data.error || t("সংরক্ষণ হয়নি।", "Save failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setGroupsBusy(false);
+    }
+  };
+
+  const deleteGroup = async (groupId: string) => {
+    const ok = await confirm({
+      title: t("গ্রুপ মুছবেন?", "Delete this group?"),
+      message: t("এই গ্রুপটি মুছে ফেলা হবে।", "This group will be deleted."),
+      confirmLabel: t("মুছুন", "Delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    setGroupsBusy(true);
+    try {
+      const res = await fetch(`/api/academy/groups/${groupId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success && groupsOpen) openGroups(groupsOpen);
+      else if (!data.success) toast(data.error || t("মোছা যায়নি।", "Delete failed."), "error");
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setGroupsBusy(false);
+    }
+  };
+
+  // ── settings helpers ───────────────────────────────────────────────────
+  const saveSettings = async (
+    courseId: string,
+    fields: Record<string, unknown>,
+    successMsg: string,
+  ) => {
+    try {
+      const res = await fetch(`/api/academy/courses/${courseId}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...fields, adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCourses((prev) => prev.map((c) => (c.courseId === courseId ? { ...c, ...(data.course as Course) } : c)));
+        toast(successMsg, "success");
+        return true;
+      }
+      toast(data.message || data.error || t("সংরক্ষণ হয়নি।", "Save failed."), "error");
+      return false;
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+      return false;
+    }
+  };
+
+  const saveTopics = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topicsOpen) return;
+    const clean = topicsForm.map((x) => x.trim()).filter(Boolean);
+    const ok = await saveSettings(
+      topicsOpen.courseId,
+      { topics: clean },
+      t("টপিকসমূহ সংরক্ষিত হয়েছে।", "Topics saved."),
+    );
+    if (ok) setTopicsOpen(null);
+  };
+
+  const saveLessons = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lessonsOpen) return;
+    const clean = lessonsForm
+      .filter((l) => l.title.trim())
+      .map((l) => ({ lessonNumber: Number(l.lessonNumber) || 0, title: l.title.trim(), description: l.description.trim() }))
+      .sort((a, b) => a.lessonNumber - b.lessonNumber);
+    const ok = await saveSettings(
+      lessonsOpen.courseId,
+      { lessons: clean },
+      t("পাঠসমূহ সংরক্ষিত হয়েছে।", "Lessons saved."),
+    );
+    if (ok) setLessonsOpen(null);
+  };
+
+  const saveRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regOpen) return;
+    const ok = await saveSettings(
+      regOpen.courseId,
+      {
+        registrationOpen: !regOpen.registrationOpen,
+        registrationLastDate: regOpen.registrationLastDate || null,
+      },
+      regOpen.registrationOpen
+        ? t("রেজিস্ট্রেশন বন্ধ করা হয়েছে।", "Registration turned off.")
+        : t("রেজিস্ট্রেশন চালু করা হয়েছে।", "Registration turned on."),
+    );
+    if (ok) setRegOpen(null);
+  };
+
+  const saveMarks = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!markOpen) return;
+    setMarkBusy(true);
+    const marks = Object.entries(markMap)
+      .map(([roll, v]) => ({
+        rollNumber: Number(roll),
+        mark: Number(v.mark) || 0,
+        feedback: v.feedback,
+      }))
+      .filter((m) => Number.isFinite(m.rollNumber) && m.rollNumber > 0);
+    try {
+      const res = await fetch("/api/academy/live/marks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ liveClassId: markOpen.session._id, marks, adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(t("মার্ক সংরক্ষিত হয়েছে — শিক্ষার্থীরা দেখতে পাবে।", "Marks saved — students can see them."), "success");
+        setMarkOpen(null);
+      } else {
+        toast(data.error || t("সংরক্ষণ হয়নি।", "Save failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setMarkBusy(false);
     }
   };
 
@@ -535,7 +860,7 @@ export default function AdminCoursesPage() {
                             size="sm"
                             variant="danger"
                             disabled={busyLive === `live-${c.courseId}`}
-                            onClick={() => closeLive(c.courseId)}
+                            onClick={() => openClose(c.courseId)}
                           >
                             {t("ক্লাস শেষ", "End class")}
                           </Button>
@@ -547,7 +872,7 @@ export default function AdminCoursesPage() {
                           iconLeft={<Radio className="h-4 w-4" />}
                           onClick={() => {
                             setLiveOpen(c);
-                            setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "" });
+                            setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "", topic: "", assignmentPrompt: "" });
                           }}
                         >
                           {t("ক্লাস অন", "Class on")}
@@ -584,6 +909,103 @@ export default function AdminCoursesPage() {
                     {enrolled.length} {t("শিক্ষার্থী", "students")}
                   </span>
                 </div>
+
+                {/* ── LMS controls: registration, lessons, topic, groups ── */}
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-text/10 pt-3">
+                  <Button
+                    size="sm"
+                    variant={c.registrationOpen ? "secondary" : "ghost"}
+                    iconLeft={<GraduationCap className="h-4 w-4" />}
+                    onClick={() => {
+                      setRegOpen(c);
+                    }}
+                  >
+                    {c.registrationOpen
+                      ? t("রেজিস্ট্রেশন চালু", "Registration open")
+                      : t("রেজিস্ট্রেশন বন্ধ", "Registration off")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    iconLeft={<BookOpen className="h-4 w-4" />}
+                    onClick={() => {
+                      setLessonsForm(
+                        (c.lessons ?? []).map((l) => ({
+                          lessonNumber: l.lessonNumber,
+                          title: l.title,
+                          description: l.description ?? "",
+                        })),
+                      );
+                      setLessonsOpen(c);
+                    }}
+                  >
+                    {t("পাঠসমূহ", "Lessons")} {(c.lessons?.length ?? 0)}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    iconLeft={<Tags className="h-4 w-4" />}
+                    onClick={() => {
+                      setTopicsForm((c.topics ?? []).map((x) => x));
+                      setTopicsOpen(c);
+                    }}
+                  >
+                    {t("টপিকসমূহ", "Topics")} {(c.topics?.length ?? 0)}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    iconLeft={<Users className="h-4 w-4" />}
+                    onClick={() => openGroups(c)}
+                  >
+                    {t("স্টাডি গ্রুপ", "Study groups")}
+                  </Button>
+                </div>
+                {(() => {
+                  const latest = c.nextClassTopic || (c.topics && c.topics.length ? c.topics[c.topics.length - 1] : "");
+                  return latest ? (
+                    <p className="mt-2 rounded-lg bg-secondary/[0.07] px-3 py-2 text-xs font-medium text-secondary">
+                      {t("পরবর্তী ক্লাসের টপিক:", "Next class topic:")}{" "}
+                      <span className="font-semibold">{latest}</span>
+                    </p>
+                  ) : null;
+                })()}
+
+                {/* ── live class management ── */}
+                {(() => {
+                  const live = liveSessions.find((s) => s.courseId === c.courseId && s.open);
+                  if (!live) return null;
+                  return (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-danger/30 bg-danger/[0.05] px-3 py-2.5">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-danger">
+                        <span className="size-1.5 animate-pulse rounded-full bg-danger" /> LIVE
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        iconLeft={<Link2 className="h-4 w-4" />}
+                        onClick={() => {
+                          setLiveEditForm({
+                            meetLink: live.meetLink,
+                            topic: live.topic ?? "",
+                            assignmentPrompt: live.assignmentPrompt ?? "",
+                          });
+                          setLiveEdit({ course: c, session: live });
+                        }}
+                      >
+                        {t("লিংক/টপিক ঠিক করুন", "Fix link / topic")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        iconLeft={<ClipboardList className="h-4 w-4" />}
+                        onClick={() => setMarkOpen({ course: c, session: { _id: live._id, topic: live.topic } })}
+                      >
+                        {t("মার্ক দিন", "Mark assignments")}
+                      </Button>
+                    </div>
+                  );
+                })()}
 
                 {/* ── pending logs for this course ── */}
                 {coursePending.length > 0 && (
@@ -632,9 +1054,18 @@ export default function AdminCoursesPage() {
                 {/* ── class log list ── */}
                 <div className="mt-4 border-t border-text/10 pt-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-text/50">
+                    <button
+                      type="button"
+                      onClick={() => setLogOpen((prev) => ({ ...prev, [c.courseId]: !prev[c.courseId] }))}
+                      className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-text/50 transition-colors hover:text-text"
+                      aria-expanded={!!logOpen[c.courseId]}
+                    >
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform ${logOpen[c.courseId] ? "" : "-rotate-90"}`}
+                      />
                       {t("ক্লাস লগ", "Class logs")}
-                    </p>
+                      <span className="text-text/40">({c.classes?.length ?? 0})</span>
+                    </button>
                     <Button
                       size="sm"
                       variant="secondary"
@@ -645,45 +1076,51 @@ export default function AdminCoursesPage() {
                     </Button>
                   </div>
 
-                  {c.classes && c.classes.length > 0 ? (
-                    <ul className="mt-2.5 space-y-1.5">
-                      {c.classes.map((cls, i) => (
-                        <li
-                          key={`${cls.classId}-${i}`}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-text/10 bg-text/2 px-3 py-2 text-xs"
-                        >
-                          <span className="min-w-0 truncate">
-                            <span className="font-mono font-semibold text-text/70">{cls.classId}</span> ·{" "}
-                            {cls.contentCovered?.summary} ·{" "}
-                            <span className="tabular-nums">
-                              {cls.date} · {(cls.presentStudents ?? []).length}
+                  {logOpen[c.courseId] ? (
+                    c.classes && c.classes.length > 0 ? (
+                      <ul className="mt-2.5 space-y-1.5">
+                        {c.classes.map((cls, i) => (
+                          <li
+                            key={`${cls.classId}-${i}`}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-text/10 bg-text/2 px-3 py-2 text-xs"
+                          >
+                            <span className="min-w-0 truncate">
+                              <span className="font-mono font-semibold text-text/70">{cls.classId}</span> ·{" "}
+                              {cls.contentCovered?.summary} ·{" "}
+                              <span className="tabular-nums">
+                                {cls.date} · {(cls.presentStudents ?? []).length}
+                              </span>
                             </span>
-                          </span>
-                          <span className="flex shrink-0 gap-1">
-                            <IconButton
-                              label={t("সম্পাদনা", "Edit")}
-                              size="sm"
-                              className="h-7 w-7"
-                              onClick={() => openClassEdit(c.courseId, cls)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </IconButton>
-                            <IconButton
-                              label={t("মুছুন", "Delete")}
-                              size="sm"
-                              className="h-7 w-7"
-                              disabled={busyLog === `${c.courseId}-${cls.classId}`}
-                              onClick={() => removeClass(c.courseId, cls.classId)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </IconButton>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                            <span className="flex shrink-0 gap-1">
+                              <IconButton
+                                label={t("সম্পাদনা", "Edit")}
+                                size="sm"
+                                className="h-7 w-7"
+                                onClick={() => openClassEdit(c.courseId, cls)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </IconButton>
+                              <IconButton
+                                label={t("মুছুন", "Delete")}
+                                size="sm"
+                                className="h-7 w-7"
+                                disabled={busyLog === `${c.courseId}-${cls.classId}`}
+                                onClick={() => removeClass(c.courseId, cls.classId)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </IconButton>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2.5 text-xs text-text/45">
+                        {t("এখনো কোনো ক্লাস লগ নেই।", "No class logs yet.")}
+                      </p>
+                    )
                   ) : (
-                    <p className="mt-2.5 text-xs text-text/45">
-                      {t("এখনো কোনো ক্লাস লগ নেই।", "No class logs yet.")}
+                    <p className="mt-2 text-xs text-text/40">
+                      {t("ক্লাস লগ দেখতে ক্লিক করুন।", "Click to view class logs.")}
                     </p>
                   )}
                 </div>
@@ -824,6 +1261,135 @@ export default function AdminCoursesPage() {
                 onChange={(e) => setLiveForm({ ...liveForm, time: e.target.value })}
               />
             </div>
+            <Field
+              label={t("ক্লাসের টপিক", "Class topic")}
+              hint={t("যেমন: লেসন ৩ — ব্যক্তিগত পরিচয়", "e.g. Lesson 3 — self introduction")}
+              value={liveForm.topic}
+              onChange={(e) => setLiveForm({ ...liveForm, topic: e.target.value })}
+            />
+            <TextArea
+              label={t("অ্যাসাইনমেন্ট নির্দেশনা", "Assignment prompt")}
+              hint={t("শিক্ষার্থীরা এটি করে ক্লাসে যোগ দেবে (ঐচ্ছিক)", "Students prepare this before class (optional)")}
+              value={liveForm.assignmentPrompt}
+              onChange={(e) => setLiveForm({ ...liveForm, assignmentPrompt: e.target.value })}
+            />
+          </form>
+        )}
+      </Dialog>
+
+      {/* ── end-class dialog (fill class log, then close) ── */}
+      <Dialog
+        open={closeOpen !== null}
+        onClose={() => setCloseOpen(null)}
+        title={t("ক্লাস শেষ করুন — ক্লাস লগ পূরণ করে সংরক্ষণ করুন", "End class — fill the class log & save")}
+        description={
+          closeOpen
+            ? `${closeOpen.course.courseName} (${closeOpen.course.courseId}) · ${t(
+                "উপস্থিত তালিকা হাজিরা থেকে আগেই বসে আছে, সম্পাদনা করতে পারেন", 
+                "present list is pre-filled from attendance — you can adjust it",
+              )}`
+            : undefined
+        }
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setCloseOpen(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" variant="danger" loading={closeBusy} onClick={saveClose} iconLeft={<Radio className="h-4 w-4" />}>
+              {t("সংরক্ষণ ও ক্লাস বন্ধ", "Save & end class")}
+            </Button>
+          </>
+        }
+      >
+        {closeOpen && (
+          <form onSubmit={saveClose} className="space-y-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                type="date"
+                label={t("তারিখ", "Date")}
+                value={closeForm.date}
+                onChange={(e) => setCloseForm({ ...closeForm, date: e.target.value })}
+              />
+              <Field
+                label={t("সময়", "Time")}
+                hint={t("যেমন: 9:00 PM - 10:10 PM", "e.g. 9:00 PM - 10:10 PM")}
+                value={closeForm.time}
+                onChange={(e) => setCloseForm({ ...closeForm, time: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Field type="number" min={1} label={t("পাঠ থেকে", "From lesson")} value={closeForm.fromLesson} onChange={(e) => setCloseForm({ ...closeForm, fromLesson: Number(e.target.value) })} className="tabular-nums" />
+              <Field type="number" min={1} label={t("টেক্সট থেকে", "From text")} value={closeForm.fromText} onChange={(e) => setCloseForm({ ...closeForm, fromText: Number(e.target.value) })} className="tabular-nums" />
+              <Field type="number" min={1} label={t("পাঠ পর্যন্ত", "To lesson")} value={closeForm.toLesson} onChange={(e) => setCloseForm({ ...closeForm, toLesson: Number(e.target.value) })} className="tabular-nums" />
+              <Field type="number" min={1} label={t("টেক্সট পর্যন্ত", "To text")} value={closeForm.toText} onChange={(e) => setCloseForm({ ...closeForm, toText: Number(e.target.value) })} className="tabular-nums" />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] font-semibold text-text">
+                  {t("উপস্থিত শিক্ষার্থী", "Present students")}
+                  <span className="ml-2 text-xs tabular-nums text-text/50">
+                    {closeForm.presentStudents.length} / {enrolledFor(closeOpen.course.courseId).length}
+                  </span>
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const all = enrolledFor(closeOpen.course.courseId).map((s) => String(s.rollNumber).trim());
+                    setCloseForm({
+                      ...closeForm,
+                      presentStudents:
+                        closeForm.presentStudents.length === all.length ? [] : all,
+                    });
+                  }}
+                >
+                  {closeForm.presentStudents.length === enrolledFor(closeOpen.course.courseId).length
+                    ? t("সব বাদ", "Clear all")
+                    : t("সবাই উপস্থিত", "All present")}
+                </Button>
+              </div>
+              <ul className="mt-3 grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                {enrolledFor(closeOpen.course.courseId).map((s) => {
+                  const roll = String(s.rollNumber).trim();
+                  const isPresent = closeForm.presentStudents.includes(roll);
+                  return (
+                    <li key={roll}>
+                      <button
+                        type="button"
+                        aria-pressed={isPresent}
+                        onClick={() =>
+                          setCloseForm({
+                            ...closeForm,
+                            presentStudents: isPresent
+                              ? closeForm.presentStudents.filter((r) => r !== roll)
+                              : [...closeForm.presentStudents, roll],
+                          })
+                        }
+                        className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                          isPresent ? "border-ok/40 bg-ok-surface" : "border-text/12 bg-card hover:border-text/25"
+                        }`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-[11px] tabular-nums text-text/45">#{roll}</span>
+                          <span className="block truncate font-semibold text-text">{s.nameEnglish}</span>
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            isPresent ? "border-ok bg-ok text-card" : "border-text/25 text-transparent"
+                          }`}
+                        >
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </form>
         )}
       </Dialog>
@@ -958,6 +1524,421 @@ export default function AdminCoursesPage() {
                 </ul>
               )}
             </div>
+          </form>
+        )}
+      </Dialog>
+
+      {/* ── topics list dialog ── */}
+      <Dialog
+        open={topicsOpen !== null}
+        onClose={() => setTopicsOpen(null)}
+        title={t("টপিকসমূহ", "Topics")}
+        description={topicsOpen ? `${topicsOpen.courseName} (${topicsOpen.courseId})` : undefined}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setTopicsOpen(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" onClick={saveTopics}>
+              {t("সংরক্ষণ", "Save")}
+            </Button>
+          </>
+        }
+      >
+        {topicsOpen && (
+          <form onSubmit={saveTopics} className="space-y-3">
+            <p className="text-xs text-text/60">
+              {t(
+                "অ্যাডমিন টপিক যোগ, এডিট ও ডিলিট করতে পারবেন — শিক্ষার্থীরা এগুলো পড়ে ক্লাসে যোগ দেবে।",
+                "Admin can add, edit and delete topics — students study them before joining class.",
+              )}
+            </p>
+            {topicsForm.map((tp, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Field
+                    label={`${t("টপিক", "Topic")} #${i + 1}`}
+                    value={tp}
+                    onChange={(e) =>
+                      setTopicsForm((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))
+                    }
+                  />
+                </div>
+                <IconButton
+                  label={t("মুছুন", "Delete")}
+                  size="sm"
+                  onClick={() => setTopicsForm((prev) => prev.filter((_, j) => j !== i))}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </IconButton>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              iconLeft={<Plus className="h-4 w-4" />}
+              onClick={() => setTopicsForm((prev) => [...prev, ""])}
+            >
+              {t("নতুন টপিক", "New topic")}
+            </Button>
+          </form>
+        )}
+      </Dialog>
+
+      {/* ── lessons manager dialog ── */}
+      <Dialog
+        open={lessonsOpen !== null}
+        onClose={() => setLessonsOpen(null)}
+        title={t("পাঠসমূহ (সিলেবাস)", "Lessons (syllabus)")}
+        description={lessonsOpen ? `${lessonsOpen.courseName} (${lessonsOpen.courseId})` : undefined}
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setLessonsOpen(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" onClick={saveLessons}>
+              {t("সংরক্ষণ", "Save")}
+            </Button>
+          </>
+        }
+      >
+        {lessonsOpen && (
+          <form onSubmit={saveLessons} className="space-y-3">
+            {lessonsForm.map((l, i) => (
+              <div key={i} className="rounded-xl border border-text/10 bg-card p-3">
+                <div className="flex items-center gap-2">
+                  <Field
+                    type="number"
+                    min={1}
+                    label={t("নম্বর", "No.")}
+                    value={l.lessonNumber}
+                    onChange={(e) =>
+                      setLessonsForm((prev) => prev.map((x, j) => (j === i ? { ...x, lessonNumber: Number(e.target.value) } : x)))
+                    }
+                    className="w-24 tabular-nums"
+                  />
+                  <div className="flex-1">
+                    <Field
+                      label={t("শিরোনাম", "Title")}
+                      value={l.title}
+                      onChange={(e) =>
+                        setLessonsForm((prev) => prev.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+                  <IconButton
+                    label={t("মুছুন", "Delete")}
+                    size="sm"
+                    onClick={() => setLessonsForm((prev) => prev.filter((_, j) => j !== i))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconButton>
+                </div>
+                <div className="mt-2">
+                  <TextArea
+                    label={t("বিবরণ (ঐচ্ছিক)", "Description (optional)")}
+                    value={l.description}
+                    onChange={(e) =>
+                      setLessonsForm((prev) => prev.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              iconLeft={<Plus className="h-4 w-4" />}
+              onClick={() =>
+                setLessonsForm((prev) => [
+                  ...prev,
+                  { lessonNumber: (prev[prev.length - 1]?.lessonNumber ?? 0) + 1, title: "", description: "" },
+                ])
+              }
+            >
+              {t("নতুন পাঠ", "New lesson")}
+            </Button>
+          </form>
+        )}
+      </Dialog>
+
+      {/* ── registration dialog ── */}
+      <Dialog
+        open={regOpen !== null}
+        onClose={() => setRegOpen(null)}
+        title={t("রেজিস্ট্রেশন নিয়ন্ত্রণ", "Registration control")}
+        description={regOpen ? `${regOpen.courseName} (${regOpen.courseId})` : undefined}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setRegOpen(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button
+              size="sm"
+              variant={regOpen?.registrationOpen ? "danger" : "secondary"}
+              onClick={saveRegistration}
+            >
+              {regOpen?.registrationOpen
+                ? t("রেজিস্ট্রেশন বন্ধ করুন", "Turn off registration")
+                : t("রেজিস্ট্রেশন চালু করুন", "Turn on registration")}
+            </Button>
+          </>
+        }
+      >
+        {regOpen && (
+          <div className="space-y-4">
+            <div
+              className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
+                regOpen.registrationOpen ? "border-ok/40 bg-ok-surface" : "border-text/15 bg-card"
+              }`}
+            >
+              <span className="text-sm font-semibold text-text">
+                {t("রেজিস্ট্রেশন", "Registration")}
+              </span>
+              <span className={`text-sm font-bold ${regOpen.registrationOpen ? "text-ok" : "text-text/55"}`}>
+                {regOpen.registrationOpen ? t("চালু", "ON") : t("বন্ধ", "OFF")}
+              </span>
+            </div>
+            <Field
+              type="date"
+              label={t("রেজিস্ট্রেশন শেষ তারিখ (ঐচ্ছিক)", "Registration last date (optional)")}
+              value={regOpen.registrationLastDate ?? ""}
+              onChange={(e) => setRegOpen({ ...regOpen, registrationLastDate: e.target.value })}
+              hint={t("খালি রাখলে শেষ তারিখ থাকবে না।", "Leave blank for no deadline.")}
+            />
+            <p className="text-xs text-text/55">
+              {t(
+                "চালু করলে একাডেমি পেজে কোর্সটি ভর্তির জন্য দেখানো হবে।",
+                "When on, the course is shown for enrolment on the academy page.",
+              )}
+            </p>
+          </div>
+        )}
+      </Dialog>
+
+      {/* ── study groups dialog ── */}
+      <Dialog
+        open={groupsOpen !== null}
+        onClose={() => setGroupsOpen(null)}
+        title={t("স্টাডি গ্রুপ (পরবর্তী ক্লাসের জোড়া)", "Study groups (next-class pairs)")}
+        description={groupsOpen ? `${groupsOpen.courseName} (${groupsOpen.courseId})` : undefined}
+        size="lg"
+        footer={
+          <Button variant="secondary" size="sm" onClick={() => setGroupsOpen(null)}>
+            {t("বন্ধ করুন", "Close")}
+          </Button>
+        }
+      >
+        {groupsOpen && (
+          <div className="space-y-4">
+            <form onSubmit={saveGroup} className="space-y-3 rounded-xl border border-text/10 bg-card p-4">
+              <Field
+                label={t("গ্রুপের নাম (ঐচ্ছিক)", "Group name (optional)")}
+                value={groupLabel}
+                onChange={(e) => setGroupLabel(e.target.value)}
+                placeholder={t("যেমন: গ্রুপ আ", "e.g. Group A")}
+              />
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-text/45">
+                  {t("সদস্য সিলেক্ট করুন (নাম)", "Select members by name")} · {groupMembers.length}
+                </p>
+                <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-text/10 bg-background p-2">
+                  {enrolledFor(groupsOpen.courseId).length === 0 ? (
+                    <p className="px-2 py-3 text-xs text-text/45">
+                      {t("এই কোর্সে অনুমোদিত শিক্ষার্থী নেই।", "No approved students in this course.")}
+                    </p>
+                  ) : (
+                    enrolledFor(groupsOpen.courseId).map((s) => {
+                      const roll = Number(s.rollNumber);
+                      const checked = groupMembers.includes(roll);
+                      return (
+                        <label
+                          key={roll}
+                          className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors ${
+                            checked ? "bg-secondary/10 text-text" : "hover:bg-text/5 text-text/80"
+                          }`}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="font-mono text-[11px] text-text/45">#{roll}</span>
+                            <span className="truncate font-semibold">{s.nameEnglish}</span>
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) =>
+                              setGroupMembers((prev) =>
+                                e.target.checked ? [...prev, roll] : prev.filter((r) => r !== roll),
+                              )
+                            }
+                            className="h-4 w-4 accent-secondary"
+                          />
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                {editingGroupId && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mr-auto"
+                    onClick={() => {
+                      setEditingGroupId(null);
+                      setGroupLabel("");
+                      setGroupMembers([]);
+                    }}
+                  >
+                    {t("বাতিল", "Cancel")}
+                  </Button>
+                )}
+                <Button type="submit" size="sm" loading={groupsBusy} iconLeft={<Plus className="h-4 w-4" />}>
+                  {editingGroupId ? t("আপডেট করুন", "Update") : t("গ্রুপ যোগ করুন", "Add group")}
+                </Button>
+              </div>
+            </form>
+
+           <div>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-text/45">
+                {t("তৈরি করা গ্রুপসমূহ", "Created groups")} ({groups.length})
+              </p>
+              {groupsBusy && groups.length === 0 ? (
+                <p className="text-xs text-text/50">{t("লোড হচ্ছে…", "Loading…")}</p>
+              ) : groups.length === 0 ? (
+                <p className="text-xs text-text/45">{t("কোনো গ্রুপ নেই।", "No groups yet.")}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {groups.map((g) => (
+                    <li
+                      key={g._id}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-text/10 bg-text/2 px-3 py-2 text-xs"
+                    >
+                      <span className="min-w-0">
+                        <span className="font-semibold text-text">{g.label || t("গ্রুপ", "Group")}</span>
+                        <span className="ml-2 text-text/55">
+                          {g.memberRolls.map((r) => `#${r}`).join(", ")}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 gap-1">
+                        <IconButton label={t("এডিট", "Edit")} size="sm" onClick={() => editGroup(g)}>
+                          <Pencil className="h-4 w-4" />
+                        </IconButton>
+                        <IconButton label={t("মুছুন", "Delete")} size="sm" onClick={() => deleteGroup(g._id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </IconButton>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </Dialog>
+
+      {/* ── mark assignments dialog ── */}
+      <Dialog
+        open={markOpen !== null}
+        onClose={() => setMarkOpen(null)}
+        title={t("অ্যাসাইনমেন্ট মার্ক", "Mark assignments")}
+        description={markOpen ? `${markOpen.course.courseName} · ${markOpen.session.topic || ""}` : undefined}
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setMarkOpen(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" loading={markBusy} onClick={saveMarks}>
+              {t("মার্ক সংরক্ষণ", "Save marks")}
+            </Button>
+          </>
+        }
+      >
+        {markOpen && (
+          <form onSubmit={saveMarks} className="space-y-2">
+            <p className="text-xs text-text/60">
+              {t(
+                "প্রতি শিক্ষার্থীর রোলে মার্ক দিন — সংরক্ষণ করলে সবাই দেখতে পাবে।",
+                "Mark each student by roll — everyone can view marks after saving.",
+              )}
+            </p>
+            <ul className="max-h-[50vh] space-y-1.5 overflow-y-auto pr-1">
+              {enrolledFor(markOpen.course.courseId).map((s) => {
+                const roll = String(s.rollNumber).trim();
+                const m = markMap[roll] ?? { mark: "", feedback: "" };
+                return (
+                  <li key={roll} className="flex flex-wrap items-center gap-2 rounded-xl border border-text/10 bg-card px-3 py-2">
+                    <span className="flex min-w-[7rem] items-center gap-2">
+                      <span className="font-mono text-xs text-text/45">#{roll}</span>
+                      <span className="truncate text-sm font-semibold text-text">{s.nameEnglish}</span>
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder={t("মার্ক", "Mark")}
+                      value={m.mark}
+                      onChange={(e) => setMarkMap((prev) => ({ ...prev, [roll]: { ...m, mark: e.target.value } }))}
+                      className="w-24 rounded-lg border border-text/20 bg-background px-3 py-1.5 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+                    />
+                    <input
+                      type="text"
+                      placeholder={t("মন্তব্য (ঐচ্ছিক)", "Feedback (optional)")}
+                      value={m.feedback}
+                      onChange={(e) => setMarkMap((prev) => ({ ...prev, [roll]: { ...m, feedback: e.target.value } }))}
+                      className="min-w-0 flex-1 rounded-lg border border-text/20 bg-background px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </form>
+        )}
+      </Dialog>
+
+      {/* ── edit live class (fix meet link / topic / assignment) ── */}
+      <Dialog
+        open={liveEdit !== null}
+        onClose={() => setLiveEdit(null)}
+        title={t("লাইভ ক্লাস ঠিক করুন", "Fix live class")}
+        description={liveEdit ? `${liveEdit.course.courseName} (${liveEdit.course.courseId})` : undefined}
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setLiveEdit(null)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button size="sm" loading={liveEditBusy} onClick={saveLiveMeta}>
+              {t("আপডেট করুন", "Update")}
+            </Button>
+          </>
+        }
+      >
+        {liveEdit && (
+          <form onSubmit={saveLiveMeta} className="space-y-4">
+            <Field
+              label={t("Google Meet লিংক", "Google Meet link")}
+              required
+              value={liveEditForm.meetLink}
+              onChange={(e) => setLiveEditForm({ ...liveEditForm, meetLink: e.target.value })}
+              hint={t("ভুল হলে এখান থেকে ঠিক করুন।", "Fix a wrong link here.")}
+            />
+            <Field
+              label={t("ক্লাসের টপিক", "Class topic")}
+              value={liveEditForm.topic}
+              onChange={(e) => setLiveEditForm({ ...liveEditForm, topic: e.target.value })}
+            />
+            <TextArea
+              label={t("অ্যাসাইনমেন্ট নির্দেশনা", "Assignment prompt")}
+              value={liveEditForm.assignmentPrompt}
+              onChange={(e) => setLiveEditForm({ ...liveEditForm, assignmentPrompt: e.target.value })}
+            />
           </form>
         )}
       </Dialog>

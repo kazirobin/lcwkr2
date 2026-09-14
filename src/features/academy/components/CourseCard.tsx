@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, GraduationCap, Radio } from "lucide-react";
 import { ICourse } from "@/features/academy/types";
 import { useLanguage } from "@/i18n";
 import { Card, ProgressBar, StatusPill } from "@/components/ui";
 
-export default function CourseCard({ course }: { course: ICourse }) {
+export default function CourseCard({
+  course,
+  live = false,
+}: {
+  course: ICourse;
+  live?: boolean;
+}) {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
@@ -15,15 +21,36 @@ export default function CourseCard({ course }: { course: ICourse }) {
   const enrolled = course.enrolledStudentRolls?.length ?? 0;
   const running = course.status === "Running";
 
+  const regOpen =
+    course.registrationOpen === true &&
+    (!course.registrationLastDate || course.registrationLastDate >= new Date().toISOString().slice(0, 10));
+
   return (
     <Card interactive className="flex flex-col p-5">
       <div className="flex items-start justify-between gap-2">
         <span className="rounded-md border border-text/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-text/70">
           {course.courseId}
         </span>
-        <StatusPill tone={running ? "done" : "pending"}>
-          {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
-        </StatusPill>
+        <div className="flex items-center gap-2">
+          {live && (
+            <Link
+              href={`/academy/courses/${course.courseId}#attendance`}
+              className="inline-flex items-center gap-1 rounded-full bg-danger px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white transition-transform hover:-translate-y-0.5"
+            >
+              <Radio className="h-3 w-3" />
+              {t("লাইভ", "Live")}
+            </Link>
+          )}
+          {regOpen && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-ok px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+              <GraduationCap className="h-3 w-3" />
+              {t("ভর্তি চলছে", "Admitting")}
+            </span>
+          )}
+          <StatusPill tone={running ? "done" : "pending"}>
+            {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
+          </StatusPill>
+        </div>
       </div>
 
       <h3 className="mt-3 text-base font-bold text-text">{course.courseName}</h3>
@@ -31,6 +58,16 @@ export default function CourseCard({ course }: { course: ICourse }) {
         {course.targetLevel} · {t(`${course.totalLessons} পাঠ`, `${course.totalLessons} lessons`)}
         {enrolled > 0 ? t(` · ${enrolled} জন ভর্তি`, ` · ${enrolled} enrolled`) : ""}
       </p>
+
+      {(() => {
+        const latest = course.nextClassTopic || (course.topics && course.topics.length ? course.topics[course.topics.length - 1] : "");
+        return latest ? (
+          <p className="mt-2 rounded-lg bg-secondary/[0.07] px-3 py-2 text-xs font-medium text-secondary">
+            {t("পরবর্তী টপিক:", "Next topic:")}{" "}
+            <span className="font-semibold">{latest}</span>
+          </p>
+        ) : null;
+      })()}
 
       <div className="mt-4 space-y-1.5">
         <div className="flex items-center justify-between text-xs">
@@ -41,6 +78,16 @@ export default function CourseCard({ course }: { course: ICourse }) {
         </div>
         <ProgressBar value={done} max={planned} label={t("ক্লাস সম্পন্ন", "Classes completed")} />
       </div>
+
+      {regOpen && (
+        <Link
+          href={`/academy/admission?course=${encodeURIComponent(course.courseId)}`}
+          className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+        >
+          {t("এখন ভর্তি করুন", "Apply now")}
+          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      )}
 
       <Link
         href={`/academy/courses/${course.courseId}`}

@@ -5,6 +5,7 @@ import {
   closeLiveClass,
   closeLiveClassAndMerge,
   deleteLiveClass,
+  setLiveMeta,
 } from "@/features/academy/server/live";
 
 /** GET /api/academy/live — every live-class session (open ones first). */
@@ -27,7 +28,7 @@ export async function GET() {
  */
 export async function POST(req: Request) {
   try {
-    const { action, courseId, meetLink, date, time, id, adminPasscode, contentCovered } = await req.json();
+    const { action, courseId, meetLink, date, time, id, adminPasscode, contentCovered, topic, assignmentPrompt, newMeetLink, presentStudents, absentStudents } = await req.json();
 
     if (
       adminPasscode !== process.env.ADMIN_PASSCODE &&
@@ -41,7 +42,25 @@ export async function POST(req: Request) {
         if (!courseId || !meetLink) {
           return NextResponse.json({ error: "courseId and meetLink are required." }, { status: 400 });
         }
-        const session = await openLiveClass(courseId, meetLink, date || new Date().toISOString().slice(0, 10), time);
+        const session = await openLiveClass(
+          courseId,
+          meetLink,
+          date || new Date().toISOString().slice(0, 10),
+          time,
+          topic,
+          assignmentPrompt,
+        );
+        return NextResponse.json({ success: true, session }, { status: 200 });
+      }
+      case "set-meta": {
+        if (!id) {
+          return NextResponse.json({ error: "id is required." }, { status: 400 });
+        }
+        const session = await setLiveMeta(id, {
+          meetLink: newMeetLink,
+          topic,
+          assignmentPrompt,
+        });
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "close": {
@@ -49,19 +68,16 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "close-merge": {
-        const session = await closeLiveClassAndMerge(
-          id,
-          contentCovered && typeof contentCovered === "object"
-            ? {
-                date: contentCovered.date,
-                time: contentCovered.time,
-                fromLesson: contentCovered.fromLesson,
-                fromText: contentCovered.fromText,
-                toLesson: contentCovered.toLesson,
-                toText: contentCovered.toText,
-              }
-            : undefined,
-        );
+        const session = await closeLiveClassAndMerge(id, {
+          date: contentCovered?.date,
+          time: contentCovered?.time,
+          fromLesson: contentCovered?.fromLesson,
+          fromText: contentCovered?.fromText,
+          toLesson: contentCovered?.toLesson,
+          toText: contentCovered?.toText,
+          presentStudents,
+          absentStudents,
+        });
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "delete": {

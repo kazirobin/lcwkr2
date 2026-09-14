@@ -1,3 +1,22 @@
+export interface ILesson {
+  lessonNumber: number;
+  title: string;
+  description?: string;
+}
+
+export interface IAssignmentSubmission {
+  rollNumber: number;
+  content: string;
+  submittedAt: string;
+}
+
+export interface IAssignmentMark {
+  rollNumber: number;
+  mark: number;
+  feedback?: string;
+  markedAt: string;
+}
+
 export interface IContentCovered {
   summary: string;
   fromLesson: number;
@@ -44,6 +63,12 @@ export interface ICourse {
   status: "Running" | "Coming Soon" | "Completed";
   startDate?: string;
   nextBatchRegistrationDate?: string;
+  // ── new professional LMS fields ──
+  lessons?: ILesson[];
+  nextClassTopic?: string;
+  topics?: string[];
+  registrationOpen?: boolean;
+  registrationLastDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
   completedClassesCount: number;
@@ -61,6 +86,28 @@ export interface IStudent {
   location: string;
   avatarUrl?: string;
   enrolledCourseIds: string[];
+}
+
+export interface IStudyGroup {
+  _id?: string;
+  courseId: string;
+  label: string;
+  memberRolls: number[];
+  createdAt: string;
+}
+
+export interface ILiveClassView {
+  _id: string;
+  courseId: string;
+  meetLink: string;
+  topic?: string;
+  assignmentPrompt?: string;
+  date: string;
+  time?: string;
+  open: boolean;
+  attendance: { rollNumber: number; name: string }[];
+  submissions: IAssignmentSubmission[];
+  marks: IAssignmentMark[];
 }
 
 export interface IAcademyData {

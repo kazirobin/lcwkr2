@@ -32,6 +32,45 @@ export async function createClassLog(input: {
   });
 }
 
+/**
+ * Admin adds a completed class-log entry straight into the course (no pending
+ * approval flow) — used by the public course page's "Add class log" control.
+ */
+export async function addClassLogToCourse(
+  courseId: string,
+  input: {
+    date: unknown;
+    time: unknown;
+    contentCovered: unknown;
+    presentStudents: unknown;
+    absentStudents: unknown;
+  },
+) {
+  await connectDB();
+
+  const course = await Course.findOne({ courseId });
+  if (!course) throw new Error("Course not found");
+
+  const nextIndex = (course.classes?.length || 0) + 1;
+  const cleanCourseCode = courseId.replace(/[^a-zA-Z0-9]/g, "");
+  const classId = `CLS-${cleanCourseCode}-${String(nextIndex).padStart(2, "0")}`;
+
+  course.classes.push({
+    classId,
+    date: input.date,
+    time: input.time,
+    status: "Completed",
+    contentCovered: input.contentCovered,
+    presentStudents: input.presentStudents,
+    absentStudents: input.absentStudents,
+  });
+  course.completedClassesCount = course.classes.length;
+  course.markModified("classes");
+  await course.save();
+
+  return course;
+}
+
 export async function listPendingClasses() {
   await connectDB();
   return ClassLog.find({ approvalStatus: "Pending" }).sort({ createdAt: -1 });

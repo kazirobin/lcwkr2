@@ -22,6 +22,7 @@ export default function CoursesListPage() {
   );
 
   const [courses, setCourses] = useState<ICourse[]>([]);
+  const [liveCourseIds, setLiveCourseIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCourses = useCallback(async () => {
@@ -30,6 +31,15 @@ export default function CoursesListPage() {
       const res = await fetch("/api/academy/courses", { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.courses)) setCourses(data.courses);
+
+      const liveRes = await fetch("/api/academy/live", { cache: "no-store" });
+      const liveData = await liveRes.json();
+      if (liveData.success && Array.isArray(liveData.sessions)) {
+        const live = (liveData.sessions as { courseId: string; open: boolean }[]).filter(
+          (s) => s.open,
+        );
+        setLiveCourseIds(live.map((s) => s.courseId.toLowerCase()));
+      }
     } catch (err) {
       console.error("Failed to fetch courses:", err);
     } finally {
@@ -87,7 +97,11 @@ export default function CoursesListPage() {
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => (
-              <CourseCard key={course._id || course.courseId} course={course} />
+              <CourseCard
+                key={course._id || course.courseId}
+                course={course}
+                live={liveCourseIds.includes(course.courseId.toLowerCase())}
+              />
             ))}
           </div>
         )}

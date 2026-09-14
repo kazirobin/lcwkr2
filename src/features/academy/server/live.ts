@@ -11,15 +11,32 @@ export interface ILiveAttendance {
   at: Date;
 }
 
+export interface ILiveSubmission {
+  rollNumber: number;
+  content: string;
+  submittedAt: Date;
+}
+
+export interface ILiveMark {
+  rollNumber: number;
+  mark: number;
+  feedback: string;
+  markedAt: Date;
+}
+
 export interface ILiveClass extends Document {
   courseId: string;
   meetLink: string;
+  topic?: string;
+  assignmentPrompt?: string;
   date: string;
   time: string;
   open: boolean;
   openedAt: Date;
   closedAt: Date | null;
   attendance: ILiveAttendance[];
+  submissions: ILiveSubmission[];
+  marks: ILiveMark[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +45,8 @@ const LiveClassSchema = new Schema<ILiveClass>(
   {
     courseId: { type: String, required: true, index: true },
     meetLink: { type: String, required: true, trim: true },
+    topic: { type: String, default: "" },
+    assignmentPrompt: { type: String, default: "" },
     date: { type: String, required: true },
     time: { type: String, default: "" },
     open: { type: Boolean, default: true, index: true },
@@ -38,6 +57,21 @@ const LiveClassSchema = new Schema<ILiveClass>(
         rollNumber: { type: Number, required: true },
         name: { type: String, default: "" },
         at: { type: Date, default: Date.now },
+      },
+    ],
+    submissions: [
+      {
+        rollNumber: { type: Number, required: true },
+        content: { type: String, default: "" },
+        submittedAt: { type: Date, default: Date.now },
+      },
+    ],
+    marks: [
+      {
+        rollNumber: { type: Number, required: true },
+        mark: { type: Number, default: 0 },
+        feedback: { type: String, default: "" },
+        markedAt: { type: Date, default: Date.now },
       },
     ],
   },
@@ -55,7 +89,14 @@ export async function listLiveClasses() {
 }
 
 /** Admin starts a class for a course (only one open per course). */
-export async function openLiveClass(courseId: string, meetLink: string, date: string, time?: string) {
+export async function openLiveClass(
+  courseId: string,
+  meetLink: string,
+  date: string,
+  time?: string,
+  topic?: string,
+  assignmentPrompt?: string,
+) {
   await connectDB();
   const already = await LiveClassModel.findOne({ courseId, open: true });
   if (already) {
@@ -64,11 +105,87 @@ export async function openLiveClass(courseId: string, meetLink: string, date: st
   const created = await LiveClassModel.create({
     courseId,
     meetLink: meetLink.trim(),
+    topic: (topic ?? "").trim(),
+    assignmentPrompt: (assignmentPrompt ?? "").trim(),
     date,
     time: time ?? "",
     open: true,
   });
   return { ...created.toObject(), _id: created._id.toString() };
+}
+
+/** Admin updates the meet link / topic / assignment prompt of a class. */
+export async function setLiveMeta(
+  id: string,
+  meta: { meetLink?: string; topic?: string; assignmentPrompt?: string },
+) {
+  await connectDB();
+  const updated = await LiveClassModel.findByIdAndUpdate(
+    id,
+    {
+      ...(meta.meetLink !== undefined ? { meetLink: meta.meetLink.trim() } : {}),
+      ...(meta.topic !== undefined ? { topic: meta.topic.trim() } : {}),
+      ...(meta.assignmentPrompt !== undefined
+        ? { assignmentPrompt: meta.assignmentPrompt.trim() }
+        : {}),
+    },
+    { new: true },
+  ).lean();
+  if (!updated) throw new Error("Live class not found.");
+  return { ...updated, _id: updated._id.toString() };
+}
+
+/**
+ * Student submits an assignment (text or link) for this class — roll-based, no
+ * login. Re-submitting overwrites the previous submission.
+ */
+export async function submitAssignment(
+  liveClassId: string,
+  rollNumber: number,
+  content: string,
+) {
+  await connectDB();
+  const session = await LiveClassModel.findById(liveClassId);
+  if (!session) throw new Error("Class not found.");
+  const idx = (session.submissions ?? []).findIndex((s) => s.rollNumber === rollNumber);
+  if (idx >= 0) {
+    session.submissions[idx].content = content;
+    session.submissions[idx].submittedAt = new Date();
+  } else {
+    session.submissions.push({ rollNumber, content, submittedAt: new Date() });
+  }
+  await session.save();
+  return { ...session.toObject(), _id: session._id.toString() };
+}
+
+/**
+ * Admin marks assignments for many students at once, keyed by roll number.
+ * Marks are public (everyone can view them per the LMS requirement).
+ */
+export async function markAssignments(
+  liveClassId: string,
+  marks: { rollNumber: number; mark: number; feedback?: string }[],
+) {
+  await connectDB();
+  const session = await LiveClassModel.findById(liveClassId);
+  if (!session) throw new Error("Class not found.");
+  for (const m of marks) {
+    const idx = (session.marks ?? []).findIndex((x) => x.rollNumber === m.rollNumber);
+    if (idx >= 0) {
+      session.marks[idx].mark = m.mark;
+      session.marks[idx].feedback = m.feedback ?? session.marks[idx].feedback ?? "";
+      session.marks[idx].markedAt = new Date();
+    } else {
+      session.marks.push({
+        rollNumber: m.rollNumber,
+        mark: m.mark,
+        feedback: m.feedback ?? "",
+        markedAt: new Date(),
+      });
+    }
+  }
+  await session.save();
+  return { ...session.toObject(), _id: session._id.toString() };
 }
 
 /** Admin ends the class. */
@@ -123,6 +240,22 @@ export async function markLiveAttendance(courseId: string, rollNumber: number) {
 }
 
 /**
+ * Student/admin unmarks (toggles off) attendance for the open class.
+ */
+export async function unmarkLiveAttendance(courseId: string, rollNumber: number) {
+  await connectDB();
+
+  const session = await LiveClassModel.findOne({ courseId, open: true });
+  if (!session) throw new Error("No open class for this course right now.");
+
+  session.attendance = (session.attendance ?? []).filter(
+    (a) => a.rollNumber !== rollNumber,
+  );
+  await session.save();
+  return { ...session.toObject(), _id: session._id.toString(), unmarked: true };
+}
+
+/**
  * Admin closes the session AND appends it to the course's class-log list —
  * the attendance rolls become the class's presentStudents. Optional lesson
  * coverage comes from the admin submit form (like the class-log dialog).
@@ -136,6 +269,8 @@ export async function closeLiveClassAndMerge(
     fromText?: number;
     toLesson?: number;
     toText?: number;
+    presentStudents?: string[];
+    absentStudents?: string[];
   },
 ) {
   await connectDB();
@@ -160,6 +295,15 @@ export async function closeLiveClassAndMerge(
       ? `Lesson ${coverage.fromLesson} Text ${coverage.fromText} to Lesson ${coverage.toLesson} Text ${coverage.toText}`
       : `Live class — ${attendance.length} attended`;
 
+  const presentRolls =
+    form?.presentStudents && form.presentStudents.length
+      ? form.presentStudents.map((r) => Number(r)).filter((n: number) => !Number.isNaN(n))
+      : attendance.map((a) => a.rollNumber);
+  const absentRolls =
+    form?.absentStudents && form.absentStudents.length
+      ? form.absentStudents.map((r) => Number(r)).filter((n: number) => !Number.isNaN(n))
+      : [];
+
   const course = await Course.findOne({ courseId: session.courseId });
   if (course) {
     const nextIndex = (course.classes?.length || 0) + 1;
@@ -176,8 +320,8 @@ export async function closeLiveClassAndMerge(
         toLesson: coverage.toLesson,
         toText: coverage.toText,
       },
-      presentStudents: attendance.map((a) => a.rollNumber),
-      absentStudents: [],
+      presentStudents: presentRolls,
+      absentStudents: absentRolls,
     });
     course.completedClassesCount = course.classes.length;
     course.markModified("classes");
