@@ -6,12 +6,19 @@ import Image from "next/image";
 import {
   ArrowRight,
   ArrowUpRight,
+  BarChart3,
   CalendarDays,
   Check,
+  ClipboardCheck,
   Clock,
+  GraduationCap,
+  Layers,
   Lock,
+  PlayCircle,
   RefreshCw,
   Trophy,
+  Users,
+  Video,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { ICourse, IStudent } from "@/features/academy";
@@ -313,8 +320,8 @@ export default function AcademyHubPage() {
       />
 
       {/* ═══════════ LIVE CLASS PANEL ═══════════ */}
-      {openSessions.length > 0 && selected && (
-        <section className="mt-8" aria-live="polite">
+       {openSessions.length > 0 && selected && (
+        <section id="live-panel" className="mt-8 scroll-mt-32" aria-live="polite">
           <div className="relative overflow-hidden rounded-3xl border-2 border-danger/50 bg-danger/[0.05] p-6 sm:p-8">
             <span
               aria-hidden="true"
@@ -557,20 +564,84 @@ export default function AcademyHubPage() {
       <dl className="mt-10 grid grid-cols-2 divide-text/10 rounded-2xl border border-text/10 bg-card sm:grid-cols-4 sm:divide-x">
         {(
           [
-            [t("সক্রিয় ব্যাচ", "Active cohorts"), stats.batches],
-            [t("চলমান এখন", "Running now"), stats.running],
-            [t("ক্লাস সম্পন্ন", "Classes held"), stats.held],
-            [t("মোট শিক্ষার্থী", "Scholars enrolled"), stats.scholars],
+            [t("সক্রিয় ব্যাচ", "Active cohorts"), stats.batches, Layers],
+            [t("চলমান এখন", "Running now"), stats.running, PlayCircle],
+            [t("ক্লাস সম্পন্ন", "Classes held"), stats.held, CalendarDays],
+            [t("মোট শিক্ষার্থী", "Scholars enrolled"), stats.scholars, Users],
           ] as const
-        ).map(([label, value]) => (
-          <div key={label} className="px-5 py-5">
-            <dt className="text-xs font-medium uppercase tracking-wide text-text/50">{label}</dt>
-            <dd className="mt-1.5 text-2xl font-bold tabular-nums text-text">
-              {loading ? <span className="text-text/30">—</span> : value}
-            </dd>
+        ).map(([label, value, Icon]) => (
+          <div key={label} className="flex items-center gap-3 px-5 py-5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-text/10 bg-text/5">
+              <Icon className="h-4.5 w-4.5 text-text/55" aria-hidden="true" />
+            </span>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-text/50">{label}</dt>
+              <dd className="mt-0.5 text-2xl font-bold tabular-nums text-text">
+                {loading ? <span className="text-text/30">—</span> : value}
+              </dd>
+            </div>
           </div>
         ))}
       </dl>
+
+      {/* How it works — for new users */}
+      <section className="mt-10">
+        <Eyebrow seal="启" label={t("কীভাবে শুরু করবেন", "How to start")} />
+        <h2 className="mt-3 text-2xl font-bold tracking-tight text-text sm:text-3xl">
+          {t("ধাপে ধাপে", "Step by step")}
+        </h2>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-text/60">
+          {t(
+            "এই পেজে ব্যাচের সব তথ্য এক জায়গায় — কোর্স বাছুন, লাইভ ক্লাসে হাজিরা দিন, আর নিজের অগ্রগতি দেখুন।",
+            "Everything about your batch in one place — pick a course, mark attendance live, and watch your progress.",
+          )}
+        </p>
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(
+            [
+              {
+                n: "১",
+                icon: GraduationCap,
+                title: t("কোর্স বাছুন", "Pick a course"),
+                text: t("সব কোর্স ও ব্যাচের অবস্থা নিচে দেখুন।", "See every course and its running status below."),
+              },
+              {
+                n: "২",
+                icon: Video,
+                title: t("ক্লাসে যোগ দিন", "Join the class"),
+                text: t("লাইভ ক্লাস চললে উপরে লাল প্যানেল থেকে মিট লিংকে ঢুকুন।", "When a class is live, join the Meet link from the red panel above."),
+              },
+              {
+                n: "৩",
+                icon: ClipboardCheck,
+                title: t("হাজিরা দিন", "Mark attendance"),
+                text: t("নিজের নামে ক্লিক করলেই হাজিরা হয়ে যায়।", "Tap your name — attendance is marked instantly."),
+              },
+              {
+                n: "৪",
+                icon: BarChart3,
+                title: t("অগ্রগতি দেখুন", "Track progress"),
+                text: t("পাঠ, ক্লাস লগ আর উপস্থিতির হার সব এখানে।", "Lessons, class logs and attendance rate — all here."),
+              },
+            ] as const
+          ).map(({ n, icon: Icon, title, text }) => (
+            <Card key={title} className="relative overflow-hidden p-5">
+              <span
+                aria-hidden="true"
+                lang="zh"
+                className="font-chinese pointer-events-none absolute -top-2 right-1 select-none text-6xl leading-none font-bold text-text/[0.04]"
+              >
+                {n}
+              </span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-text/5">
+                <Icon className="h-5 w-5 text-text/60" aria-hidden="true" />
+              </span>
+              <p className="mt-3 text-sm font-bold text-text">{title}</p>
+              <p className="mt-1 text-xs leading-5 text-text/60">{text}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
 
       {/* Hanzi Pro paid class */}
       {!loading && (

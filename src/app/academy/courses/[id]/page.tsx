@@ -509,7 +509,7 @@ export default function CourseDetailsPage({ params }: Props) {
     );
 
   return (
-    <div className="relative isolate mx-auto max-w-4xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+    <div className="relative isolate mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
       <SectionHanzi char="课" className="-top-10 right-0" />
 
       <Breadcrumb
@@ -669,6 +669,107 @@ export default function CourseDetailsPage({ params }: Props) {
             </section>
           )}
 
+          {/* ── assignment & marks ── */}
+          <section className="mt-10">
+            <Eyebrow seal="业" label={t("অ্যাসাইনমেন্ট ও নম্বর", "Assignment & marks")} />
+            {!live ? (
+              <Card className="mt-4 p-8 text-center text-sm text-text/55">
+                {t(
+                  "ক্লাস চালু হলে এখানে অ্যাসাইনমেন্ট জমা ও নম্বর দেখা যাবে।",
+                  "Assignment submission and marks appear here once a class goes live.",
+                )}
+              </Card>
+            ) : (
+              <Card className="mt-4 space-y-5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/55">
+                    {t("অ্যাসাইনমেন্ট জমা দিন", "Submit your assignment")}
+                  </p>
+                  {live.open ? (
+                    <form onSubmit={submitAssignment} className="mt-3 space-y-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[10rem_1fr]">
+                        <Field
+                          type="number"
+                          min={1}
+                          label={t("রোল নম্বর", "Roll number")}
+                          value={submitRoll}
+                          onChange={(e) => setSubmitRoll(e.target.value)}
+                          className="tabular-nums"
+                        />
+                        <Field
+                          label={t("অ্যাসাইনমেন্ট / লিংক", "Assignment / link")}
+                          placeholder="https://… or text"
+                          value={submitContent}
+                          onChange={(e) => setSubmitContent(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button type="submit" size="sm" loading={submitBusy}>
+                          {t("জমা দিন", "Submit")}
+                        </Button>
+                        {submitMsg.text && (
+                          <span className={`text-xs font-medium ${submitMsg.ok ? "text-ok" : "text-danger"}`}>
+                            {submitMsg.text}
+                          </span>
+                        )}
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="mt-3 text-xs text-text/50">
+                      {t(
+                        "লাইভ ক্লাস চালু থাকলে অ্যাসাইনমেন্ট জমা দেওয়া যাবে।",
+                        "Assignments can be submitted while the live class is running.",
+                      )}
+                    </p>
+                  )}
+                  {myMark && (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-ok/10 px-3 py-2 text-sm font-semibold text-ok">
+                      <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                      {t(`আপনার নম্বর: ${myMark.mark}`, `Your mark: ${myMark.mark}`)}
+                      {myMark.feedback ? (
+                        <span className="font-normal text-text/60">— {myMark.feedback}</span>
+                      ) : null}
+                    </p>
+                  )}
+                </div>
+
+                {live.submissions && live.submissions.length > 0 && (
+                  <div className="border-t border-text/10 pt-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/55">
+                      {t("জমা দেওয়া অ্যাসাইনমেন্ট", "Submitted assignments")} · {live.submissions.length}
+                    </p>
+                    <ul className="mt-3 space-y-2">
+                      {live.submissions.map((sub, i) => {
+                        const mark = (live.marks ?? []).find((m) => m.rollNumber === sub.rollNumber);
+                        return (
+                          <li key={`${sub.rollNumber}-${i}`} className="rounded-xl border border-text/10 bg-card px-3.5 py-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-sm font-semibold text-text">
+                                <span className="font-mono text-[11px] text-text/45">#{sub.rollNumber}</span>{" "}
+                                {nameByRoll.get(String(sub.rollNumber).trim()) ?? t("অজানা শিক্ষার্থী", "Unknown student")}
+                              </span>
+                              {mark && (
+                                <StatusMark tone="done">
+                                  {t("নম্বর", "Mark")}: <span className="tabular-nums">{mark.mark}</span>
+                                </StatusMark>
+                              )}
+                            </div>
+                            <p className="mt-1 break-words text-xs text-text/70">{sub.content}</p>
+                            {mark?.feedback && (
+                              <p className="mt-1 text-[11px] italic text-text/50">
+                                {t("মন্তব্য", "Feedback")}: {mark.feedback}
+                              </p>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </Card>
+            )}
+          </section>
+
           {/* ── live attendance ── */}
           {!live?.open && (
             <section id="attendance" className="mt-10 scroll-mt-24">
@@ -808,6 +909,107 @@ export default function CourseDetailsPage({ params }: Props) {
               </Card>
             </section>
           )}
+
+          {/* ── assignment & marks ── */}
+          <section className="mt-10">
+            <Eyebrow seal="业" label={t("অ্যাসাইনমেন্ট ও নম্বর", "Assignment & marks")} />
+            {!live ? (
+              <Card className="mt-4 p-8 text-center text-sm text-text/55">
+                {t(
+                  "ক্লাস চালু হলে এখানে অ্যাসাইনমেন্ট জমা ও নম্বর দেখা যাবে।",
+                  "Assignment submission and marks appear here once a class goes live.",
+                )}
+              </Card>
+            ) : (
+              <Card className="mt-4 space-y-5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/55">
+                    {t("অ্যাসাইনমেন্ট জমা দিন", "Submit your assignment")}
+                  </p>
+                  {live.open ? (
+                    <form onSubmit={submitAssignment} className="mt-3 space-y-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[10rem_1fr]">
+                        <Field
+                          type="number"
+                          min={1}
+                          label={t("রোল নম্বর", "Roll number")}
+                          value={submitRoll}
+                          onChange={(e) => setSubmitRoll(e.target.value)}
+                          className="tabular-nums"
+                        />
+                        <Field
+                          label={t("অ্যাসাইনমেন্ট / লিংক", "Assignment / link")}
+                          placeholder="https://… or text"
+                          value={submitContent}
+                          onChange={(e) => setSubmitContent(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button type="submit" size="sm" loading={submitBusy}>
+                          {t("জমা দিন", "Submit")}
+                        </Button>
+                        {submitMsg.text && (
+                          <span className={`text-xs font-medium ${submitMsg.ok ? "text-ok" : "text-danger"}`}>
+                            {submitMsg.text}
+                          </span>
+                        )}
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="mt-3 text-xs text-text/50">
+                      {t(
+                        "লাইভ ক্লাস চালু থাকলে অ্যাসাইনমেন্ট জমা দেওয়া যাবে।",
+                        "Assignments can be submitted while the live class is running.",
+                      )}
+                    </p>
+                  )}
+                  {myMark && (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-lg bg-ok/10 px-3 py-2 text-sm font-semibold text-ok">
+                      <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                      {t(`আপনার নম্বর: ${myMark.mark}`, `Your mark: ${myMark.mark}`)}
+                      {myMark.feedback ? (
+                        <span className="font-normal text-text/60">— {myMark.feedback}</span>
+                      ) : null}
+                    </p>
+                  )}
+                </div>
+
+                {live.submissions && live.submissions.length > 0 && (
+                  <div className="border-t border-text/10 pt-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/55">
+                      {t("জমা দেওয়া অ্যাসাইনমেন্ট", "Submitted assignments")} · {live.submissions.length}
+                    </p>
+                    <ul className="mt-3 space-y-2">
+                      {live.submissions.map((sub, i) => {
+                        const mark = (live.marks ?? []).find((m) => m.rollNumber === sub.rollNumber);
+                        return (
+                          <li key={`${sub.rollNumber}-${i}`} className="rounded-xl border border-text/10 bg-card px-3.5 py-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-sm font-semibold text-text">
+                                <span className="font-mono text-[11px] text-text/45">#{sub.rollNumber}</span>{" "}
+                                {nameByRoll.get(String(sub.rollNumber).trim()) ?? t("অজানা শিক্ষার্থী", "Unknown student")}
+                              </span>
+                              {mark && (
+                                <StatusMark tone="done">
+                                  {t("নম্বর", "Mark")}: <span className="tabular-nums">{mark.mark}</span>
+                                </StatusMark>
+                              )}
+                            </div>
+                            <p className="mt-1 break-words text-xs text-text/70">{sub.content}</p>
+                            {mark?.feedback && (
+                              <p className="mt-1 text-[11px] italic text-text/50">
+                                {t("মন্তব্য", "Feedback")}: {mark.feedback}
+                              </p>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </Card>
+            )}
+          </section>
 
           <section className="mt-10">
             <div className="flex flex-wrap items-center justify-between gap-2">

@@ -100,9 +100,10 @@ export async function ensureLiveLink(courseId: string, meetLink: string, topic?:
   return LiveLink.create({ courseId, meetLink: link, topic: (topic ?? "").trim() });
 }
 
-export async function listLiveLinks(courseId: string) {
+export async function listLiveLinks(courseId?: string) {
   await connectDB();
-  const docs = await LiveLink.find({ courseId }).sort({ createdAt: 1 }).lean();
+  const filter = courseId && courseId.trim() ? { courseId } : {};
+  const docs = await LiveLink.find(filter).sort({ createdAt: 1 }).lean();
   return docs.map((d) => ({ ...d, _id: d._id.toString() }));
 }
 

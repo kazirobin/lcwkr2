@@ -3,14 +3,18 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, MapPin, RefreshCw, Search, X } from "lucide-react";
+import { ArrowUpRight, Copy, Check, Lock, MapPin, Phone, RefreshCw, Search, X } from "lucide-react";
 import { IStudent, ICourse } from "@/features/academy";
+import { isSubAdminPasscode } from "@/features/academy/subAdminPasswords";
 import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
+  Button,
   Card,
+  Dialog,
   EmptyState,
   Eyebrow,
+  Field,
   IconButton,
   InlineSelect,
   LoadingBlock,
@@ -33,6 +37,18 @@ export default function ScholarsDirectoryPage() {
   const [query, setQuery] = useState("");
   const [track, setTrack] = useState("all");
   const [sortBy, setSortBy] = useState<"roll" | "attendance">("roll");
+
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+
+  useEffect(() => {
+    setAdminUnlocked(sessionStorage.getItem("academy_admin_unlocked") === "true");
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -105,6 +121,32 @@ export default function ScholarsDirectoryPage() {
 
   const filtersActive = query !== "" || track !== "all" || sortBy !== "roll";
 
+  const maskPhone = (num: string): string => {
+    const digits = (num || "").replace(/\D/g, "");
+    if (digits.length <= 6) return digits;
+    return `${digits.slice(0, 3)}***${digits.slice(-2)}`;
+  };
+
+  const submitPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = pin.trim();
+    if (v === ADMIN_SECRET_PIN.trim() || isSubAdminPasscode(v)) {
+      setAdminUnlocked(true);
+      sessionStorage.setItem("academy_admin_unlocked", "true");
+      setPinOpen(false);
+    } else {
+      setPinError(t("ভুল পাসকোড।", "Incorrect passcode."));
+    }
+  };
+
+  const copyNumber = async (num: string) => {
+    try {
+      await navigator.clipboard.writeText(num || "");
+      setCopied(num);
+      setTimeout(() => setCopied(null), 1500);
+    } catch { /* ignore */ }
+  };
+
   return (
     <div className="relative isolate mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
       <SectionHanzi char="生" className="-top-10 right-0" />
@@ -125,14 +167,28 @@ export default function ScholarsDirectoryPage() {
           "Everyone in the running cohorts, and how their attendance is going.",
         )}
         actions={
-          <IconButton
-            label={t("তালিকা রিফ্রেশ করুন", "Refresh list")}
-            size="sm"
-            spinning={loading}
-            onClick={fetchData}
-          >
-            <RefreshCw className="h-4 w-4" />
-          </IconButton>
+          <div className="flex items-center gap-2">
+            {adminUnlocked ? (
+              <StatusMark tone="done">{t("অ্যাডমিন মোড", "Admin mode")}</StatusMark>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setPin(""); setPinError(""); setPinOpen(true); }}
+                iconLeft={<Lock className="h-3.5 w-3.5" />}
+              >
+                {t("সাব-অ্যাডমিন লগইন", "Sub-admin login")}
+              </Button>
+            )}
+            <IconButton
+              label={t("তালিকা রিফ্রেশ করুন", "Refresh list")}
+              size="sm"
+              spinning={loading}
+              onClick={fetchData}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </IconButton>
+          </div>
         }
       />
 
@@ -242,6 +298,39 @@ export default function ScholarsDirectoryPage() {
                     <span className="truncate">{s.location || t("অবস্থান নেই", "Location not set")}</span>
                   </p>
 
+                  {s.whatsapp && (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-text/10 bg-text/[0.03] px-3.5 py-2.5">
+                      <Phone className="h-4 w-4 shrink-0 text-text/35" aria-hidden="true" />
+                      <a
+                        href={`tel:${s.whatsapp.replace(/\D/g, "")}`}
+                        className="min-w-0 flex-1 truncate font-mono text-sm font-bold tabular-nums text-text hover:text-text/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                        title={t("কল করুন", "Call")}
+                      >
+                        {adminUnlocked ? s.whatsapp : maskPhone(s.whatsapp)}
+                      </a>
+                      {adminUnlocked && (
+                        <button
+                          type="button"
+                          onClick={() => copyNumber(s.whatsapp)}
+                          aria-label={t("নম্বর কপি করুন", "Copy number")}
+                          title={t("কপি করুন", "Copy")}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-text/15 text-text/50 transition-colors hover:border-text/30 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                        >
+                          {copied === s.whatsapp ? (
+                            <Check className="h-3.5 w-3.5 text-ok" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {!adminUnlocked && s.whatsapp && (
+                    <p className="mt-1.5 text-[10px] text-text/40">
+                      {t("পুরো নম্বর দেখতে সাব-অ্যাডমিন লগইন করুন।", "Login as sub-admin to see full number.")}
+                    </p>
+                  )}
+
                   <dl className="mt-4 space-y-2 rounded-xl border border-text/10 bg-text/3 p-3 text-xs">
                     <div className="flex items-center justify-between">
                       <dt className="text-text/50">{t("উপস্থিতি", "Attendance")}</dt>
@@ -280,6 +369,33 @@ export default function ScholarsDirectoryPage() {
           </ul>
         )}
       </div>
+
+      {/* PIN dialog */}
+      <Dialog
+        open={pinOpen}
+        onClose={() => setPinOpen(false)}
+        title={t("সাব-অ্যাডমিন যাচাই", "Sub-admin verification")}
+        description={t("পুরো হোয়াটসঅ্যাপ নম্বর দেখতে পাসকোড দিন।", "Enter passcode to see full phone numbers.")}
+        size="sm"
+      >
+        <form onSubmit={submitPin} className="space-y-4">
+          <Field
+            type="password"
+            label={t("পাসকোড", "Passcode")}
+            autoFocus
+            value={pin}
+            error={pinError}
+            onChange={(e) => { setPin(e.target.value); setPinError(""); }}
+            className="text-center tracking-widest"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setPinOpen(false)}>
+              {t("বাতিল", "Cancel")}
+            </Button>
+            <Button type="submit" size="sm">{t("আনলক", "Unlock")}</Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }

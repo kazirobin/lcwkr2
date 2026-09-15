@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { listLiveLinks, createLiveLink } from "@/features/academy/server/live";
 
-/** GET /api/academy/live/links?courseId= — saved Meet links for a course. */
+/** GET /api/academy/live/links?courseId= — saved Meet links (all courses if no courseId). */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("courseId") || "";
-    if (!courseId) {
-      return NextResponse.json({ success: false, error: "courseId is required" }, { status: 400 });
-    }
-    const links = await listLiveLinks(courseId);
+    const links = await listLiveLinks(courseId || undefined);
     return NextResponse.json({ success: true, links });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to load links";
