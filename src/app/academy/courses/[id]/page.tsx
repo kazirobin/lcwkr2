@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useMemo, useCallback } from "react";
 import { ArrowLeft, Check, ChevronDown, Lock, Pencil, Plus, RefreshCw, Trash2, Radio, ClipboardList, Users, Link2, GraduationCap } from "lucide-react";
 import { ICourse, IClassSession, IStudent, ILiveClassView, IStudyGroup, ILiveLink } from "@/features/academy";
+import { isSubAdminPasscode } from "@/features/academy/subAdminPasswords";
 import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
@@ -65,6 +66,8 @@ export default function CourseDetailsPage({ params }: Props) {
   const [submitBusy, setSubmitBusy] = useState(false);
 
   const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminPin, setAdminPin] = useState("");
+  const [adminIsSub, setAdminIsSub] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
@@ -162,8 +165,11 @@ export default function CourseDetailsPage({ params }: Props) {
 
   const submitPin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === ADMIN_SECRET_PIN.trim()) {
+    const v = pin.trim();
+    if (v === ADMIN_SECRET_PIN.trim() || isSubAdminPasscode(v)) {
       setAdminUnlocked(true);
+      setAdminPin(v);
+      setAdminIsSub(v !== ADMIN_SECRET_PIN.trim());
       sessionStorage.setItem("academy_admin_unlocked", "true");
       setPinOpen(false);
     } else {
@@ -387,7 +393,7 @@ export default function CourseDetailsPage({ params }: Props) {
             date: new Date().toISOString().slice(0, 10),
             time: "",
             topic,
-            adminPasscode: ADMIN_SECRET_PIN,
+            adminPasscode: adminPin || ADMIN_SECRET_PIN,
           }),
         });
         const data = await res.json();
@@ -430,7 +436,7 @@ export default function CourseDetailsPage({ params }: Props) {
           },
           presentStudents: closeForm.presentStudents,
           absentStudents: absent,
-          adminPasscode: ADMIN_SECRET_PIN,
+          adminPasscode: adminPin || ADMIN_SECRET_PIN,
         }),
       });
       const data = await res.json();
@@ -806,14 +812,18 @@ export default function CourseDetailsPage({ params }: Props) {
           <section className="mt-10">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Eyebrow seal="录" label={t("ক্লাস লগ", "Class log")} detail={`${course.classes?.length ?? 0}`} />
-              {adminUnlocked ? (
+              {adminUnlocked && !adminIsSub && (
                 <div className="flex items-center gap-2">
                   <Button size="sm" onClick={openCreate} iconLeft={<Plus className="h-4 w-4" />}>
                     {t("নতুন ক্লাস লগ", "Add class log")}
                   </Button>
                   <StatusMark tone="done">{t("অ্যাডমিন মোড", "Admin mode")}</StatusMark>
                 </div>
-              ) : (
+              )}
+              {adminUnlocked && adminIsSub && (
+                <StatusMark tone="done">{t("সাব-অ্যাডমিন মোড", "Sub-admin mode")}</StatusMark>
+              )}
+              {!adminUnlocked && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -867,7 +877,7 @@ export default function CourseDetailsPage({ params }: Props) {
                               {cls.contentCovered?.summary || t("নিয়মিত ক্লাস", "Regular session")}
                             </p>
                           </div>
-                          {adminUnlocked && (
+                          {adminUnlocked && !adminIsSub && (
                             <div className="flex gap-1.5">
                               <IconButton label={t("সম্পাদনা", "Edit")} size="sm" onClick={() => openEdit(cls)}>
                                 <Pencil className="h-4 w-4" />
@@ -946,7 +956,10 @@ export default function CourseDetailsPage({ params }: Props) {
         open={pinOpen}
         onClose={() => setPinOpen(false)}
         title={t("অ্যাডমিন যাচাই", "Admin verification")}
-        description={t("ক্লাস লগ সম্পাদনা বা মুছতে পাসকোড দিন।", "Enter the passcode to edit or delete class logs.")}
+        description={t(
+          "ক্লাস চালু / জমা দিতে অ্যাডমিন বা সাব-অ্যাডমিন পাসকোড দিন। লগ এডিট/ডিলিট শুধু অ্যাডমিনের।",
+          "Enter the admin or sub-admin passcode to start or submit a class. Editing/deleting logs is admin-only.",
+        )}
         size="sm"
       >
         <form onSubmit={submitPin} className="space-y-4">

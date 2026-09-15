@@ -8,6 +8,7 @@ import {
   setLiveMeta,
   ensureLiveLink,
 } from "@/features/academy/server/live";
+import { isSubAdminPasscode } from "@/features/academy/subAdminPasswords";
 
 /** GET /api/academy/live — every live-class session (open ones first). */
 export async function GET() {
@@ -31,15 +32,18 @@ export async function POST(req: Request) {
   try {
     const { action, courseId, meetLink, date, time, id, adminPasscode, contentCovered, topic, assignmentPrompt, newMeetLink, presentStudents, absentStudents } = await req.json();
 
-    if (
-      adminPasscode !== process.env.ADMIN_PASSCODE &&
-      adminPasscode !== "8131"
-    ) {
-      return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
-    }
+    // Full admin (course/lesson edits, deleting logs, etc.) — main PIN only.
+    const isAdmin =
+      adminPasscode === process.env.ADMIN_PASSCODE ||
+      adminPasscode === "8131";
+    // Sub-admins (teachers/assistants) may only start a class and submit it.
+    const isLiveManager = isAdmin || isSubAdminPasscode(adminPasscode ?? "");
 
     switch (action) {
       case "open": {
+        if (!isLiveManager) {
+          return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
+        }
         if (!courseId || !meetLink) {
           return NextResponse.json({ error: "courseId and meetLink are required." }, { status: 400 });
         }
@@ -56,6 +60,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "set-meta": {
+        if (!isAdmin) {
+          return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
+        }
         if (!id) {
           return NextResponse.json({ error: "id is required." }, { status: 400 });
         }
@@ -67,10 +74,16 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "close": {
+        if (!isAdmin) {
+          return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
+        }
         const session = await closeLiveClass(id);
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "close-merge": {
+        if (!isLiveManager) {
+          return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
+        }
         const session = await closeLiveClassAndMerge(id, {
           date: contentCovered?.date,
           time: contentCovered?.time,
@@ -84,6 +97,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "delete": {
+        if (!isAdmin) {
+          return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
+        }
         await deleteLiveClass(id);
         return NextResponse.json({ success: true, message: "Deleted." }, { status: 200 });
       }
