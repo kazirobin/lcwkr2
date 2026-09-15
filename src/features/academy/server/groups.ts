@@ -2,9 +2,10 @@
 import { connectDB } from "@/lib/db";
 import { StudyGroup } from "@/features/academy/models";
 
-export async function listStudyGroups(courseId: string) {
+export async function listStudyGroups(courseId?: string) {
   await connectDB();
-  const docs = await StudyGroup.find({ courseId }).sort({ createdAt: 1 }).lean();
+  const filter = courseId && courseId.trim() ? { courseId } : {};
+  const docs = await StudyGroup.find(filter).sort({ createdAt: 1 }).lean();
   return docs.map((d) => ({ ...d, _id: d._id.toString() }));
 }
 

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listStudyGroups, createStudyGroup } from "@/features/academy/server/groups";
 
-// GET /api/academy/groups?courseId=HSK-101 — public list for a course.
+// GET /api/academy/groups?courseId=HSK-101 — public list. Without courseId, returns all groups (grouped later by the client).
 export async function GET(req: NextRequest) {
   try {
     const courseId = req.nextUrl.searchParams.get("courseId") || "";
-    if (!courseId) {
-      return NextResponse.json({ error: "courseId is required." }, { status: 400 });
-    }
-    const groups = await listStudyGroups(courseId);
+    const groups = await listStudyGroups(courseId || undefined);
     return NextResponse.json({ success: true, groups });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

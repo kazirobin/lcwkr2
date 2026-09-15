@@ -10,6 +10,7 @@ import {
   Lock,
   ShieldCheck,
   Users,
+  UsersRound,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { isSubAdminPasscode } from "@/features/academy/subAdminPasswords";
@@ -86,6 +87,13 @@ export function AcademyQuickNav() {
       href: "/academy/students",
       icon: Users,
       match: (p) => p.startsWith("/academy/students"),
+    },
+    {
+      key: "groups",
+      label: ["স্টাডি গ্রুপ", "Groups"],
+      href: "/academy/groups",
+      icon: UsersRound,
+      match: (p) => p.startsWith("/academy/groups"),
     },
     {
       key: "registration",
