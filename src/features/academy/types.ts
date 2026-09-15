@@ -110,6 +110,14 @@ export interface ILiveClassView {
   marks: IAssignmentMark[];
 }
 
+export interface ILiveLink {
+  _id: string;
+  courseId: string;
+  label: string;
+  meetLink: string;
+  topic: string;
+}
+
 export interface IAcademyData {
   institution: string;
   instructor: string;

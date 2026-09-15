@@ -175,6 +175,89 @@ export default function AdminCoursesPage() {
   const [liveSaving, setLiveSaving] = useState(false);
   const [busyLive, setBusyLive] = useState<string | null>(null);
 
+  // ── saved Google Meet links per course ─────────────────────────────────
+  const [linksOpen, setLinksOpen] = useState<Course | null>(null);
+  const [links, setLinks] = useState<{ _id: string; courseId: string; label: string; meetLink: string; topic: string }[]>([]);
+  const [linkForm, setLinkForm] = useState<{ _id?: string; label: string; meetLink: string; topic: string }>({ label: "", meetLink: "", topic: "" });
+  const [linksBusy, setLinksBusy] = useState(false);
+
+  const fetchLinks = useCallback(async (courseId: string) => {
+    try {
+      const res = await fetch(`/api/academy/live/links?courseId=${encodeURIComponent(courseId)}`, { cache: "no-store" });
+      const data = await res.json();
+      if (data.success) setLinks(data.links || []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const openLinks = (course: Course) => {
+    setLinksOpen(course);
+    setLinkForm({ label: "", meetLink: "", topic: "" });
+    fetchLinks(course.courseId);
+  };
+
+  const saveLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linksOpen) return;
+    if (!linkForm.meetLink.trim()) {
+      toast(t("মিট লিংক দিন।", "Enter a Meet link."), "error");
+      return;
+    }
+    setLinksBusy(true);
+    try {
+      const isEdit = !!linkForm._id;
+      const res = await fetch(
+        isEdit ? `/api/academy/live/links/${linkForm._id}` : "/api/academy/live/links",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseId: linksOpen.courseId,
+            label: linkForm.label,
+            meetLink: linkForm.meetLink,
+            topic: linkForm.topic,
+            adminPasscode: ADMIN_PASSCODE,
+          }),
+        },
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast(isEdit ? t("লিংক আপডেট হয়েছে।", "Link updated.") : t("লিংক সংরক্ষিত হয়েছে।", "Link saved."), "success");
+        setLinkForm({ label: "", meetLink: "", topic: "" });
+        fetchLinks(linksOpen.courseId);
+      } else {
+        toast(data.error || data.message || t("সংরক্ষণ হয়নি।", "Save failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setLinksBusy(false);
+    }
+  };
+
+  const deleteLink = async (id: string) => {
+    const ok = await confirm({
+      title: t("মিট লিংক মুছবেন?", "Delete this Meet link?"),
+      message: t("এই সংরক্ষিত লিংকটি মুছে ফেলা হবে।", "This saved link will be removed."),
+      confirmLabel: t("মুছুন", "Delete"),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/academy/live/links/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success) fetchLinks(linksOpen!.courseId);
+      else toast(data.error || t("মোছা যায়নি।", "Delete failed."), "error");
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    }
+  };
+
   // ── end-class dialog (fill class log, then close) ─────────────────────
   const [closeOpen, setCloseOpen] = useState<{
     session: { _id: string; courseId: string; date: string; time?: string; attendance: { rollNumber: number; name: string }[]; open: boolean };
@@ -873,6 +956,7 @@ export default function AdminCoursesPage() {
                           onClick={() => {
                             setLiveOpen(c);
                             setLiveForm({ meetLink: "", date: new Date().toISOString().slice(0, 10), time: "", topic: "", assignmentPrompt: "" });
+                            fetchLinks(c.courseId);
                           }}
                         >
                           {t("ক্লাস অন", "Class on")}
@@ -912,6 +996,14 @@ export default function AdminCoursesPage() {
 
                 {/* ── LMS controls: registration, lessons, topic, groups ── */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-text/10 pt-3">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    iconLeft={<Link2 className="h-4 w-4" />}
+                    onClick={() => openLinks(c)}
+                  >
+                    {t("মিট লিংক", "Meet links")}
+                  </Button>
                   <Button
                     size="sm"
                     variant={c.registrationOpen ? "secondary" : "ghost"}
@@ -1239,6 +1331,33 @@ export default function AdminCoursesPage() {
       >
         {liveOpen && (
           <form onSubmit={openLive} className="space-y-4">
+            {links.length > 0 && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-text/55">
+                  {t("বা সংরক্ষিত লিংক ব্যবহার করুন", "Or use a saved link")}
+                </label>
+                <select
+                  value={liveForm.meetLink}
+                  onChange={(e) => {
+                    const link = links.find((l) => l.meetLink === e.target.value);
+                    setLiveForm({
+                      ...liveForm,
+                      meetLink: e.target.value,
+                      topic: link?.topic ?? liveForm.topic,
+                    });
+                  }}
+                  className="w-full rounded-xl border border-text/20 bg-card px-3.5 py-2.5 text-sm font-semibold text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+                >
+                  <option value="">{t("— নতুন লিংক —", "— new link —")}</option>
+                  {links.map((l) => (
+                    <option key={l._id} value={l.meetLink}>
+                      {l.label ? `${l.label} · ` : ""}
+                      {l.meetLink}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <Field
               label={t("Google Meet লিংক", "Google Meet link")}
               required
@@ -1274,6 +1393,82 @@ export default function AdminCoursesPage() {
               onChange={(e) => setLiveForm({ ...liveForm, assignmentPrompt: e.target.value })}
             />
           </form>
+        )}
+      </Dialog>
+
+      {/* ── saved Meet links dialog ── */}
+      <Dialog
+        open={linksOpen !== null}
+        onClose={() => setLinksOpen(null)}
+        title={t("সংরক্ষিত মিট লিংক", "Saved Meet links")}
+        description={linksOpen ? `${linksOpen.courseName} (${linksOpen.courseId})` : undefined}
+        size="md"
+        footer={
+          <Button variant="secondary" size="sm" onClick={() => setLinksOpen(null)}>
+            {t("বন্ধ করুন", "Close")}
+          </Button>
+        }
+      >
+        {linksOpen && (
+          <div className="space-y-5">
+            {/* list */}
+            {links.length === 0 ? (
+              <p className="text-sm text-text/55">{t("এখনো কোনো লিংক সংরক্ষিত হয়নি।", "No links saved yet.")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {links.map((l) => (
+                  <li key={l._id} className="flex items-center justify-between gap-2 rounded-xl border border-text/12 bg-card px-3 py-2.5">
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-text">
+                        {l.label || l.meetLink}
+                      </span>
+                      {l.label && <span className="block truncate text-[11px] tabular-nums text-text/45">{l.meetLink}</span>}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      <IconButton label={t("সম্পাদনা", "Edit")} size="sm" onClick={() => setLinkForm({ _id: l._id, label: l.label, meetLink: l.meetLink, topic: l.topic })}>
+                        <Pencil className="h-4 w-4" />
+                      </IconButton>
+                      <IconButton label={t("মুছুন", "Delete")} size="sm" onClick={() => deleteLink(l._id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </IconButton>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* add / edit form */}
+            <form onSubmit={saveLink} className="space-y-3 border-t border-text/10 pt-4">
+              <Field
+                label={t("লেবেল (ঐচ্ছিক)", "Label (optional)")}
+                placeholder={t("যেমন: নিয়মিত ক্লাস", "e.g. Regular class")}
+                value={linkForm.label}
+                onChange={(e) => setLinkForm({ ...linkForm, label: e.target.value })}
+              />
+              <Field
+                label={t("Google Meet লিংক", "Google Meet link")}
+                required
+                placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                value={linkForm.meetLink}
+                onChange={(e) => setLinkForm({ ...linkForm, meetLink: e.target.value })}
+              />
+              <Field
+                label={t("টপিক (ঐচ্ছিক)", "Topic (optional)")}
+                value={linkForm.topic}
+                onChange={(e) => setLinkForm({ ...linkForm, topic: e.target.value })}
+              />
+              <div className="flex justify-end gap-2">
+                {linkForm._id && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setLinkForm({ label: "", meetLink: "", topic: "" })}>
+                    {t("নতুন লিংক", "New link")}
+                  </Button>
+                )}
+                <Button type="submit" size="sm" loading={linksBusy} iconLeft={<Link2 className="h-4 w-4" />}>
+                  {linkForm._id ? t("আপডেট", "Update") : t("সংরক্ষণ করুন", "Save link")}
+                </Button>
+              </div>
+            </form>
+          </div>
         )}
       </Dialog>
 

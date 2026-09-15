@@ -6,6 +6,7 @@ import {
   closeLiveClassAndMerge,
   deleteLiveClass,
   setLiveMeta,
+  ensureLiveLink,
 } from "@/features/academy/server/live";
 
 /** GET /api/academy/live — every live-class session (open ones first). */
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
           topic,
           assignmentPrompt,
         );
+        // persist the meet link so the admin can reuse / edit / delete it later
+        await ensureLiveLink(courseId, meetLink, topic);
         return NextResponse.json({ success: true, session }, { status: 200 });
       }
       case "set-meta": {

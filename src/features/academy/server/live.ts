@@ -3,7 +3,7 @@
 
 import mongoose, { Schema, Document, Model } from "mongoose";
 import connectDB from "@/lib/db";
-import { Student, Course } from "@/features/academy/models";
+import { Student, Course, LiveLink } from "@/features/academy/models";
 
 export interface ILiveAttendance {
   rollNumber: number;
@@ -86,6 +86,58 @@ export async function listLiveClasses() {
   await connectDB();
   const docs = await LiveClassModel.find({}).sort({ openedAt: -1 }).lean();
   return docs.map((d) => ({ ...d, _id: d._id.toString() }));
+}
+
+// ── saved Google Meet links (per course) ─────────────────────────────────
+
+/** Persist a meet link if it isn't already saved for the course. */
+export async function ensureLiveLink(courseId: string, meetLink: string, topic?: string) {
+  await connectDB();
+  const link = meetLink.trim();
+  if (!link) return null;
+  const existing = await LiveLink.findOne({ courseId, meetLink: link });
+  if (existing) return existing;
+  return LiveLink.create({ courseId, meetLink: link, topic: (topic ?? "").trim() });
+}
+
+export async function listLiveLinks(courseId: string) {
+  await connectDB();
+  const docs = await LiveLink.find({ courseId }).sort({ createdAt: 1 }).lean();
+  return docs.map((d) => ({ ...d, _id: d._id.toString() }));
+}
+
+export async function createLiveLink(input: { courseId: string; label: string; meetLink: string; topic: string }) {
+  await connectDB();
+  return LiveLink.create({
+    courseId: input.courseId,
+    label: input.label.trim(),
+    meetLink: input.meetLink.trim(),
+    topic: input.topic.trim(),
+  });
+}
+
+export async function updateLiveLink(
+  id: string,
+  input: { label?: string; meetLink?: string; topic?: string },
+) {
+  await connectDB();
+  const updated = await LiveLink.findByIdAndUpdate(
+    id,
+    {
+      ...(input.label !== undefined ? { label: input.label.trim() } : {}),
+      ...(input.meetLink !== undefined ? { meetLink: input.meetLink.trim() } : {}),
+      ...(input.topic !== undefined ? { topic: input.topic.trim() } : {}),
+    },
+    { new: true },
+  ).lean();
+  if (!updated) throw new Error("Live link not found.");
+  return { ...updated, _id: updated._id.toString() };
+}
+
+export async function deleteLiveLink(id: string) {
+  await connectDB();
+  await LiveLink.findByIdAndDelete(id);
+  return true;
 }
 
 /** Admin starts a class for a course (only one open per course). */

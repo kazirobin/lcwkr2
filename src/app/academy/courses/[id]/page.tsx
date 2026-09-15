@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useMemo, useCallback } from "react";
 import { ArrowLeft, Check, ChevronDown, Lock, Pencil, Plus, RefreshCw, Trash2, Radio, ClipboardList, Users, Link2, GraduationCap } from "lucide-react";
-import { ICourse, IClassSession, IStudent, ILiveClassView, IStudyGroup } from "@/features/academy";
+import { ICourse, IClassSession, IStudent, ILiveClassView, IStudyGroup, ILiveLink } from "@/features/academy";
 import { useLanguage } from "@/i18n";
 import {
   Breadcrumb,
@@ -85,6 +85,13 @@ export default function CourseDetailsPage({ params }: Props) {
   });
   const [closeBusy, setCloseBusy] = useState(false);
 
+  // ── start-class (saved Meet links) ─────────────────────────────────────
+  const [links, setLinks] = useState<ILiveLink[]>([]);
+  const [startLinkId, setStartLinkId] = useState<string>("");
+  const [startMeet, setStartMeet] = useState("");
+  const [startTopic, setStartTopic] = useState("");
+  const [startBusy, setStartBusy] = useState(false);
+
   useEffect(() => {
     setAdminUnlocked(sessionStorage.getItem("academy_admin_unlocked") === "true");
   }, []);
@@ -92,11 +99,12 @@ export default function CourseDetailsPage({ params }: Props) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [c, s, liveRes, grpRes] = await Promise.all([
+      const [c, s, liveRes, grpRes, linksRes] = await Promise.all([
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/live", { cache: "no-store" }).then((r) => r.json()),
         fetch(`/api/academy/groups?courseId=${encodeURIComponent(courseId)}`, { cache: "no-store" }).then((r) => r.json()),
+        fetch(`/api/academy/live/links?courseId=${encodeURIComponent(courseId)}`, { cache: "no-store" }).then((r) => r.json()),
       ]);
       if (c.success && Array.isArray(c.courses)) {
         setCourse(
@@ -114,6 +122,7 @@ export default function CourseDetailsPage({ params }: Props) {
         setLive(open ?? closed.sort((a, b) => (a.date < b.date ? 1 : -1))[0] ?? null);
       }
       if (grpRes.success && Array.isArray(grpRes.groups)) setGroups(grpRes.groups);
+      if (linksRes.success && Array.isArray(linksRes.links)) setLinks(linksRes.links);
     } catch (err) {
       console.error("Failed to load course:", err);
     } finally {
@@ -355,6 +364,47 @@ export default function CourseDetailsPage({ params }: Props) {
         presentStudents: (live.attendance ?? []).map((a) => String(a.rollNumber).trim()),
       });
       setCloseOpen(true);
+    });
+
+  const startClass = () =>
+    requireAdmin(async () => {
+      const link = startLinkId === "new" ? null : links.find((l) => l._id === startLinkId);
+      const meet = (link?.meetLink || startMeet).trim();
+      const topic = (link?.topic || startTopic).trim();
+      if (!meet) {
+        toast(t("মিট লিংক দিন বা সিলেক্ট করুন।", "Enter or select a Meet link."), "error");
+        return;
+      }
+      setStartBusy(true);
+      try {
+        const res = await fetch("/api/academy/live", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "open",
+            courseId: course?.courseId || courseId,
+            meetLink: meet,
+            date: new Date().toISOString().slice(0, 10),
+            time: "",
+            topic,
+            adminPasscode: ADMIN_SECRET_PIN,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setStartLinkId("");
+          setStartMeet("");
+          setStartTopic("");
+          await fetchData();
+          toast(t("ক্লাস চালু হয়েছে।", "Class is live."), "success");
+        } else {
+          toast(data.error || t("চালু হয়নি।", "Failed."), "error");
+        }
+      } catch {
+        toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+      } finally {
+        setStartBusy(false);
+      }
     });
 
   const saveClose = async (e: React.FormEvent) => {
@@ -614,6 +664,77 @@ export default function CourseDetailsPage({ params }: Props) {
           )}
 
           {/* ── live attendance ── */}
+          {!live?.open && (
+            <section id="attendance" className="mt-10 scroll-mt-24">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Eyebrow seal="到" label={t("ক্লাস চালু করুন", "Start a live class")} />
+                {adminUnlocked ? (
+                  <StatusMark tone="done">{t("অ্যাডমিন মোড", "Admin mode")}</StatusMark>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => requireAdmin(() => {})}
+                    iconLeft={<Lock className="h-3.5 w-3.5" />}
+                  >
+                    {t("অ্যাডমিন আনলক", "Admin unlock")}
+                  </Button>
+                )}
+              </div>
+              <Card className="mt-4 p-5 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-text/55">
+                    {t("সংরক্ষিত মিট লিংক", "Saved Meet link")}
+                  </label>
+                  <select
+                    value={startLinkId}
+                    onChange={(e) => setStartLinkId(e.target.value)}
+                    className="w-full rounded-xl border border-text/20 bg-card px-3.5 py-2.5 text-sm font-semibold text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
+                  >
+                    <option value="new">{t("— নতুন লিংক —", "— new link —")}</option>
+                    {links.map((l) => (
+                      <option key={l._id} value={l._id}>
+                        {l.label ? `${l.label} · ` : ""}
+                        {l.meetLink}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {startLinkId === "new" && (
+                  <>
+                    <Field
+                      label={t("Google Meet লিংক", "Google Meet link")}
+                      required
+                      placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                      value={startMeet}
+                      onChange={(e) => setStartMeet(e.target.value)}
+                    />
+                    <Field
+                      label={t("টপিক (ঐচ্ছিক)", "Topic (optional)")}
+                      value={startTopic}
+                      onChange={(e) => setStartTopic(e.target.value)}
+                    />
+                    <p className="text-[11px] text-text/45">
+                      {t(
+                        "ক্লাস চালু করলে এই লিংকটি সংরক্ষিত হবে — পরে আবার ব্যবহার / এডিট / ডিলিট করা যাবে।",
+                        "Starting the class saves this link — you can reuse, edit or delete it later.",
+                      )}
+                    </p>
+                  </>
+                )}
+                {adminUnlocked ? (
+                  <Button size="sm" loading={startBusy} iconLeft={<Radio className="h-4 w-4" />} onClick={startClass}>
+                    {t("ক্লাস চালু করুন", "Go live")}
+                  </Button>
+                ) : (
+                  <p className="text-xs text-text/45">
+                    {t("ক্লাস চালু করতে আগে অ্যাডমিন আনলক করুন।", "Unlock admin first to start a class.")}
+                  </p>
+                )}
+              </Card>
+            </section>
+          )}
+
           {live?.open && (
             <section id="attendance" className="mt-10 scroll-mt-24">
               <div className="flex flex-wrap items-center justify-between gap-2">
