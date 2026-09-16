@@ -6,8 +6,10 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ArrowUpRight,
   BookOpen,
+  CalendarDays,
   Check,
   ChevronDown,
+  Clock,
   Copy,
   Lock,
   MapPin,
@@ -75,6 +77,10 @@ export default function CoursesListPage() {
   const [toggleBusy, setToggleBusy] = useState<number | null>(null);
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+
+  // class log dropdown + details expansion (per class)
+  const [logMenuFor, setLogMenuFor] = useState<string | null>(null);
+  const [logDetailsFor, setLogDetailsFor] = useState<string | null>(null);
 
   // student roster pagination — 10 per page; reset when the selected course changes
   const STUDENTS_PER_PAGE = 10;
@@ -329,12 +335,27 @@ export default function CoursesListPage() {
           title: t(`পাঠ ${i + 1}`, `Lesson ${i + 1}`),
         }));
 
+  /** lesson number → lesson title (Bangla/English as set on the course). */
+  const lessonTitleByNumber = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const l of lessonList) {
+      if (l.title?.trim()) m.set(Number(l.lessonNumber), l.title.trim());
+    }
+    return m;
+  }, [lessonList]);
+
   const contentLabel = (cc: { topic?: string; summary?: string; fromLesson?: number; toLesson?: number } | undefined | null) => {
     if (!cc) return t("নিয়মিত ক্লাস", "Regular session");
     if (cc.topic?.trim()) return cc.topic.trim();
     if (cc.summary?.trim()) return cc.summary.trim();
     if (cc.fromLesson != null) {
       const to = cc.toLesson ?? cc.fromLesson;
+      const fromTitle = lessonTitleByNumber.get(cc.fromLesson);
+      const toTitle = lessonTitleByNumber.get(to);
+      if (fromTitle) {
+        if (cc.fromLesson === to) return fromTitle;
+        return `${fromTitle} → ${toTitle ?? t(`পাঠ ${to}`, `Lesson ${to}`)}`;
+      }
       return cc.fromLesson === to
         ? t(`পাঠ ${cc.fromLesson}`, `Lesson ${cc.fromLesson}`)
         : t(`পাঠ ${cc.fromLesson}–${to}`, `Lesson ${cc.fromLesson}–${to}`);
@@ -829,7 +850,7 @@ export default function CoursesListPage() {
           </section>
 
           {/* ═══════════════════════════════════════
-               CLASS LOGS — collapsible
+               CLASS LOGS — admin-style list + dropdown
               ═══════════════════════════════════════ */}
           <section>
             <Eyebrow seal="录" label={t("ক্লাস লগ", "Class logs")} detail={`${selected.classes?.length ?? 0}`} />
@@ -838,93 +859,206 @@ export default function CoursesListPage() {
                 {t("এখনো কোনো ক্লাস লগ নেই।", "No class logs yet.")}
               </Card>
             ) : (
-              <div className="mt-3 space-y-2">
+              <ul className="mt-3 space-y-1.5">
                 {selected.classes.map((cls, i) => {
+                  const logKey = cls._id ? String(cls._id) : `${cls.classId}-${i}`;
                   const present = (cls.presentStudents ?? []).map((r) => String(r).trim());
                   const absent = (cls.absentStudents ?? []).map((r) => String(r).trim());
                   const total = present.length + absent.length;
                   const rate = total > 0 ? Math.round((present.length / total) * 100) : null;
+                  const isFirst = i === 0;
+                  const menuOpen = logMenuFor === logKey;
+                  const detailsOpen = logDetailsFor === logKey;
                   return (
-                    <details key={cls._id ? String(cls._id) : `${cls.classId}-${i}`} className="group">
-                      <Card className="overflow-hidden p-0">
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-text/[0.03]">
-                          <div className="min-w-0 flex-1">
-                            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-text/40">
-                              <BookOpen className="h-3 w-3" />
-                              {cls.classId} · {cls.date}{cls.time ? ` · ${cls.time}` : ""}
-                            </span>
-                            <span className="mt-1 block text-sm font-bold text-text">
-                              {contentLabel(cls.contentCovered)}
-                            </span>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-3">
-                            <span className="text-[11px] tabular-nums text-ok">{present.length} {t("উপস্থিত", "P")}</span>
-                            <span className="text-[11px] tabular-nums text-danger">{absent.length} {t("অনুপস্থিত", "A")}</span>
-                            {rate !== null && <span className="hidden text-[11px] tabular-nums text-text/40 sm:inline">{rate}%</span>}
-                            <span className="inline-flex items-center gap-1 rounded-lg border border-text/15 px-2 py-1 text-[11px] font-semibold text-text/55 transition-colors group-open:border-primary/40 group-open:bg-primary/10 group-open:text-primary">
-                              <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                              {t("বিস্তারিত", "Details")}
-                            </span>
-                          </div>
-                        </summary>
-                        <div className="border-t border-text/10 px-5 py-4 space-y-3">
-                          {cls.contentCovered ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                                <BookOpen className="h-3 w-3" />
-                                {contentLabel(cls.contentCovered)}
+                    <li key={logKey} className={`relative transition-opacity ${logMenuFor && !menuOpen ? "opacity-60" : ""}`}>
+                      {/* dropdown menu */}
+                      {menuOpen && (
+                        <div
+                          className="absolute right-0 top-9 z-30 w-44 rounded-xl border border-text/10 bg-card p-1 shadow-xl"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLogDetailsFor(detailsOpen ? null : logKey);
+                              setLogMenuFor(null);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-text/80 transition-colors hover:bg-text/5"
+                          >
+                            {detailsOpen ? <ChevronDown className="h-3.5 w-3.5 rotate-180 text-primary" /> : <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-text/40" />}
+                            {t("বিস্তারিত", "Details")}
+                            {detailsOpen && <span className="ml-auto text-[10px] text-primary">✓</span>}
+                          </button>
+                        </div>
+                      )}
+
+                      <div
+                        className={`cursor-pointer rounded-lg border px-3 py-2 text-xs transition-colors ${
+                          isFirst ? "border-primary/30 bg-text/2" : "border-text/10 bg-text/2"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          {/* row title — click toggles details */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLogDetailsFor(detailsOpen ? null : logKey);
+                              setLogMenuFor(null);
+                            }}
+                            className="flex min-w-0 flex-1 items-baseline gap-1.5 text-left"
+                          >
+                            <span className="min-w-0 truncate">
+                              <span className="font-mono font-semibold text-text/70">{cls.classId}</span>
+                              {isFirst && <span className="ml-1.5 inline-flex h-3.5 items-center rounded bg-primary/10 px-1 text-[9px] font-bold uppercase tracking-wide text-primary">新</span>}
+                              {" · "}
+                              <span className="font-medium text-text/80">{contentLabel(cls.contentCovered)}</span>
+                              {" · "}
+                              <span className="tabular-nums text-text/45">
+                                <CalendarDays className="mr-0.5 inline h-3 w-3 text-text/35" />
+                                {cls.date}
+                                {cls.time ? (
+                                  <>
+                                    {" · "}
+                                    <Clock className="mr-0.5 inline h-3 w-3 text-text/35" />
+                                    {cls.time}
+                                  </>
+                                ) : null}
                               </span>
-                              {cls.contentCovered.topic && cls.contentCovered.fromText !== cls.contentCovered.toText && (
-                                <span className="text-xs text-text/55">
-                                  {t(`টেক্সট ${cls.contentCovered.fromText}–${cls.contentCovered.toText}`, `Text ${cls.contentCovered.fromText}–${cls.contentCovered.toText}`)}
+                            </span>
+                            <span className="ml-2 flex shrink-0 items-center gap-1.5">
+                              {rate !== null && (
+                                <span
+                                  className={`font-mono font-bold tabular-nums ${
+                                    rate >= 80 ? "text-ok" : rate >= 50 ? "text-warn" : "text-danger"
+                                  }`}
+                                >
+                                  {present.length}
                                 </span>
                               )}
-                            </div>
-                          ) : (
-                            <p className="text-sm font-medium text-text">
-                              {t("নিয়মিত ক্লাস", "Regular session")}
-                            </p>
-                          )}
-                          {(present.length > 0 || absent.length > 0) && (
-                            <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                              {present.length > 0 && (
-                                <div className="border-l-2 border-ok/40 pl-3">
-                                  <p className="text-[10px] font-bold uppercase tracking-wide text-ok">
-                                    {t("উপস্থিত", "Present")} <span className="text-text/40">{present.length}</span>
-                                  </p>
-                                  <ul className="mt-1.5 space-y-0.5">
-                                    {present.map((r) => (
-                                      <li key={r} className="text-xs text-text/70">
-                                        <span className="font-mono text-[10px] text-text/40">#{r}</span>{" "}
-                                        {nameByRoll.get(r) ?? ""}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {absent.length > 0 && (
-                                <div className="border-l-2 border-danger/40 pl-3">
-                                  <p className="text-[10px] font-bold uppercase tracking-wide text-danger">
-                                    {t("অনুপস্থিত", "Absent")} <span className="text-text/40">{absent.length}</span>
-                                  </p>
-                                  <ul className="mt-1.5 space-y-0.5">
-                                    {absent.map((r) => (
-                                      <li key={r} className="text-xs text-text/70">
-                                        <span className="font-mono text-[10px] text-text/40">#{r}</span>{" "}
-                                        {nameByRoll.get(r) ?? ""}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                              <span className="text-[10px] uppercase tracking-wide text-text/35">
+                                {t("উপস্থিত", "present")}
+                              </span>
+                            </span>
+                          </button>
+
+                          <IconButton
+                            label={t("অ্যাকশন", "Actions")}
+                            size="sm"
+                            className="h-7 w-7 shrink-0"
+                            aria-expanded={menuOpen}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLogMenuFor(menuOpen ? null : logKey);
+                            }}
+                          >
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`} />
+                          </IconButton>
                         </div>
-                      </Card>
-                    </details>
+
+                        {/* details panel */}
+                        {detailsOpen && (
+                          <div className="mt-2.5 border-t border-text/10 pt-3">
+                            <div className="space-y-4">
+                              {/* attendance summary */}
+                              {total > 0 && rate !== null && (
+                                <div className="flex items-center gap-3">
+                                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-text/45">
+                                        {t("উপস্থিতির হার", "Attendance")}
+                                      </span>
+                                      <span className="font-mono text-[11px] tabular-nums text-text/55">
+                                        {present.length}/{total}
+                                      </span>
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-text/10">
+                                      <div
+                                        className={`h-full rounded-full transition-all ${
+                                          rate >= 80 ? "bg-ok" : rate >= 50 ? "bg-warn" : "bg-danger"
+                                        }`}
+                                        style={{ width: `${rate}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                  <span
+                                    className={`shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-bold tabular-nums ${
+                                      rate >= 80
+                                        ? "border-ok/30 bg-ok/10 text-ok"
+                                        : rate >= 50
+                                          ? "border-warn/30 bg-warn/10 text-warn"
+                                          : "border-danger/30 bg-danger/10 text-danger"
+                                    }`}
+                                  >
+                                    {rate}%
+                                  </span>
+                                </div>
+                              )}
+
+                              {cls.contentCovered?.topic && cls.contentCovered.fromText !== cls.contentCovered.toText && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                                    <BookOpen className="h-3 w-3" />
+                                    {contentLabel(cls.contentCovered)}
+                                  </span>
+                                  <span className="text-xs text-text/55">
+                                    {t(`টেক্সট ${cls.contentCovered.fromText}–${cls.contentCovered.toText}`, `Text ${cls.contentCovered.fromText}–${cls.contentCovered.toText}`)}
+                                  </span>
+                                </div>
+                              )}
+                              {(present.length > 0 || absent.length > 0) && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  {present.length > 0 && (
+                                    <div className="rounded-xl border border-ok/20 bg-ok/[0.04] p-3">
+                                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-ok">
+                                        <Check className="h-3 w-3" strokeWidth={3} />
+                                        {t("উপস্থিত", "Present")}
+                                        <span className="ml-auto font-mono tabular-nums text-ok/70">{present.length}</span>
+                                      </p>
+                                      <ul className="mt-2 space-y-1">
+                                        {present.map((r) => (
+                                          <li key={r} className="flex items-baseline gap-1.5 text-xs text-text/70">
+                                            <span className="font-mono text-[10px] tabular-nums text-ok/50">#{r}</span>
+                                            <span className="truncate font-medium text-text/80">
+                                              {nameByRoll.get(r) ?? ""}
+                                            </span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {absent.length > 0 && (
+                                    <div className="rounded-xl border border-danger/20 bg-danger/[0.04] p-3">
+                                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-danger">
+                                        <span className="inline-flex size-3 items-center justify-center">
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} className="h-3 w-3">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        </span>
+                                        {t("অনুপস্থিত", "Absent")}
+                                        <span className="ml-auto font-mono tabular-nums text-danger/70">{absent.length}</span>
+                                      </p>
+                                      <ul className="mt-2 space-y-1">
+                                        {absent.map((r) => (
+                                          <li key={r} className="flex items-baseline gap-1.5 text-xs text-text/70">
+                                            <span className="font-mono text-[10px] tabular-nums text-danger/50">#{r}</span>
+                                            <span className="truncate font-medium text-text/80">
+                                              {nameByRoll.get(r) ?? ""}
+                                            </span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             )}
           </section>
 
