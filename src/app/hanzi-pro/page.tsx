@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -17,6 +17,10 @@ import { useLanguage } from "@/i18n";
 import { LESSON_WORDS } from "@/features/chinese-words";
 import { Button, Field } from "@/components/ui";
 import { StrokeTrainer, WordStrokePractice } from "@/features/hanzi-pro";
+import {
+  FREE_CURRICULUM_LESSONS,
+} from "@/features/hanzi-pro/components/WordStrokePractice";
+import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
 
 const BKASH_NUMBER = "01787881334";
 const ADMIN_WHATSAPP = "8801787881334";
@@ -65,6 +69,30 @@ export default function HanziProPage() {
   const [students, setStudents] = useState<HPStudent[]>([]);
   const [sessions, setSessions] = useState<HPSession[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Pro subscription gate — shares the same localStorage key as the
+  // Chinese Core Words builder, so one subscription unlocks both.
+  const [isPro, setIsPro] = useState(false);
+  const [proReady, setProReady] = useState(false);
+  const proRef = useRef<ProAccessHandle>(null);
+
+  useEffect(() => {
+    try {
+      setIsPro(localStorage.getItem("cw:pro") === "1");
+    } catch {
+      /* localStorage unavailable */
+    }
+    setProReady(true);
+  }, []);
+
+  const openSubscribe = () => proRef.current?.open();
+  const refreshPro = () => {
+    try {
+      setIsPro(localStorage.getItem("cw:pro") === "1");
+    } catch {
+      /* localStorage unavailable */
+    }
+  };
 
   const [copied, setCopied] = useState(false);
   const [regOpen, setRegOpen] = useState(false);
@@ -601,7 +629,7 @@ export default function HanziProPage() {
             )}
           </p>
           <div className="mt-4">
-            <WordStrokePractice />
+            <WordStrokePractice pro={isPro} onRequirePro={openSubscribe} />
           </div>
         </div>
       </section>
@@ -680,26 +708,48 @@ export default function HanziProPage() {
           </h2>
           <p className="mt-3 text-sm leading-7 text-text/60">
             {t(
-              "HSK 1 এর ১৫টি লেসনে ছড়ানো মোট শব্দ — প্রতিটি লেসন শেষ করলেই অগ্রগতি বাড়বে।",
-              "All HSK 1 words across 15 lessons — each finished lesson grows your progress.",
+              "HSK 1 এর ১৫টি লেসনে ছড়ানো মোট শব্দ — প্রথম ৫টি লেসন ফ্রি, বাকিগুলো প্রো সাবস্ক্রিপশনে খোলা যাবে।",
+              "All HSK 1 words across 15 lessons — the first 5 lessons are free, the rest unlock with a Pro subscription.",
             )}
           </p>
 
           <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-            {LESSON_COUNTS.map(([lesson, count]) => (
-              <li
-                key={lesson}
-                className="rounded-xl border border-text/12 bg-card p-3.5 text-center shadow-sm"
-              >
-                <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-text/45">
-                  {t("লেসন", "Lesson")} {lesson}
-                </p>
-                <p className="mt-1 font-mono text-xl font-bold tabular-nums text-text">{count}</p>
-                <p className="text-[10px] uppercase tracking-[0.1em] text-text/40">
-                  {t("শব্দ", "words")}
-                </p>
-              </li>
-            ))}
+            {LESSON_COUNTS.map(([lesson, count]) => {
+              const locked = proReady && !isPro && lesson > FREE_CURRICULUM_LESSONS;
+              return (
+                <li
+                  key={lesson}
+                  className={`relative rounded-xl border p-3.5 text-center shadow-sm ${
+                    locked
+                      ? "border-text/12 bg-text/5"
+                      : "border-text/12 bg-card"
+                  }`}
+                >
+                  {locked && (
+                    <button
+                      type="button"
+                      onClick={openSubscribe}
+                      aria-label={t(`লেসন ${lesson} — প্রো`, `Lesson ${lesson} — Pro`)}
+                      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 rounded-xl bg-background/40 text-text/70 transition-colors hover:bg-secondary/10"
+                    >
+                      <Lock className="size-4 text-secondary" aria-hidden="true" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
+                        {t("প্রো", "Pro")}
+                      </span>
+                    </button>
+                  )}
+                  <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-text/45">
+                    {t("লেসন", "Lesson")} {lesson}
+                  </p>
+                  <p className="mt-1 font-mono text-xl font-bold tabular-nums text-text">
+                    {locked ? "•••" : count}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.1em] text-text/40">
+                    {t("শব্দ", "words")}
+                  </p>
+                </li>
+              );
+            })}
             <li className="rounded-xl border border-secondary/40 bg-secondary/10 p-3.5 text-center">
               <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-secondary">
                 {t("মোট", "Total")}
@@ -840,6 +890,9 @@ export default function HanziProPage() {
           </div>
         </div>
       )}
+
+      {/* ═══════════ PRO ACCESS BADGE ═══════════ */}
+      <ProAccessButton ref={proRef} onUnlock={refreshPro} />
     </div>
   );
 }

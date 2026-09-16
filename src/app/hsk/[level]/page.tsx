@@ -6,6 +6,7 @@ import {
   getLevelParams,
 } from "@/features/vocabulary/data";
 import LessonPicker from "@/features/vocabulary/components/LessonPicker";
+import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 
 /** Positive integer, no leading zero — keeps `/hsk/01` from rendering `/hsk/1`. */
 const CANONICAL = /^[1-9]\d*$/;
@@ -40,5 +41,9 @@ export default async function LevelPage({ params }: Props) {
   const detail = CANONICAL.test(level) ? getLevelDetail(Number(level)) : null;
   if (!detail) notFound();
 
-  return <LessonPicker detail={detail} />;
+  return (
+    <ProLevelGate level={detail.level}>
+      <LessonPicker detail={detail} />
+    </ProLevelGate>
+  );
 }

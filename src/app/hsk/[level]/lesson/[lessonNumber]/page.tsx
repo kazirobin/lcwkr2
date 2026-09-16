@@ -6,6 +6,7 @@ import {
   getLessonParams,
 } from "@/features/vocabulary/data";
 import TextPicker from "@/features/vocabulary/components/TextPicker";
+import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 
 const CANONICAL = /^[1-9]\d*$/;
 
@@ -43,5 +44,9 @@ export default async function LessonPage({ params }: Props) {
     : null;
   if (!detail) notFound();
 
-  return <TextPicker detail={detail} />;
+  return (
+    <ProLevelGate level={Number(level)}>
+      <TextPicker detail={detail} />
+    </ProLevelGate>
+  );
 }

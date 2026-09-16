@@ -7,6 +7,7 @@ import {
   getTextParams,
 } from "@/features/vocabulary/data";
 import TextReader from "@/features/vocabulary/components/TextReader";
+import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 import Script from "next/dist/client/script";
 
 const SITE_URL =
@@ -98,7 +99,9 @@ export default async function TextPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <TextReader data={data} nav={nav} />
+      <ProLevelGate level={lvl}>
+        <TextReader data={data} nav={nav} />
+      </ProLevelGate>
     </>
   );
 }

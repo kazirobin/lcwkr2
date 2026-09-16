@@ -8,6 +8,7 @@ import {
 } from "@/features/vocabulary/data";
 import type { VocabularyData, VocabularyItem } from "@/features/vocabulary/types";
 import FullLessonReader from "@/features/vocabulary/components/FullLessonReader";
+import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 
 const CANONICAL = /^[1-9]\d*$/;
 
@@ -61,5 +62,9 @@ export default async function AllTextsPage({ params }: Props) {
     }
   }
 
-  return <FullLessonReader level={lvl} lesson={lsn} records={records} words={words} />;
+  return (
+    <ProLevelGate level={lvl}>
+      <FullLessonReader level={lvl} lesson={lsn} records={records} words={words} />
+    </ProLevelGate>
+  );
 }
