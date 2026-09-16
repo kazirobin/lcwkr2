@@ -38,7 +38,7 @@ export default function TeacherClassLogPage() {
   const [passcode, setPasscode] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("09:00 PM - 10:10 PM");
-  const [range, setRange] = useState({ fromLesson: 1, fromText: 1, toLesson: 1, toText: 2 });
+  const [topic, setTopic] = useState("");
   const [presentRolls, setPresentRolls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -114,7 +114,6 @@ export default function TeacherClassLogPage() {
     e.preventDefault();
     setSubmitting(true);
     const absent = allRolls.filter((r) => !presentRolls.includes(r));
-    const summary = `Lesson ${range.fromLesson} Text ${range.fromText} to Lesson ${range.toLesson} Text ${range.toText}`;
     try {
       const res = await fetch("/api/academy/classes", {
         method: "POST",
@@ -124,7 +123,7 @@ export default function TeacherClassLogPage() {
           courseId,
           date,
           time,
-          contentCovered: { summary, ...range },
+          contentCovered: { topic: topic.trim(), summary: topic.trim() || `Class ${date}` },
           presentStudents: presentRolls,
           absentStudents: absent,
         }),
@@ -142,18 +141,6 @@ export default function TeacherClassLogPage() {
       setSubmitting(false);
     }
   };
-
-  const num = (key: keyof typeof range, label: string) => (
-    <Field
-      key={key}
-      type="number"
-      min={1}
-      label={label}
-      value={range[key]}
-      onChange={(e) => setRange((r) => ({ ...r, [key]: Number(e.target.value) }))}
-      className="tabular-nums"
-    />
-  );
 
   return (
     <div className="relative isolate mx-auto max-w-3xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
@@ -226,11 +213,14 @@ export default function TeacherClassLogPage() {
 
             <Card className="p-6">
               <Eyebrow label={t("সিলেবাসের অগ্রগতি", "Syllabus covered")} />
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {num("fromLesson", t("পাঠ থেকে", "From lesson"))}
-                {num("fromText", t("টেক্সট থেকে", "From text"))}
-                {num("toLesson", t("পাঠ পর্যন্ত", "To lesson"))}
-                {num("toText", t("টেক্সট পর্যন্ত", "To text"))}
+              <div className="mt-4 grid grid-cols-1 gap-3">
+                <Field
+                  label={t("আজকের বিষয়", "Today's topic")}
+                  hint={t("যেমন: HSK 3 Lesson 4 — Weather", "e.g. HSK 3 Lesson 4 — Weather")}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder={t("ক্লাসের বিষয় লিখুন", "Enter the class topic")}
+                />
               </div>
             </Card>
 

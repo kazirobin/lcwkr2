@@ -7,6 +7,7 @@ export interface IClassLogDoc {
   time: string;
   contentCovered: {
     summary: string;
+    topic?: string;
     fromLesson: number;
     fromText: number;
     toLesson: number;
@@ -27,6 +28,7 @@ const ClassLogSchema = new Schema<IClassLogDoc>(
     time: { type: String, required: true },
     contentCovered: {
       summary: String,
+      topic: String,
       fromLesson: Number,
       fromText: Number,
       toLesson: Number,

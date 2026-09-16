@@ -318,6 +318,8 @@ export async function closeLiveClassAndMerge(
   form?: {
     date?: string;
     time?: string;
+    topic?: string;
+    summary?: string;
     fromLesson?: number;
     fromText?: number;
     toLesson?: number;
@@ -337,16 +339,19 @@ export async function closeLiveClassAndMerge(
   const attendance = session.attendance ?? [];
   const date = form?.date || session.date;
   const time = form?.time || session.time || "Live class";
+  const topic = (form?.topic ?? form?.summary ?? "").trim();
   const coverage = {
+    topic,
     fromLesson: form?.fromLesson,
     fromText: form?.fromText,
     toLesson: form?.toLesson,
     toText: form?.toText,
   };
   const summary =
-    coverage.fromLesson != null
+    topic ||
+    (coverage.fromLesson != null
       ? `Lesson ${coverage.fromLesson} Text ${coverage.fromText} to Lesson ${coverage.toLesson} Text ${coverage.toText}`
-      : `Live class — ${attendance.length} attended`;
+      : `Live class — ${attendance.length} attended`);
 
   const presentRolls =
     form?.presentStudents && form.presentStudents.length
@@ -368,6 +373,7 @@ export async function closeLiveClassAndMerge(
       status: "Completed",
       contentCovered: {
         summary,
+        topic,
         fromLesson: coverage.fromLesson,
         fromText: coverage.fromText,
         toLesson: coverage.toLesson,

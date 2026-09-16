@@ -115,7 +115,7 @@ export default function AcademyHubPage() {
   const [endBusy, setEndBusy] = useState<string | null>(null);
   const [endMsg, setEndMsg] = useState<Record<string, { ok: boolean; text: string }>>({});
   const [showMeet, setShowMeet] = useState<Record<string, boolean>>({});
-  const [lessonForm, setLessonForm] = useState({ fromLesson: 1, fromText: 1, toLesson: 1, toText: 1 });
+  const [lessonForm, setLessonForm] = useState({ topic: "" });
   // time auto-fills from the session (set at "Class on"); user can override
   const [timeOverride, setTimeOverride] = useState<Record<string, string>>({});
 
@@ -191,10 +191,7 @@ export default function AcademyHubPage() {
           action: "close-merge",
           id: session._id,
           contentCovered: {
-            fromLesson: lessonForm.fromLesson,
-            fromText: lessonForm.fromText,
-            toLesson: lessonForm.toLesson,
-            toText: lessonForm.toText,
+            topic: lessonForm.topic.trim(),
             time: timeOverride[session._id] || session.time || "Live class",
           },
           adminPasscode: passcode,
@@ -494,40 +491,13 @@ export default function AcademyHubPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <Field
-                        type="number"
-                        min={1}
-                        label={t("পাঠ থেকে", "From lesson")}
-                        value={lessonForm.fromLesson}
-                        onChange={(e) => setLessonForm({ ...lessonForm, fromLesson: Number(e.target.value) })}
-                        className="tabular-nums"
-                      />
-                      <Field
-                        type="number"
-                        min={1}
-                        label={t("টেক্সট থেকে", "From text")}
-                        value={lessonForm.fromText}
-                        onChange={(e) => setLessonForm({ ...lessonForm, fromText: Number(e.target.value) })}
-                        className="tabular-nums"
-                      />
-                      <Field
-                        type="number"
-                        min={1}
-                        label={t("পাঠ পর্যন্ত", "To lesson")}
-                        value={lessonForm.toLesson}
-                        onChange={(e) => setLessonForm({ ...lessonForm, toLesson: Number(e.target.value) })}
-                        className="tabular-nums"
-                      />
-                      <Field
-                        type="number"
-                        min={1}
-                        label={t("টেক্সট পর্যন্ত", "To text")}
-                        value={lessonForm.toText}
-                        onChange={(e) => setLessonForm({ ...lessonForm, toText: Number(e.target.value) })}
-                        className="tabular-nums"
-                      />
-                    </div>
+                    <Field
+                      label={t("আজকের বিষয়", "Today's topic")}
+                      hint={t("যেমন: HSK 3 Lesson 4 — Weather", "e.g. HSK 3 Lesson 4 — Weather")}
+                      value={lessonForm.topic}
+                      onChange={(e) => setLessonForm({ topic: e.target.value })}
+                      placeholder={t("ক্লাসের বিষয় লিখুন", "Enter the class topic")}
+                    />
 
                     <Field
                       type="password"

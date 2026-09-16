@@ -23,6 +23,7 @@ export type AdminCounts = {
   chineseWords: number;
   hanziPro: number;
   donations: number;
+  reviews: number;
 };
 
 const EMPTY: AdminCounts = {
@@ -33,6 +34,7 @@ const EMPTY: AdminCounts = {
   chineseWords: 0,
   hanziPro: 0,
   donations: 0,
+  reviews: 0,
 };
 
 type AdminStatsContextType = {
@@ -54,7 +56,7 @@ export function AdminStatsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [pStu, aStu, logs, crs, words, hp, donate] = await Promise.all([
+      const [pStu, aStu, logs, crs, words, hp, donate, rev] = await Promise.all([
         fetch("/api/academy/students?status=Pending", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/classes/pending", { cache: "no-store" }).then((r) => r.json()),
@@ -62,6 +64,7 @@ export function AdminStatsProvider({ children }: { children: ReactNode }) {
         fetch("/api/chinese-words", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/hanzi-pro", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/donations", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/academy/reviews?all=1", { cache: "no-store" }).then((r) => r.json()),
       ]);
       setCounts({
         pendingStudents: pStu.students?.length || 0,
@@ -71,6 +74,7 @@ export function AdminStatsProvider({ children }: { children: ReactNode }) {
         chineseWords: words.data?.length || 0,
         hanziPro: hp.students?.length || 0,
         donations: donate.donations?.length || 0,
+        reviews: rev.reviews?.length || 0,
       });
     } catch (err) {
       console.error("Failed to load admin stats:", err);

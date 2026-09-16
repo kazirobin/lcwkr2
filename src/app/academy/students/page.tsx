@@ -301,11 +301,13 @@ export default function ScholarsDirectoryPage() {
                   {s.whatsapp && (
                     <div className="mt-3 flex items-center gap-2 rounded-xl border border-text/10 bg-text/[0.03] px-3.5 py-2.5">
                       <Phone className="h-4 w-4 shrink-0 text-text/35" aria-hidden="true" />
-                      <a
-                        href={`tel:${s.whatsapp.replace(/\D/g, "")}`}
-                        className="min-w-0 flex-1 truncate font-mono text-sm font-bold tabular-nums text-text hover:text-text/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
-                        title={t("কল করুন", "Call")}
-                      >
+                       <a
+                         href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="min-w-0 flex-1 truncate font-mono text-sm font-bold tabular-nums text-text hover:text-text/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                         title={t("হোয়াটসঅ্যাপ কল করুন", "Call on WhatsApp")}
+                       >
                         {adminUnlocked ? s.whatsapp : maskPhone(s.whatsapp)}
                       </a>
                       {adminUnlocked && (

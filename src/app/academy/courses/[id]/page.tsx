@@ -35,10 +35,7 @@ type EditForm = {
   classId: string;
   date: string;
   time: string;
-  fromLesson: number;
-  fromText: number;
-  toLesson: number;
-  toText: number;
+  topic: string;
   presentStudents: string[];
 };
 
@@ -80,10 +77,7 @@ export default function CourseDetailsPage({ params }: Props) {
   const [closeForm, setCloseForm] = useState({
     date: "",
     time: "",
-    fromLesson: 1,
-    fromText: 1,
-    toLesson: 1,
-    toText: 1,
+    topic: "",
     presentStudents: [] as string[],
   });
   const [closeBusy, setCloseBusy] = useState(false);
@@ -183,10 +177,7 @@ export default function CourseDetailsPage({ params }: Props) {
         classId: cls.classId,
         date: cls.date,
         time: cls.time,
-        fromLesson: cls.contentCovered?.fromLesson ?? 1,
-        fromText: cls.contentCovered?.fromText ?? 1,
-        toLesson: cls.contentCovered?.toLesson ?? 1,
-        toText: cls.contentCovered?.toText ?? 1,
+        topic: cls.contentCovered?.topic || cls.contentCovered?.summary || "",
         presentStudents: (cls.presentStudents ?? []).map((r) => String(r).trim()),
       }),
     );
@@ -202,11 +193,8 @@ export default function CourseDetailsPage({ params }: Props) {
       date: edit.date,
       time: edit.time,
       contentCovered: {
-        summary: `Lesson ${edit.fromLesson} Text ${edit.fromText} to Lesson ${edit.toLesson} Text ${edit.toText}`,
-        fromLesson: edit.fromLesson,
-        fromText: edit.fromText,
-        toLesson: edit.toLesson,
-        toText: edit.toText,
+        topic: edit.topic.trim(),
+        summary: edit.topic.trim() || `Class ${edit.date}`,
       },
       presentStudents: edit.presentStudents,
       absentStudents: absent,
@@ -349,10 +337,7 @@ export default function CourseDetailsPage({ params }: Props) {
         classId: "",
         date: live?.date || new Date().toISOString().slice(0, 10),
         time: live?.time || "",
-        fromLesson: 1,
-        fromText: 1,
-        toLesson: 1,
-        toText: 1,
+        topic: live?.topic || course?.nextClassTopic || "",
         presentStudents: live?.open ? presentFromLive : [],
       });
     });
@@ -363,10 +348,7 @@ export default function CourseDetailsPage({ params }: Props) {
       setCloseForm({
         date: live.date || new Date().toISOString().slice(0, 10),
         time: live.time || "",
-        fromLesson: 1,
-        fromText: 1,
-        toLesson: 1,
-        toText: 1,
+        topic: live.topic || course?.nextClassTopic || "",
         presentStudents: (live.attendance ?? []).map((a) => String(a.rollNumber).trim()),
       });
       setCloseOpen(true);
@@ -429,10 +411,7 @@ export default function CourseDetailsPage({ params }: Props) {
           contentCovered: {
             date: closeForm.date,
             time: closeForm.time,
-            fromLesson: closeForm.fromLesson,
-            fromText: closeForm.fromText,
-            toLesson: closeForm.toLesson,
-            toText: closeForm.toText,
+            topic: closeForm.topic.trim(),
           },
           presentStudents: closeForm.presentStudents,
           absentStudents: absent,
@@ -499,12 +478,9 @@ export default function CourseDetailsPage({ params }: Props) {
     edit && (
       <Field
         key={key}
-        type="number"
-        min={1}
         label={label}
-        value={edit[key] as number}
-        onChange={(ev) => setEdit({ ...edit, [key]: Number(ev.target.value) })}
-        className="tabular-nums"
+        value={String(edit[key])}
+        onChange={(ev) => setEdit({ ...edit, [key]: ev.target.value })}
       />
     );
 
@@ -1076,7 +1052,9 @@ export default function CourseDetailsPage({ params }: Props) {
                               <span className="text-xs text-text/50">{cls.time}</span>
                             </div>
                             <p className="mt-2 text-sm font-semibold text-text">
-                              {cls.contentCovered?.summary || t("নিয়মিত ক্লাস", "Regular session")}
+                              {cls.contentCovered?.topic ||
+                                cls.contentCovered?.summary ||
+                                t("নিয়মিত ক্লাস", "Regular session")}
                             </p>
                           </div>
                           {adminUnlocked && !adminIsSub && (
@@ -1227,11 +1205,8 @@ export default function CourseDetailsPage({ params }: Props) {
                 onChange={(e) => setEdit({ ...edit, time: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {editNum("fromLesson", t("পাঠ থেকে", "From lesson"))}
-              {editNum("fromText", t("টেক্সট থেকে", "From text"))}
-              {editNum("toLesson", t("পাঠ পর্যন্ত", "To lesson"))}
-              {editNum("toText", t("টেক্সট পর্যন্ত", "To text"))}
+            <div className="grid grid-cols-1 gap-3">
+              {editNum("topic", t("আজকের বিষয়", "Today's topic"))}
             </div>
 
             <div>
@@ -1341,11 +1316,14 @@ export default function CourseDetailsPage({ params }: Props) {
                 onChange={(e) => setCloseForm({ ...closeForm, time: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Field type="number" min={1} label={t("পাঠ থেকে", "From lesson")} value={closeForm.fromLesson} onChange={(e) => setCloseForm({ ...closeForm, fromLesson: Number(e.target.value) })} className="tabular-nums" />
-              <Field type="number" min={1} label={t("টেক্সট থেকে", "From text")} value={closeForm.fromText} onChange={(e) => setCloseForm({ ...closeForm, fromText: Number(e.target.value) })} className="tabular-nums" />
-              <Field type="number" min={1} label={t("পাঠ পর্যন্ত", "To lesson")} value={closeForm.toLesson} onChange={(e) => setCloseForm({ ...closeForm, toLesson: Number(e.target.value) })} className="tabular-nums" />
-              <Field type="number" min={1} label={t("টেক্সট পর্যন্ত", "To text")} value={closeForm.toText} onChange={(e) => setCloseForm({ ...closeForm, toText: Number(e.target.value) })} className="tabular-nums" />
+            <div className="grid grid-cols-1 gap-3">
+              <Field
+                label={t("আজকের বিষয়", "Today's topic")}
+                hint={t("যেমন: HSK 3 Lesson 4 — Weather", "e.g. HSK 3 Lesson 4 — Weather")}
+                value={closeForm.topic}
+                onChange={(e) => setCloseForm({ ...closeForm, topic: e.target.value })}
+                placeholder={t("ক্লাসের বিষয় লিখুন", "Enter the class topic")}
+              />
             </div>
 
             <div>

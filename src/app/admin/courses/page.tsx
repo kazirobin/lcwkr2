@@ -43,6 +43,7 @@ type ClassRow = {
   time?: string;
   contentCovered?: {
     summary?: string;
+    topic?: string;
     fromLesson?: number;
     fromText?: number;
     toLesson?: number;
@@ -82,7 +83,7 @@ type PendingLog = {
   classId: string;
   date?: string;
   time?: string;
-  contentCovered?: { summary?: string };
+  contentCovered?: { summary?: string; topic?: string };
 };
 
 type ClassForm = {
@@ -90,10 +91,7 @@ type ClassForm = {
   classId: string; // empty for create
   date: string;
   time: string;
-  fromLesson: number;
-  fromText: number;
-  toLesson: number;
-  toText: number;
+  topic: string;
   presentStudents: string[];
 };
 
@@ -113,8 +111,11 @@ const EMPTY_COURSE: Course = {
   totalClassesPlanned: 24,
 };
 
-const summaryOf = (f: { fromLesson: number; fromText: number; toLesson: number; toText: number }) =>
-  `Lesson ${f.fromLesson} Text ${f.fromText} to Lesson ${f.toLesson} Text ${f.toText}`;
+const summaryOf = (cc: { topic?: string; fromLesson?: number; toLesson?: number; summary?: string }) =>
+  cc.topic?.trim() ||
+  (cc.fromLesson != null
+    ? `Lesson ${cc.fromLesson}${cc.toLesson != null && cc.toLesson !== cc.fromLesson ? `–${cc.toLesson}` : ""}`
+    : cc.summary || "Regular session");
 
 export default function AdminCoursesPage() {
   const { language } = useLanguage();
@@ -266,10 +267,7 @@ export default function AdminCoursesPage() {
   const [closeForm, setCloseForm] = useState({
     date: new Date().toISOString().slice(0, 10),
     time: "",
-    fromLesson: 1,
-    fromText: 1,
-    toLesson: 1,
-    toText: 1,
+    topic: "",
     presentStudents: [] as string[],
   });
   const [closeBusy, setCloseBusy] = useState(false);
@@ -382,10 +380,7 @@ export default function AdminCoursesPage() {
     setCloseForm({
       date: session.date || new Date().toISOString().slice(0, 10),
       time: session.time || "",
-      fromLesson: 1,
-      fromText: 1,
-      toLesson: 1,
-      toText: 1,
+      topic: session.topic || "",
       presentStudents: (session.attendance ?? []).map((a) => String(a.rollNumber).trim()),
     });
     setCloseOpen({ session, course: courses.find((c) => c.courseId === courseId) as Course });
@@ -407,10 +402,7 @@ export default function AdminCoursesPage() {
           contentCovered: {
             date: closeForm.date,
             time: closeForm.time,
-            fromLesson: closeForm.fromLesson,
-            fromText: closeForm.fromText,
-            toLesson: closeForm.toLesson,
-            toText: closeForm.toText,
+            topic: closeForm.topic.trim(),
           },
           presentStudents: closeForm.presentStudents,
           absentStudents: absent,
@@ -695,10 +687,7 @@ export default function AdminCoursesPage() {
       classId: "",
       date: new Date().toISOString().slice(0, 10),
       time: "",
-      fromLesson: 1,
-      fromText: 1,
-      toLesson: 1,
-      toText: 1,
+      topic: "",
       presentStudents: [],
     });
 
@@ -708,10 +697,7 @@ export default function AdminCoursesPage() {
       classId: cls.classId,
       date: cls.date ?? "",
       time: cls.time ?? "",
-      fromLesson: cls.contentCovered?.fromLesson ?? 1,
-      fromText: cls.contentCovered?.fromText ?? 1,
-      toLesson: cls.contentCovered?.toLesson ?? 1,
-      toText: cls.contentCovered?.toText ?? 1,
+      topic: cls.contentCovered?.topic || cls.contentCovered?.summary || "",
       presentStudents: (cls.presentStudents ?? []).map((r) => String(r).trim()),
     });
 
@@ -734,11 +720,8 @@ export default function AdminCoursesPage() {
             date: classForm.date,
             time: classForm.time,
             contentCovered: {
-              summary: summaryOf(classForm),
-              fromLesson: classForm.fromLesson,
-              fromText: classForm.fromText,
-              toLesson: classForm.toLesson,
-              toText: classForm.toText,
+              topic: classForm.topic.trim(),
+              summary: classForm.topic.trim() || `Class ${classForm.date}`,
             },
             presentStudents: classForm.presentStudents,
             absentStudents: absent,
@@ -767,11 +750,8 @@ export default function AdminCoursesPage() {
             date: classForm.date,
             time: classForm.time,
             contentCovered: {
-              summary: summaryOf(classForm),
-              fromLesson: classForm.fromLesson,
-              fromText: classForm.fromText,
-              toLesson: classForm.toLesson,
-              toText: classForm.toText,
+              topic: classForm.topic.trim(),
+              summary: classForm.topic.trim() || `Class ${classForm.date}`,
             },
             presentStudents: classForm.presentStudents,
             absentStudents: absent,
@@ -859,16 +839,13 @@ export default function AdminCoursesPage() {
     }
   };
 
-  const classNum = (key: "fromLesson" | "fromText" | "toLesson" | "toText", label: string) =>
+  const classNum = (key: "topic", label: string) =>
     classForm && (
       <Field
         key={key}
-        type="number"
-        min={1}
         label={label}
-        value={classForm[key]}
-        onChange={(e) => setClassForm((f) => (f ? { ...f, [key]: Number(e.target.value) } : f))}
-        className="tabular-nums"
+        value={String(classForm[key])}
+        onChange={(e) => setClassForm((f) => (f ? { ...f, [key]: e.target.value } : f))}
       />
     );
 
@@ -1116,7 +1093,7 @@ export default function AdminCoursesPage() {
                         >
                           <span className="min-w-0 truncate">
                             <span className="font-mono font-semibold text-text/70">{log.classId}</span>{" "}
-                            · {log.contentCovered?.summary || t("নিয়মিত ক্লাস", "Regular session")} ·{" "}
+                            · {log.contentCovered?.topic || log.contentCovered?.summary || t("নিয়মিত ক্লাস", "Regular session")} ·{" "}
                             <span className="tabular-nums">{log.date}</span>
                           </span>
                           <span className="flex gap-1.5">
@@ -1178,7 +1155,7 @@ export default function AdminCoursesPage() {
                           >
                             <span className="min-w-0 truncate">
                               <span className="font-mono font-semibold text-text/70">{cls.classId}</span> ·{" "}
-                              {cls.contentCovered?.summary} ·{" "}
+                              {cls.contentCovered?.topic || cls.contentCovered?.summary} ·{" "}
                               <span className="tabular-nums">
                                 {cls.date} · {(cls.presentStudents ?? []).length}
                               </span>
@@ -1513,11 +1490,14 @@ export default function AdminCoursesPage() {
                 onChange={(e) => setCloseForm({ ...closeForm, time: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Field type="number" min={1} label={t("পাঠ থেকে", "From lesson")} value={closeForm.fromLesson} onChange={(e) => setCloseForm({ ...closeForm, fromLesson: Number(e.target.value) })} className="tabular-nums" />
-              <Field type="number" min={1} label={t("টেক্সট থেকে", "From text")} value={closeForm.fromText} onChange={(e) => setCloseForm({ ...closeForm, fromText: Number(e.target.value) })} className="tabular-nums" />
-              <Field type="number" min={1} label={t("পাঠ পর্যন্ত", "To lesson")} value={closeForm.toLesson} onChange={(e) => setCloseForm({ ...closeForm, toLesson: Number(e.target.value) })} className="tabular-nums" />
-              <Field type="number" min={1} label={t("টেক্সট পর্যন্ত", "To text")} value={closeForm.toText} onChange={(e) => setCloseForm({ ...closeForm, toText: Number(e.target.value) })} className="tabular-nums" />
+            <div className="grid grid-cols-1 gap-3">
+              <Field
+                label={t("আজকের বিষয়", "Today's topic")}
+                hint={t("যেমন: HSK 3 Lesson 4 — Weather", "e.g. HSK 3 Lesson 4 — Weather")}
+                value={closeForm.topic}
+                onChange={(e) => setCloseForm({ ...closeForm, topic: e.target.value })}
+                placeholder={t("ক্লাসের বিষয় লিখুন", "Enter the class topic")}
+              />
             </div>
 
             <div>
@@ -1634,11 +1614,8 @@ export default function AdminCoursesPage() {
                 onChange={(e) => setClassForm({ ...classForm, time: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {classNum("fromLesson", t("পাঠ থেকে", "From lesson"))}
-              {classNum("fromText", t("টেক্সট থেকে", "From text"))}
-              {classNum("toLesson", t("পাঠ পর্যন্ত", "To lesson"))}
-              {classNum("toText", t("টেক্সট পর্যন্ত", "To text"))}
+            <div className="grid grid-cols-1 gap-3">
+              {classNum("topic", t("আজকের বিষয়", "Today's topic"))}
             </div>
 
             <div>

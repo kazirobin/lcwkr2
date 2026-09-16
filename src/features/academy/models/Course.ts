@@ -23,6 +23,7 @@ export interface ICourseDoc {
     status: "Scheduled" | "Completed" | "Cancelled";
     contentCovered: {
       summary: string;
+      topic?: string;
       fromLesson: number;
       fromText: number;
       toLesson: number;
@@ -82,6 +83,7 @@ const CourseSchema = new Schema<ICourseDoc>(
         status: { type: String, default: "Completed" },
         contentCovered: {
           summary: String,
+          topic: String,
           fromLesson: Number,
           fromText: Number,
           toLesson: Number,

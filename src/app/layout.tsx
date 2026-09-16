@@ -4,6 +4,7 @@ import { Noto_Sans_Bengali, Lora, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
+import DonationBadge from "@/components/layout/DonationBadge";
 import LiveClassBanner from "@/features/academy/components/LiveClassBanner";
 import { LanguageProvider } from "@/i18n";
 import ThemeProvider from "@/providers/ThemeProvider";
@@ -99,6 +100,7 @@ export default function RootLayout({
                 {children}
               </main>
               <Footer />
+              <DonationBadge />
               <LiveClassBanner />
             </LanguageProvider>
           </PinyinProvider>

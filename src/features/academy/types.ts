@@ -18,11 +18,12 @@ export interface IAssignmentMark {
 }
 
 export interface IContentCovered {
-  summary: string;
-  fromLesson: number;
-  fromText: number;
-  toLesson: number;
-  toText: number;
+  summary?: string;
+  topic?: string;
+  fromLesson?: number;
+  fromText?: number;
+  toLesson?: number;
+  toText?: number;
 }
 
 export interface IClassSession {

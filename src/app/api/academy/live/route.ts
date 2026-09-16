@@ -87,6 +87,8 @@ export async function POST(req: Request) {
         const session = await closeLiveClassAndMerge(id, {
           date: contentCovered?.date,
           time: contentCovered?.time,
+          topic: contentCovered?.topic,
+          summary: contentCovered?.summary,
           fromLesson: contentCovered?.fromLesson,
           fromText: contentCovered?.fromText,
           toLesson: contentCovered?.toLesson,

@@ -9,6 +9,7 @@ import {
   HandCoins,
   Languages,
   LogOut,
+  MessageSquareQuote,
   ShieldCheck,
   Trophy,
   UserPlus,
@@ -39,6 +40,7 @@ const ADMIN_MODULES = [
   { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
   { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
   { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },
+  { href: "/admin/reviews", bn: "রিভিউ", en: "Reviews", icon: MessageSquareQuote },
 ] as const;
 
 /**
@@ -242,6 +244,8 @@ function AdminQuickBar() {
         return c.hanziPro;
       case "/admin/donations":
         return c.donations;
+      case "/admin/reviews":
+        return c.reviews;
       default:
         return null;
     }

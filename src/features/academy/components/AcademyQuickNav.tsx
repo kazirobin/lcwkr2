@@ -8,6 +8,7 @@ import {
   ClipboardEdit,
   Info,
   Lock,
+  MessageSquareQuote,
   ShieldCheck,
   Users,
   UsersRound,
@@ -94,6 +95,13 @@ export function AcademyQuickNav() {
       href: "/academy/groups",
       icon: UsersRound,
       match: (p) => p.startsWith("/academy/groups"),
+    },
+    {
+      key: "reviews",
+      label: ["রিভিউ", "Reviews"],
+      href: "/academy/reviews",
+      icon: MessageSquareQuote,
+      match: (p) => p.startsWith("/academy/reviews"),
     },
     {
       key: "registration",

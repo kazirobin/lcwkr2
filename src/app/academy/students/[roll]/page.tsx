@@ -77,7 +77,7 @@ export default function StudentProfilePage() {
       .map((c) => {
         const sessions = (c.classes ?? []).map((cls) => ({
           date: cls.date,
-          summary: cls.contentCovered?.summary ?? "",
+          summary: cls.contentCovered?.topic ?? cls.contentCovered?.summary ?? "",
           present: (cls.presentStudents ?? []).some((r) => String(r).trim() === target),
         }));
         const attended = sessions.filter((s) => s.present).length;
