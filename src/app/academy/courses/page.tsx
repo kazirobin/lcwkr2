@@ -76,6 +76,14 @@ export default function CoursesListPage() {
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
+  // student roster pagination — 10 per page; reset when the selected course changes
+  const STUDENTS_PER_PAGE = 10;
+  const [studentPage, setStudentPage] = useState(1);
+
+  useEffect(() => {
+    setStudentPage(1);
+  }, [selectedId]);
+
   useEffect(() => {
     setAdminUnlocked(sessionStorage.getItem("academy_admin_unlocked") === "true");
   }, []);
@@ -147,6 +155,13 @@ export default function CoursesListPage() {
       return legacy ? legacy.toLowerCase() === cid : false;
     });
   }, [allStudents, selected]);
+
+  const totalPages = Math.max(1, Math.ceil(courseStudents.length / STUDENTS_PER_PAGE));
+  const safePage = Math.min(Math.max(1, studentPage), totalPages);
+  const pageStudents = useMemo(
+    () => courseStudents.slice((safePage - 1) * STUDENTS_PER_PAGE, safePage * STUDENTS_PER_PAGE),
+    [courseStudents, safePage],
+  );
 
   const nameByRoll = useMemo(() => {
     const m = new Map<string, string>();
@@ -668,8 +683,9 @@ export default function CoursesListPage() {
                 {t("এই কোর্সে এখনো কোনো শিক্ষার্থী নেই।", "No students enrolled in this course yet.")}
               </Card>
             ) : (
+              <>
                 <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {courseStudents.map((s) => {
+                {pageStudents.map((s) => {
                   const roll = String(s.rollNumber).trim();
                   const expanded = expandedStudent === roll;
                   const attended = (selected.classes ?? []).filter((c) =>
@@ -779,6 +795,36 @@ export default function CoursesListPage() {
                   );
                 })}
               </ul>
+                {totalPages > 1 && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      disabled={safePage <= 1}
+                      onClick={() => {
+                        setStudentPage((p) => Math.max(1, p - 1));
+                        setExpandedStudent(null);
+                      }}
+                      className="rounded-lg border border-text/15 px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-text/35 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {t("← আগের", "← Prev")}
+                    </button>
+                    <span className="px-2 font-mono text-xs tabular-nums text-text/60">
+                      {t(`পাতা ${safePage} / ${totalPages}`, `Page ${safePage} / ${totalPages}`)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={safePage >= totalPages}
+                      onClick={() => {
+                        setStudentPage((p) => Math.min(totalPages, p + 1));
+                        setExpandedStudent(null);
+                      }}
+                      className="rounded-lg border border-text/15 px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-text/35 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {t("পরের →", "Next →")}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
 

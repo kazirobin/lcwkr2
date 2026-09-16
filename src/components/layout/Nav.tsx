@@ -39,8 +39,6 @@ const DROPDOWNS = {
     bn: "একাডেমি",
     items: [
       { href: "/academy", en: "Academy Hub", bn: "একাডেমি হাব" },
-      { href: "/academy/courses", en: "Mandarin Courses", bn: "কোর্সসমূহ" },
-      { href: "/academy/students", en: "Scholars Directory", bn: "শিক্ষার্থী তালিকা" },
       { href: "/community", en: "Community", bn: "কমিউনিটি" },
       { href: "/donate", en: "Support / Donate", bn: "অনুদান" },
     ],
@@ -53,8 +51,8 @@ const DROPDOWNS = {
     items: [
       { href: "/hsk", en: "HSK Vocabulary", bn: "HSK ভোকাবুলারি" },
       { href: "/hsk/1", en: "HSK 1", bn: "HSK ১" },
-      { href: "/hsk/2", en: "HSK 2", bn: "HSK ২" },
-      { href: "/hsk/3", en: "HSK 3", bn: "HSK ৩" },
+      { href: "/hsk/2", en: "HSK 2", bn: "HSK ২", isPro: true },
+      { href: "/hsk/3", en: "HSK 3", bn: "HSK ৩", isPro: true },
     ],
     activePrefixes: ["/hsk"],
   },
@@ -360,6 +358,7 @@ export default function Nav() {
           >
             {dropdown.items.map((item) => {
               const isProtected = "isProtected" in item && item.isProtected;
+              const showProBadge = isProtected || ("isPro" in item && item.isPro);
 
               return (
                 <Link
@@ -379,7 +378,7 @@ export default function Nav() {
                   }`}
                 >
                   <span>{t(item.en, item.bn)}</span>
-                  {isProtected && (
+                  {showProBadge && (
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary/15 text-secondary font-bold">
                       PRO
                     </span>
@@ -436,6 +435,7 @@ export default function Nav() {
           <div className="pl-4 pb-2 space-y-1">
             {dropdown.items.map((item) => {
               const isProtected = "isProtected" in item && item.isProtected;
+              const showProBadge = isProtected || ("isPro" in item && item.isPro);
 
               return (
                 <Link
@@ -455,7 +455,7 @@ export default function Nav() {
                   }`}
                 >
                   <span>{t(item.en, item.bn)}</span>
-                  {isProtected && (
+                  {showProBadge && (
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary/15 text-secondary font-bold">
                       PRO
                     </span>
