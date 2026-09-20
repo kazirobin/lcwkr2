@@ -32,6 +32,13 @@ export default function LiveClassBanner() {
     [language],
   );
 
+  /** normalize a meet link to a clickable URL (adds https:// when missing). */
+  const meetHref = (raw: string | null | undefined) => {
+    const v = (raw ?? "").trim();
+    if (!v) return v;
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : `https://${v}`;
+  };
+
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [students, setStudents] = useState<AcademyStudent[]>([]);
   const [dismissed, setDismissed] = useState(false);
@@ -165,7 +172,7 @@ export default function LiveClassBanner() {
             <Button
               size="sm"
               iconLeft={<ExternalLink className="h-4 w-4" />}
-              onClick={() => window.open(selected.meetLink, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(meetHref(selected.meetLink), "_blank", "noopener,noreferrer")}
             >
               {t("Join Google Meet", "Join Google Meet")}
             </Button>

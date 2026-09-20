@@ -47,6 +47,13 @@ export default function CourseDetailsPage({ params }: Props) {
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
   );
+
+  /** normalize a meet link to a clickable URL (adds https:// when missing). */
+  const meetHref = (raw: string | null | undefined) => {
+    const v = (raw ?? "").trim();
+    if (!v) return v;
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : `https://${v}`;
+  };
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -357,7 +364,7 @@ export default function CourseDetailsPage({ params }: Props) {
   const startClass = () =>
     requireAdmin(async () => {
       const link = startLinkId === "new" ? null : links.find((l) => l._id === startLinkId);
-      const meet = (link?.meetLink || startMeet).trim();
+      const meet = meetHref(link?.meetLink || startMeet);
       const topic = (link?.topic || startTopic).trim();
       if (!meet) {
         toast(t("মিট লিংক দিন বা সিলেক্ট করুন।", "Enter or select a Meet link."), "error");

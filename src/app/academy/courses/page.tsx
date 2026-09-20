@@ -212,11 +212,18 @@ export default function CoursesListPage() {
     } catch { /* ignore */ }
   };
 
+  /** normalize a meet link to a clickable URL (adds https:// when missing). */
+  const meetHref = (raw: string | null | undefined) => {
+    const v = (raw ?? "").trim();
+    if (!v) return v;
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : `https://${v}`;
+  };
+
   const startClass = () =>
     requireAdmin(async () => {
       if (!selected) return;
       const link = startLinkId === "new" ? null : links.find((l) => l._id === startLinkId);
-      const meet = (link?.meetLink || startMeet).trim();
+      const meet = meetHref(link?.meetLink || startMeet);
       const topic = (link?.topic || startTopic).trim();
       if (!meet) {
         alert(t("মিট লিংক দিন বা সিলেক্ট করুন।", "Enter or select a Meet link."));
@@ -646,7 +653,7 @@ export default function CoursesListPage() {
                     </Button>
                   )}
                   <a
-                    href={courseLive.meetLink}
+                    href={meetHref(courseLive.meetLink)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-danger px-4 py-2 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
