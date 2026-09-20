@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Registration is only open for upcoming (Coming Soon) courses.",
+          message: "Registration is currently closed for this course.",
           nextBatchDate: result.nextBatchDate,
         },
         { status: 403 }

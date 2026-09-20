@@ -205,6 +205,10 @@ const en = {
         label: "Join the WhatsApp class",
         href: "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY",
       },
+      ctaFacebook: {
+        label: "Join the Facebook group",
+        href: "https://www.facebook.com/groups/lcwkr/",
+      },
       ctaText: { label: "Browse the courses", href: "/academy/courses" },
     },
 

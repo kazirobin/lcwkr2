@@ -86,10 +86,18 @@ export async function registerStudent(
   await connectDB();
 
   const targetCourse = await Course.findOne({ courseId: enrolledCourseId });
-  if (!targetCourse || targetCourse.status !== "Coming Soon") {
+
+  const regOpen =
+    targetCourse?.registrationOpen === true &&
+    (!targetCourse.registrationLastDate ||
+      targetCourse.registrationLastDate >=
+        new Date().toISOString().slice(0, 10));
+
+  if (!regOpen) {
     return {
       kind: "course-not-open",
-      nextBatchDate: targetCourse?.nextBatchRegistrationDate || "TBA",
+      nextBatchDate:
+        targetCourse?.nextBatchRegistrationDate || "TBA",
     };
   }
 

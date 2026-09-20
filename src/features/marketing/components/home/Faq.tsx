@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Plus, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import Script from "next/dist/client/script";
 
 type FAQItem = {
@@ -21,12 +22,14 @@ type FAQContent = {
     button: string;
     available: string;
     href: string;
+    facebook: string;
   };
 };
 
 const DRIVE_URL =
   "https://drive.google.com/drive/folders/12fEKjDBRU5NgnpgE4WluoRMer94LIkaQ";
 const PRACTICE_GROUP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
+const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/lcwkr/";
 const SUPPORT_URL = "https://wa.me/8801787881334";
 
 /* Chinese numerals — double as a passing glance of the language itself */
@@ -42,7 +45,11 @@ export const faq: { en: FAQContent; bn: FAQContent } = {
       {
         question: "How can I join the Chinese Learning Community?",
         answer:
-          'Tap the "Join Community" button on the website. You\'ll be taken to our WhatsApp community, where you can join as a member.',
+          'Tap the "Join Community" button on the website. You\'ll be taken to our WhatsApp community, where you can join as a member — or join our Facebook group to keep up with everything.',
+        action: {
+          label: "Join the Facebook group",
+          href: FACEBOOK_GROUP_URL,
+        },
       },
       {
         question: "Do I need any previous Chinese language knowledge?",
@@ -80,6 +87,7 @@ export const faq: { en: FAQContent; bn: FAQContent } = {
       button: "Message support",
       available: "Replies 10:00 AM – 10:00 PM",
       href: SUPPORT_URL,
+      facebook: "Join the Facebook group",
     },
   },
 
@@ -92,7 +100,11 @@ export const faq: { en: FAQContent; bn: FAQContent } = {
       {
         question: "আমি কীভাবে চীনা ভাষা শেখার কমিউনিটিতে যোগ দিতে পারি?",
         answer:
-          'ওয়েবসাইটের "Join Community" বাটনে ক্লিক করুন। এরপর আপনাকে আমাদের WhatsApp কমিউনিটিতে নিয়ে যাওয়া হবে, যেখানে আপনি সদস্য হতে পারবেন।',
+          'ওয়েবসাইটের "Join Community" বাটনে ক্লিক করুন। এরপর আপনাকে আমাদের WhatsApp কমিউনিটিতে নিয়ে যাওয়া হবে, যেখানে আপনি সদস্য হতে পারবেন — অথবা আমাদের Facebook গ্রুপে যোগ দিয়ে সব আপডেট পেতে পারেন।',
+        action: {
+          label: "Facebook গ্রুপে যোগ দিন",
+          href: FACEBOOK_GROUP_URL,
+        },
       },
       {
         question: "চীনা ভাষা শেখার জন্য আগে থেকে কিছু জানা কি প্রয়োজন?",
@@ -130,6 +142,7 @@ export const faq: { en: FAQContent; bn: FAQContent } = {
       button: "সাপোর্টে মেসেজ",
       available: "উত্তর: সকাল ১০টা – রাত ১০টা",
       href: SUPPORT_URL,
+      facebook: "Facebook গ্রুপে যোগ দিন",
     },
   },
 };
@@ -238,6 +251,16 @@ export default function FAQ() {
             <p className="mt-1.5 text-xs text-muted-foreground">
               {data.support.available}
             </p>
+
+            <a
+              href={FACEBOOK_GROUP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-text transition hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+            >
+              <FacebookIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {data.support.facebook}
+            </a>
           </div>
         </div>
 

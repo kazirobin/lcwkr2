@@ -582,6 +582,7 @@ export default function AdminCoursesPage() {
       {
         registrationOpen: !regOpen.registrationOpen,
         registrationLastDate: regOpen.registrationLastDate || null,
+        nextBatchRegistrationDate: regOpen.nextBatchRegistrationDate || null,
       },
       regOpen.registrationOpen
         ? t("রেজিস্ট্রেশন বন্ধ করা হয়েছে।", "Registration turned off.")
@@ -1882,6 +1883,16 @@ export default function AdminCoursesPage() {
               value={regOpen.registrationLastDate ?? ""}
               onChange={(e) => setRegOpen({ ...regOpen, registrationLastDate: e.target.value })}
               hint={t("খালি রাখলে শেষ তারিখ থাকবে না।", "Leave blank for no deadline.")}
+            />
+            <Field
+              type="date"
+              label={t("পরবর্তী ভর্তির তারিখ (ঐচ্ছিক)", "Next admission date (optional)")}
+              value={regOpen.nextBatchRegistrationDate ?? ""}
+              onChange={(e) => setRegOpen({ ...regOpen, nextBatchRegistrationDate: e.target.value })}
+              hint={t(
+                "রেজিস্ট্রেশন বন্ধ থাকলে শিক্ষার্থীরা এই তারিখটি 'পরবর্তী ভর্তি' হিসেবে দেখবে।",
+                "When registration is off, students see this date as the next intake.",
+              )}
             />
             <p className="text-xs text-text/55">
               {t(

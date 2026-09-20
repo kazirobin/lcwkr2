@@ -13,9 +13,11 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/i18n";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 
 const WHATSAPP_COMMUNITY = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
 const WHATSAPP_SUPPORT = "https://wa.me/8801787881334";
+const FACEBOOK_GROUP = "https://www.facebook.com/groups/lcwkr/";
 const DRIVE_FOLDER =
   "https://drive.google.com/drive/folders/12fEKjDBRU5NgnpgE4WluoRMer94LIkaQ";
 
@@ -26,8 +28,9 @@ export const footer = {
     ctaBadge: "Join the community",
     ctaTitle: "Start learning Chinese with us — today",
     ctaText:
-      "Hop into our WhatsApp community. Lessons, practice groups, and moderators are all a tap away.",
+      "Hop into our WhatsApp community or Facebook group. Lessons, practice groups, and moderators are all a tap away.",
     ctaButton: "Join on WhatsApp",
+    ctaButtonFacebook: "Join on Facebook",
     columns: [
       {
         title: "Learn",
@@ -56,6 +59,7 @@ export const footer = {
           { label: "Community rules", href: "/community" },
           { label: "Support the platform", href: "/donate" },
           { label: "WhatsApp Group", href: WHATSAPP_COMMUNITY, external: true },
+          { label: "Facebook Group", href: FACEBOOK_GROUP, external: true },
           { label: "Lesson Drive", href: DRIVE_FOLDER, external: true },
         ],
       },
@@ -74,8 +78,9 @@ export const footer = {
     ctaBadge: "কমিউনিটিতে যোগ দিন",
     ctaTitle: "আজই আমাদের সাথে চাইনিজ শেখা শুরু করুন",
     ctaText:
-      "আমাদের WhatsApp কমিউনিটিতে যোগ দিন। ক্লাস, প্র্যাকটিস গ্রুপ ও মডারেটর — সবকিছু এক ট্যাপ দূরে।",
+      "আমাদের WhatsApp কমিউনিটি বা Facebook গ্রুপে যোগ দিন। ক্লাস, প্র্যাকটিস গ্রুপ ও মডারেটর — সবকিছু এক ট্যাপ দূরে।",
     ctaButton: "WhatsApp-এ যোগ দিন",
+    ctaButtonFacebook: "Facebook-এ যোগ দিন",
     columns: [
       {
         title: "শেখা",
@@ -104,6 +109,7 @@ export const footer = {
           { label: "কমিউনিটির নিয়ম", href: "/community" },
           { label: "প্ল্যাটফর্মকে সহযোগিতা", href: "/donate" },
           { label: "WhatsApp গ্রুপ", href: WHATSAPP_COMMUNITY, external: true },
+          { label: "Facebook গ্রুপ", href: FACEBOOK_GROUP, external: true },
           { label: "লেসন ড্রাইভ", href: DRIVE_FOLDER, external: true },
         ],
       },
@@ -120,6 +126,7 @@ export const footer = {
 
 const SOCIALS = [
   { icon: MessageCircle, href: WHATSAPP_SUPPORT, label: "WhatsApp" },
+  { icon: FacebookIcon, href: FACEBOOK_GROUP, label: "Facebook" },
   { icon: FolderOpen, href: DRIVE_FOLDER, label: "Google Drive" },
   { icon: Phone, href: "tel:+8801787881334", label: "Phone" },
 ];
@@ -163,15 +170,27 @@ export default function Footer() {
               <p className="mt-2 leading-7 text-text/70">{data.ctaText}</p>
             </div>
 
-            <a
-              href={WHATSAPP_COMMUNITY}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 font-bold text-background shadow-[0_12px_30px_-10px_hsl(var(--primary)/0.6)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              <MessageCircle className="h-5 w-5" aria-hidden="true" />
-              {data.ctaButton}
-            </a>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+              <a
+                href={WHATSAPP_COMMUNITY}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 font-bold text-background shadow-[0_12px_30px_-10px_hsl(var(--primary)/0.6)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                {data.ctaButton}
+              </a>
+
+              <a
+                href={FACEBOOK_GROUP}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-background px-6 py-3.5 font-bold text-text transition hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <FacebookIcon className="h-5 w-5" aria-hidden="true" />
+                {data.ctaButtonFacebook}
+              </a>
+            </div>
           </div>
         </div>
 

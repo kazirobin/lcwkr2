@@ -10,6 +10,7 @@ import { useLanguage } from "@/i18n";
 import ThemeButton from "./ThemeButton";
 import PinyinToggle from "@/components/ui/PinyinToggle";
 import ProSubscriptionForm from "@/features/chinese-words/components/ProSubscriptionForm";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 
 // ============================================
 // CONFIGURATION
@@ -26,6 +27,8 @@ const STORAGE_KEY = "chinese_words_unlocked";
 
 // Primary call-to-action — the live-class WhatsApp group (mirrors the Hero CTA).
 const WHATSAPP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
+// Secondary community — the Facebook group.
+const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/lcwkr/";
 
 const MAIN_LINKS = [
   { id: "home", href: "/", en: "Home", bn: "হোম" },
@@ -522,8 +525,22 @@ export default function Nav() {
               >
                 {language === "en" ? "বাংলা" : "English"}
               </button>
-              <PinyinToggle />
+<PinyinToggle />
               <ThemeButton />
+              <a
+                href={FACEBOOK_GROUP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeAll}
+                aria-label={t(
+                  "Join the Facebook group",
+                  "Facebook গ্রুপে যোগ দিন",
+                )}
+                title={t("Join the Facebook group", "Facebook গ্রুপে যোগ দিন")}
+                className="p-2.5 rounded-full text-text/70 hover:text-secondary hover:bg-secondary/7 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+              >
+                <FacebookIcon className="h-4 w-4" />
+              </a>
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
@@ -634,6 +651,17 @@ export default function Nav() {
                       d="M13 7l5 5m0 0l-5 5m5-5H6"
                     />
                   </svg>
+                </a>
+
+                <a
+                  href={FACEBOOK_GROUP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeAll}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-text/15 bg-background px-4 py-3 text-sm font-medium text-text transition-colors hover:border-secondary/50 hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                >
+                  <FacebookIcon className="h-4 w-4" />
+                  {t("Join the Facebook group", "Facebook গ্রুপে যোগ দিন")}
                 </a>
               </div>
             </div>

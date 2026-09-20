@@ -13,6 +13,9 @@ import {
   Users,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
+
+const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/lcwkr/";
 
 type Props = {
   /** Optional real instructor portrait. Omitted → an initials mark is used instead. */
@@ -194,6 +197,16 @@ export function Hero({ photoSrc }: Props) {
               >
                 {t("লাইভ ক্লাসে যোগ দিন", "Join live class")}
                 <ArrowRight className="h-4 w-4" />
+              </a>
+
+              <a
+                href={FACEBOOK_GROUP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-secondary/40 bg-background px-6 py-3.5 text-[15px] font-semibold text-secondary transition-all duration-200 hover:border-secondary hover:bg-secondary/10 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+              >
+                <FacebookIcon className="h-4 w-4" />
+                {t("Facebook গ্রুপে যোগ দিন", "Join the Facebook group")}
               </a>
 
               <Link

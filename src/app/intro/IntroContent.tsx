@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '@/i18n';
+import { FacebookIcon } from '@/components/icons/FacebookIcon';
 
 /**
  * The `/intro` route — "Start here". A problem → answer read for a Bangla-speaking
@@ -217,6 +218,19 @@ export default function IntroContent() {
                                     className="size-4"
                                     aria-hidden="true"
                                 />
+                            </a>
+
+                            <a
+                                href={c.hero.ctaFacebook.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-3 text-[15px] font-semibold text-text transition hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                            >
+                                <FacebookIcon
+                                    className="size-4"
+                                    aria-hidden="true"
+                                />
+                                {c.hero.ctaFacebook.label}
                             </a>
 
                             <Link

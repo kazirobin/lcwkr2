@@ -26,12 +26,14 @@ import {
   Wallet,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import { ICourse, IStudent } from "@/features/academy";
 import {
   Breadcrumb,
   Button,
   ButtonLink,
   Card,
+  Dialog,
   Eyebrow,
   Field,
   IconButton,
@@ -43,6 +45,7 @@ import {
 } from "@/components/ui";
 
 const WHATSAPP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
+const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/lcwkr/";
 
 export default function AcademyHubPage() {
   const { language } = useLanguage();
@@ -160,6 +163,8 @@ export default function AcademyHubPage() {
   const [enrollBusy, setEnrollBusy] = useState(false);
   const [enrollMsg, setEnrollMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [enrollSubmitted, setEnrollSubmitted] = useState(false);
+  // HSK-1 registration popup — "same as other course registration"
+  const [enrollOpen, setEnrollOpen] = useState(false);
 
   const fetchEnrollCount = useCallback(async () => {
     try {
@@ -224,6 +229,7 @@ export default function AcademyHubPage() {
         remaining: Number(data.remaining) ?? BATCH_CAPACITY - (Number(data.enrolled) || 0),
       });
       setEnrollSubmitted(true);
+      setEnrollOpen(false);
       // forward the details to the academy WhatsApp
       const waText = [
         "🎉 *HSK-1 Batch — New Enrollment!*",
@@ -328,10 +334,14 @@ export default function AcademyHubPage() {
     }
   };
 
-  const openBatch = useMemo(
-    () => courses.find((c) => c.status === "Coming Soon"),
-    [courses],
-  );
+  const openBatch = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return courses.find(
+      (c) =>
+        c.registrationOpen === true &&
+        (!c.registrationLastDate || c.registrationLastDate >= today),
+    );
+  }, [courses]);
 
   const stats = useMemo(() => {
     const running = courses.filter((c) => c.status === "Running").length;
@@ -414,6 +424,18 @@ export default function AcademyHubPage() {
                 <ArrowRight className="h-4 w-4" />
               </a>
             )}
+            <a
+              href={FACEBOOK_GROUP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-text/15 px-3.5 py-2 text-[13px] font-semibold text-text/80 transition-colors hover:border-secondary/50 hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+              title={t("Facebook গ্রুপে যোগ দিন", "Join the Facebook group")}
+            >
+              <FacebookIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {t("Facebook গ্রুপ", "Facebook group")}
+              </span>
+            </a>
             <IconButton
               label={t("তথ্য রিফ্রেশ করুন", "Refresh data")}
               size="sm"
@@ -536,7 +558,7 @@ export default function AcademyHubPage() {
                   </p>
                 </div>
 
-                {/* registration form */}
+                {/* registration */}
                 {enrollSubmitted ? (
                   <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ok/30 bg-ok/[0.06] px-5 py-8 text-center">
                     <span className="inline-flex size-11 items-center justify-center rounded-full bg-ok/15 text-ok">
@@ -551,90 +573,32 @@ export default function AcademyHubPage() {
                         "Your details were sent to the academy. Watch your WhatsApp for confirmation.",
                       )}
                     </p>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="mt-4"
-                      onClick={() => {
-                        setEnrollSubmitted(false);
-                        setEnrollForm({ name: "", whatsapp: "", trxId: "", location: "" });
-                        setEnrollMsg(null);
-                      }}
-                    >
-                      {t("আরেকটি বই", "Book one more")}
-                    </Button>
                   </div>
                 ) : (
-                  <form
-                    className="flex flex-1 flex-col gap-3"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      submitEnrollment();
-                    }}
-                  >
-                    <Field
-                      label={t("নাম", "Name")}
-                      placeholder={t("আপনার পুরো নাম", "Your full name")}
-                      value={enrollForm.name}
-                      error={enrollErrors.name}
-                      onChange={(e) => setEnroll("name", e.target.value)}
-                    />
-                    <Field
-                      label={t("WhatsApp নম্বর", "WhatsApp number")}
-                      type="tel"
-                      placeholder="017XXXXXXXX"
-                      value={enrollForm.whatsapp}
-                      error={enrollErrors.whatsapp}
-                      onChange={(e) => setEnroll("whatsapp", e.target.value)}
-                    />
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field
-                        label={t("bKash TrxID", "bKash TrxID")}
-                        placeholder="ABC123456789"
-                        value={enrollForm.trxId}
-                        error={enrollErrors.trxId}
-                        onChange={(e) => setEnroll("trxId", e.target.value)}
-                      />
-                      <Field
-                        label={t("এলাকা", "Location")}
-                        placeholder={t("যে শহরে থাকেন", "Your city / area")}
-                        value={enrollForm.location}
-                        error={enrollErrors.location}
-                        onChange={(e) => setEnroll("location", e.target.value)}
-                      />
-                    </div>
-
+                  <div className="flex flex-1 flex-col justify-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 sm:p-6">
                     <p className="flex items-start gap-1.5 rounded-lg border border-text/10 bg-background/50 px-3 py-2 text-xs text-text/55">
                       <Phone className="mt-0.5 size-3.5 shrink-0 text-primary" />
                       {t(
-                        "১,০০০ টাকা bKash করুন 01787881334-এ → TrxID দিয়ে সাবমিট করলে আপনার তথ্য WhatsApp-এ (01787881334) পাঠানো হবে।",
-                        "Send 1,000 BDT to bKash 01787881334 → submit with your TrxID and we forward your info on WhatsApp (01787881334).",
+                        "১,০০০ টাকা bKash করুন 01787881334-এ → TrxID দিয়ে নিবন্ধন সম্পূর্ণ করুন।",
+                        "Send 1,000 BDT to bKash 01787881334 → complete registration with your TrxID.",
                       )}
                     </p>
-
-                    {enrollMsg && !enrollMsg.ok && (
-                      <p
-                        role="alert"
-                        className="rounded-lg border border-danger/30 bg-danger/[0.06] px-3 py-2 text-xs font-semibold text-danger"
-                      >
-                        {enrollMsg.text}
-                      </p>
-                    )}
-
                     <Button
-                      type="submit"
+                      type="button"
                       size="md"
-                      loading={enrollBusy}
+                      disabled={enrollCount.remaining <= 0}
                       className="mt-1 w-full"
+                      onClick={() => {
+                        setEnrollMsg(null);
+                        setEnrollOpen(true);
+                      }}
                       iconRight={<ArrowRight className="size-4" />}
                     >
-                      {t("আজই সিট নিশ্চিত করুন", "Secure your seat now")}
+                      {enrollCount.remaining <= 0
+                        ? t("সিট পূর্ণ", "Batch full")
+                        : t("রেজিস্ট্রেশন করুন", "Register now")}
                     </Button>
-
-                    <p className="text-center text-xs text-text/45">
-                      {t("২০ জন না হওয়া পর্যন্ত ব্যাচ শুরু হবে না।", "The batch won't start until 20 students enroll.")}
-                    </p>
-                  </form>
+                  </div>
                 )}
               </div>
             </div>
@@ -1110,7 +1074,7 @@ export default function AcademyHubPage() {
           <div>
             <p className="text-sm font-bold text-text">
               {openBatch
-                ? t("নতুন ব্যাচের ভর্তি চলছে", "Admission is open for the next cohort")
+                ? t("এখন ভর্তি চলছে", "Admission is open")
                 : t("সব ব্যাচে ক্লাস চলছে (ভর্তি বন্ধ)", "All cohorts are currently running (Admission closed)")}
             </p>
             <p className="mt-1 text-sm text-text/60">
@@ -1188,6 +1152,88 @@ export default function AcademyHubPage() {
           </ul>
         </section>
       )}
+
+      {/* HSK-1 registration popup */}
+      <Dialog
+        open={enrollOpen}
+        onClose={() => setEnrollOpen(false)}
+        title={t("HSK 1 ব্যাচে রেজিস্ট্রেশন", "HSK 1 batch registration")}
+        description={t(
+          `ফি ${BATCH_FEE} টাকা bKash করুন 01787881334-এ, তারপর TrxID দিয়ে ফর্মটি পূরণ করুন।`,
+          `Send the ${BATCH_FEE} BDT fee to bKash 01787881334, then fill the form below with your TrxID.`,
+        )}
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submitEnrollment();
+          }}
+        >
+          <Field
+            label={t("নাম", "Name")}
+            placeholder={t("আপনার পুরো নাম", "Your full name")}
+            value={enrollForm.name}
+            error={enrollErrors.name}
+            onChange={(e) => setEnroll("name", e.target.value)}
+          />
+          <Field
+            label={t("WhatsApp নম্বর", "WhatsApp number")}
+            type="tel"
+            placeholder="017XXXXXXXX"
+            value={enrollForm.whatsapp}
+            error={enrollErrors.whatsapp}
+            onChange={(e) => setEnroll("whatsapp", e.target.value)}
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label={t("bKash TrxID", "bKash TrxID")}
+              placeholder="ABC123456789"
+              value={enrollForm.trxId}
+              error={enrollErrors.trxId}
+              onChange={(e) => setEnroll("trxId", e.target.value)}
+            />
+            <Field
+              label={t("এলাকা", "Location")}
+              placeholder={t("যে শহরে থাকেন", "Your city / area")}
+              value={enrollForm.location}
+              error={enrollErrors.location}
+              onChange={(e) => setEnroll("location", e.target.value)}
+            />
+          </div>
+
+          <p className="flex items-start gap-1.5 rounded-lg border border-text/10 bg-background/50 px-3 py-2 text-xs text-text/55">
+            <Phone className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            {t(
+              "আপনার তথ্য একাডেমির WhatsApp-এ (01787881334) পাঠানো হবে।",
+              "Your details are forwarded to the academy on WhatsApp (01787881334).",
+            )}
+          </p>
+
+          {enrollMsg && !enrollMsg.ok && (
+            <p
+              role="alert"
+              className="rounded-lg border border-danger/30 bg-danger/[0.06] px-3 py-2 text-xs font-semibold text-danger"
+            >
+              {enrollMsg.text}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            size="md"
+            loading={enrollBusy}
+            className="mt-1 w-full"
+            iconRight={<ArrowRight className="size-4" />}
+          >
+            {t("আজই সিট নিশ্চিত করুন", "Secure your seat now")}
+          </Button>
+
+          <p className="text-center text-xs text-text/45">
+            {t("২০ জন না হওয়া পর্যন্ত ব্যাচ শুরু হবে না।", "The batch won't start until 20 students enroll.")}
+          </p>
+        </form>
+      </Dialog>
 
       {/* New here → intro */}
       <Link

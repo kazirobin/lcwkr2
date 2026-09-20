@@ -203,6 +203,10 @@ const bn = {
         label: "WhatsApp ক্লাসে যোগ দিন",
         href: "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY",
       },
+      ctaFacebook: {
+        label: "Facebook গ্রুপে যোগ দিন",
+        href: "https://www.facebook.com/groups/lcwkr/",
+      },
       ctaText: { label: "কোর্সগুলো দেখুন", href: "/academy/courses" },
     },
 

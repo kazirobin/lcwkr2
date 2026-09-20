@@ -11,6 +11,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import { finals, initials, type PinyinSound } from "@/features/marketing/data/pinyin";
 import { speakChinese } from "@/lib/chinese-speech";
 
@@ -184,6 +185,18 @@ export default function RoadmapBooks() {
                 />
               </a>
             </div>
+
+            <a
+              href="https://www.facebook.com/groups/lcwkr/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-text/60 transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+            >
+              <FacebookIcon className="size-4" aria-hidden="true" />
+              {language === "bn"
+                ? "সবশেষ আপডেটের জন্য আমাদের Facebook গ্রুপে যোগ দিন"
+                : "Join our Facebook group to stay updated"}
+            </a>
           </div>
         </div>
       </div>

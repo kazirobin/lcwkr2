@@ -91,7 +91,7 @@ export default function CourseDetailsPage({ params }: Props) {
 
   // ── start-class (saved Meet links) ─────────────────────────────────────
   const [links, setLinks] = useState<ILiveLink[]>([]);
-  const [startLinkId, setStartLinkId] = useState<string>("");
+  const [startLinkId, setStartLinkId] = useState<string>("new");
   const [startMeet, setStartMeet] = useState("");
   const [startTopic, setStartTopic] = useState("");
   const [startBusy, setStartBusy] = useState(false);
@@ -387,7 +387,7 @@ export default function CourseDetailsPage({ params }: Props) {
         });
         const data = await res.json();
         if (data.success) {
-          setStartLinkId("");
+          setStartLinkId("new");
           setStartMeet("");
           setStartTopic("");
           await fetchData();
@@ -572,7 +572,12 @@ export default function CourseDetailsPage({ params }: Props) {
                     ? t(`শেষ তারিখ: ${course.registrationLastDate}`, `Last date: ${course.registrationLastDate}`)
                     : course.registrationOpen
                       ? t("কোনো শেষ তারিখ নেই।", "No deadline set.")
-                      : t("অ্যাডমিন পরবর্তী ব্যাচ খুললে জানানো হবে।", "You'll be notified when the admin opens the next batch.")}
+                      : course.nextBatchRegistrationDate
+                        ? t(
+                            `পরবর্তী ভর্তি শুরু হবে: ${course.nextBatchRegistrationDate}`,
+                            `Next admission opens: ${course.nextBatchRegistrationDate}`,
+                          )
+                        : t("অ্যাডমিন পরবর্তী ব্যাচ খুললে জানানো হবে।", "You'll be notified when the admin opens the next batch.")}
                 </p>
               </div>
               {course.registrationOpen && (

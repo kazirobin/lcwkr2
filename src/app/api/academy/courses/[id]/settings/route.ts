@@ -24,6 +24,8 @@ export async function PUT(req: NextRequest, props: Props) {
       allowed.registrationOpen = fields.registrationOpen;
     if (fields.registrationLastDate === null || typeof fields.registrationLastDate === "string")
       allowed.registrationLastDate = fields.registrationLastDate;
+    if (fields.nextBatchRegistrationDate === null || typeof fields.nextBatchRegistrationDate === "string")
+      allowed.nextBatchRegistrationDate = fields.nextBatchRegistrationDate;
 
     const updated = await updateCourse(id, allowed);
     if (!updated) {
