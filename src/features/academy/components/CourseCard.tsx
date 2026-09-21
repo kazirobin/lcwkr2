@@ -27,9 +27,9 @@ export default function CourseCard({
 
   return (
     <Card interactive className="group relative flex flex-col p-5">
-      {/* whole card links to the course detail page (stretched link) */}
+      {/* whole card links to the course page (stretched link) */}
       <Link
-        href={`/academy/courses/${course.courseId}`}
+        href={`/academy/courses?course=${encodeURIComponent(course.courseId)}`}
         aria-label={t("দেখুন", "View") + " " + course.courseName}
         className="absolute inset-0 z-0 rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
       />
@@ -41,7 +41,7 @@ export default function CourseCard({
           <div className="flex items-center gap-2">
             {live && (
               <Link
-                href={`/academy/courses/${course.courseId}#attendance`}
+                href={`/academy/courses?course=${encodeURIComponent(course.courseId)}#attendance`}
                 className="inline-flex items-center gap-1 rounded-full bg-danger px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white transition-transform hover:-translate-y-0.5"
               >
                 <Radio className="h-3 w-3" />

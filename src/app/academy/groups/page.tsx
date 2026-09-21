@@ -152,7 +152,7 @@ export default function AcademyGroupsPage() {
                     <Eyebrow seal="组" label={course?.courseName ?? courseId} detail={`${list.length}`} />
                   </div>
                   <Link
-                    href={`/academy/courses/${courseId}`}
+                    href={`/academy/courses?course=${encodeURIComponent(courseId)}`}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-text underline decoration-text/25 underline-offset-4 hover:decoration-text"
                   >
                     {t("কোর্স পেজ", "Course page")}

@@ -117,23 +117,26 @@ export function AcademyQuickNav() {
       aria-label={t("একাডেমি দ্রুত সংযোগ", "Academy quick access")}
       className="sticky top-16 z-30 -mx-4 px-4 sm:top-20 sm:mx-0 sm:px-0"
     >
-      <div className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-text/10 bg-card/85 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/70">
+      <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-text/10 bg-card/85 p-1.5 shadow-sm backdrop-blur scroll-px-1.5 snap-x supports-[backdrop-filter]:bg-card/70 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((it) => {
           const Icon = it.icon;
           const active = it.match(pathname);
+          const label = t(it.label[0], it.label[1]);
           return (
             <Link
               key={it.key}
               href={it.href}
               aria-current={active ? "page" : undefined}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+              aria-label={label}
+              title={label}
+              className={`inline-flex shrink-0 snap-start items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text sm:px-3.5 ${
                 active
                   ? "bg-text text-background"
                   : "text-text/70 hover:bg-text/5 hover:text-text"
               }`}
             >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {t(it.label[0], it.label[1])}
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="hidden sm:inline">{label}</span>
             </Link>
           );
         })}
@@ -143,21 +146,25 @@ export function AcademyQuickNav() {
         <button
           type="button"
           aria-pressed={adminOn}
+          aria-label={adminOn ? t("অ্যাডমিন মোড চালু", "Admin ON") : t("অ্যাডমিন মোড", "Admin")}
+          title={adminOn ? t("অ্যাডমিন মোড চালু", "Admin ON") : t("অ্যাডমিন মোড", "Admin")}
           onClick={() => (adminOn ? turnOff() : setPinOpen(true))}
-          className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+          className={`inline-flex shrink-0 snap-start items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text sm:px-3.5 ${
             adminOn
               ? "border-ok bg-ok/10 text-ok hover:bg-ok/20"
               : "border-text/20 text-text/70 hover:border-text/40 hover:text-text"
           }`}
         >
           {adminOn ? (
-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
           ) : (
-            <Lock className="h-4 w-4" aria-hidden="true" />
+            <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
           )}
-          {adminOn
-            ? t("অ্যাডমিন মোড চালু", "Admin ON")
-            : t("অ্যাডমিন মোড", "Admin")}
+          <span className="hidden sm:inline">
+            {adminOn
+              ? t("অ্যাডমিন মোড চালু", "Admin ON")
+              : t("অ্যাডমিন মোড", "Admin")}
+          </span>
         </button>
       </div>
 

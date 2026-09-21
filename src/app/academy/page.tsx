@@ -977,7 +977,13 @@ export default function AcademyHubPage() {
               const isLive = openSessions.some((s) => s.courseId === course.courseId);
 
               return (
-                <Card key={course._id ? String(course._id) : course.courseId} className={`flex flex-col p-6 ${isLive ? "border-danger/50" : ""}`}>
+                <Card key={course._id ? String(course._id) : course.courseId} className={`relative flex flex-col p-6 ${isLive ? "border-danger/50" : ""}`}>
+                  <Link
+                    href={`/academy/courses?course=${encodeURIComponent(course.courseId)}`}
+                    aria-label={t("দেখুন", "View") + " " + course.courseName}
+                    className="absolute inset-0 z-0 rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                  />
+                  <div className="relative z-10 flex flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-md border border-text/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-text/70">
@@ -1041,7 +1047,7 @@ export default function AcademyHubPage() {
 
                   <div className="mt-5 flex flex-wrap items-center gap-2">
                     <Link
-                      href={`/academy/courses/${course.courseId}`}
+                      href={`/academy/courses?course=${encodeURIComponent(course.courseId)}`}
                       className="inline-flex items-center gap-1 self-start border-t border-text/10 pt-4 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
                     >
                       {t("সিলেবাস ও ক্লাস লগ", "Curriculum & class logs")}
@@ -1060,6 +1066,7 @@ export default function AcademyHubPage() {
                         ▶ {t("লাইভ ক্লাসে যান", "Go to live class")}
                       </button>
                     )}
+                  </div>
                   </div>
                 </Card>
               );

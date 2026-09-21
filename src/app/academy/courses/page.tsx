@@ -129,6 +129,26 @@ export default function CoursesListPage() {
     return () => clearInterval(iv);
   }, [fetchData]);
 
+  // deep-link: /academy/courses?course=HSK-101 auto-selects that course
+  useEffect(() => {
+    if (courses.length === 0) return;
+    const urlCourse = new URLSearchParams(window.location.search).get("course");
+    if (urlCourse) {
+      const match = courses.find((c) => c.courseId.toLowerCase() === urlCourse.toLowerCase());
+      if (match) setSelectedId(match.courseId);
+    }
+  }, [courses]);
+
+  const selectCourse = useCallback(
+    (courseId: string) => {
+      setSelectedId(courseId);
+      const url = new URL(window.location.href);
+      url.searchParams.set("course", courseId);
+      window.history.replaceState({}, "", url.toString());
+    },
+    [],
+  );
+
   const selected = useMemo(
     () => courses.find((c) => c.courseId.toLowerCase() === selectedId.toLowerCase()) ?? courses[0] ?? null,
     [courses, selectedId],
@@ -423,7 +443,7 @@ export default function CoursesListPage() {
                 <button
                   key={c.courseId}
                   type="button"
-                  onClick={() => setSelectedId(c.courseId)}
+                  onClick={() => selectCourse(c.courseId)}
                   className={`flex shrink-0 items-center gap-2 rounded-xl border px-4 py-3 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
                     active
                       ? "border-text bg-text text-background font-bold"
