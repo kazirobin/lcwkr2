@@ -94,6 +94,7 @@ export interface IStudyGroup {
   courseId: string;
   label: string;
   memberRolls: number[];
+  createdByRoll?: number;
   createdAt: string;
 }
 
