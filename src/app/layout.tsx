@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Noto_Sans_Bengali, Lora, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
@@ -6,6 +6,7 @@ import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
 import DonationBadge from "@/components/layout/DonationBadge";
 import LiveClassBanner from "@/features/academy/components/LiveClassBanner";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import { LanguageProvider } from "@/i18n";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { PinyinProvider } from "@/providers/PinyinProvider";
@@ -58,6 +59,19 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: "Learn Chinese with Kazi Robin",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Learn Chinese with Kazi Robin",
+    statusBarStyle: "default",
+  },
   openGraph: {
     type: "website",
     siteName: "Learn Chinese with Kazi Robin",
@@ -72,6 +86,14 @@ export const metadata: Metadata = {
     title: "Learn Chinese with Kazi Robin",
     description: SITE_DESCRIPTION,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#071614",
+  colorScheme: "light dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -102,6 +124,7 @@ export default function RootLayout({
               <Footer />
               <DonationBadge />
               <LiveClassBanner />
+              <ServiceWorkerRegistrar />
             </LanguageProvider>
           </PinyinProvider>
         </ThemeProvider>
