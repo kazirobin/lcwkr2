@@ -62,10 +62,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/kr.png", sizes: "any" },
+      { url: "/kr.png", sizes: "192x192", type: "image/png" },
+      { url: "/kr.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: "/kr.png",
   },
   appleWebApp: {
     capable: true,
