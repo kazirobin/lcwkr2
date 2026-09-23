@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import DonationBadge from "@/components/layout/DonationBadge";
 import LiveClassBanner from "@/features/academy/components/LiveClassBanner";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import OfflineManager from "@/components/OfflineManager";
 import { LanguageProvider } from "@/i18n";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { PinyinProvider } from "@/providers/PinyinProvider";
@@ -62,11 +63,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/kr.png", sizes: "any" },
-      { url: "/kr.png", sizes: "192x192", type: "image/png" },
-      { url: "/kr.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/kr.png",
+    apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
     capable: true,
@@ -126,6 +127,7 @@ export default function RootLayout({
               <DonationBadge />
               <LiveClassBanner />
               <ServiceWorkerRegistrar />
+              <OfflineManager />
             </LanguageProvider>
           </PinyinProvider>
         </ThemeProvider>

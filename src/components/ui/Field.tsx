@@ -55,6 +55,7 @@ type FieldProps = {
   label: string;
   hint?: string;
   error?: string;
+  children?: ReactNode;
 };
 
 export function Field({
@@ -63,19 +64,22 @@ export function Field({
   error,
   required,
   className = "",
+  children,
   ...rest
-}: FieldProps & ComponentPropsWithoutRef<"input">) {
+}: FieldProps & Omit<ComponentPropsWithoutRef<"input">, "children">) {
   const id = useId();
   return (
     <Shell id={id} label={label} hint={hint} error={error} required={required}>
-      <input
-        id={id}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, hint, error)}
-        className={`${control} ${className}`}
-        {...rest}
-      />
+      {children ?? (
+        <input
+          id={id}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(id, hint, error)}
+          className={`${control} ${className}`}
+          {...rest}
+        />
+      )}
     </Shell>
   );
 }
