@@ -59,12 +59,17 @@ export default function DialogueSection({ questions, answers, onChange, disabled
               const blank = q.blanks.find((b) => b.lineIndex === i);
               if (!blank) {
                 return (
-                  <p key={i} className="text-sm font-chinese text-text">
-                    <span className="text-[10px] font-mono text-muted mr-2 align-middle">
-                      {ln.s}
-                    </span>
-                    {ln.h}
-                  </p>
+                  <div key={i}>
+                    <p className="text-sm font-chinese text-text">
+                      <span className="text-[10px] font-mono text-muted mr-2 align-middle">
+                        {ln.s}
+                      </span>
+                      {ln.h}
+                    </p>
+                    <p data-pinyin className="pl-1 text-xs font-mono text-secondary">
+                      {ln.p}
+                    </p>
+                  </div>
                 );
               }
               const val = answers[blank.id] ?? "";
@@ -72,26 +77,32 @@ export default function DialogueSection({ questions, answers, onChange, disabled
 
               return (
                 <div key={i} className="py-1">
-                  <p className="text-sm font-chinese text-text mb-1.5">
+                  <p className="text-sm font-chinese text-text mb-1">
                     <span className="text-[10px] font-mono text-muted mr-2 align-middle">{ln.s}</span>
                     {blank.hanzi}
                   </p>
+                  <p data-pinyin className="mb-2 pl-1 text-xs font-mono text-secondary">
+                    {blank.pinyin}
+                  </p>
                   <div className="flex flex-wrap gap-1.5 pl-1">
                     {blank.choices.map((choice) => {
-                      const active = val === choice;
+                      const active = val === choice.hanzi;
                       return (
                         <button
-                          key={choice}
+                          key={choice.hanzi}
                           type="button"
                           disabled={disabled}
-                          onClick={() => onChange(blank.id, active ? "" : choice)}
-                          className={`px-3 py-1.5 rounded-lg text-sm font-chinese transition border ${
+                          onClick={() => onChange(blank.id, active ? "" : choice.hanzi)}
+                          className={`min-w-[72px] rounded-lg border px-3 py-1.5 text-left transition ${
                             active
-                              ? "bg-primary text-primary-foreground border-primary font-bold"
-                              : "bg-card border-border text-text hover:border-primary/50"
+                              ? "border-primary bg-primary font-bold text-primary-foreground"
+                              : "border-border bg-card text-text hover:border-primary/50"
                           }`}
                         >
-                          {choice}
+                          <span className="block font-chinese">{choice.hanzi}</span>
+                          <span data-pinyin className="mt-0.5 block text-[10px] font-mono opacity-75">
+                            {choice.pinyin}
+                          </span>
                         </button>
                       );
                     })}
@@ -101,7 +112,6 @@ export default function DialogueSection({ questions, answers, onChange, disabled
                       {t("সঠিক উত্তর", "Correct")}: {res.correctAnswer}
                     </p>
                   )}
-                  <p data-pinyin className="text-[10px] font-mono text-muted mt-1">{blank.pinyin}</p>
                 </div>
               );
             })}

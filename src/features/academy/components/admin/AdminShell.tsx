@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpen,
-  CalendarCheck,
   HandCoins,
   Languages,
   LogOut,
   MessageSquareQuote,
+  PenLine,
   ShieldCheck,
   Trophy,
   UserPlus,
@@ -41,6 +41,7 @@ const ADMIN_MODULES = [
   { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
   { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },
   { href: "/admin/reviews", bn: "রিভিউ", en: "Reviews", icon: MessageSquareQuote },
+  { href: "/admin/hw", bn: "হোমওয়ার্ক", en: "Homework", icon: PenLine },
 ] as const;
 
 /**
@@ -81,13 +82,19 @@ export function AdminShell({
     try {
       const saved = localStorage.getItem(PIN_KEY);
       if (saved && saved.trim() === ADMIN_PASSCODE.trim()) {
-        setAuthed(true);
-        sessionStorage.setItem(UNLOCK_KEY, "true");
+        queueMicrotask(() => {
+          setAuthed(true);
+          try {
+            sessionStorage.setItem(UNLOCK_KEY, "true");
+          } catch {
+            /* ignore */
+          }
+        });
       }
     } catch {
       /* storage unavailable */
     }
-    setChecking(false);
+    queueMicrotask(() => setChecking(false));
   }, []);
 
   const login = (e: React.FormEvent) => {

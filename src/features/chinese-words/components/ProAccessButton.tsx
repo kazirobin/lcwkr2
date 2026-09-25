@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useState } from "react";
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth";
 import ProSubscriptionForm from "./ProSubscriptionForm";
 
 /**
@@ -37,15 +38,19 @@ export default function ProAccessButton({
   const [ready, setReady] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const unlockedRef = useRef(false);
+  const { student: account } = useAccount();
+  // Server truth (admin-granted) counts alongside the local flag.
+  const showPro = isPro || !!account?.isPro;
 
   useEffect(() => {
-    try {
-      setIsPro(localStorage.getItem(PRO_KEY) === "1");
-    } catch {
-      /* storage unavailable */
-    }
-    setReady(true);
+    queueMicrotask(() => {
+      try {
+        setIsPro(localStorage.getItem(PRO_KEY) === "1");
+      } catch {
+        /* storage unavailable */
+      }
+      setReady(true);
+    });
   }, []);
 
   useImperativeHandle(ref, () => ({
@@ -77,7 +82,7 @@ export default function ProAccessButton({
 
   return (
     <>
-      {isPro ? (
+      {showPro ? (
         <button
           type="button"
           onClick={() => setModalOpen(true)}
@@ -111,7 +116,7 @@ export default function ProAccessButton({
               ✕
             </button>
 
-            {isPro && (
+            {showPro && (
               <div className="mb-4 p-4 rounded-2xl bg-ok-surface border border-ok/30 space-y-2">
                 <p className="text-sm font-semibold text-ok">
                   ✓ {t("আপনি Pro সদস্য — সব কনটেন্ট আনলক করা আছে।", "You're a Pro member — all content is unlocked.")}

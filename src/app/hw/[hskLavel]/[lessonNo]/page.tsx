@@ -7,6 +7,7 @@ import {
   EXAM_LEVELS,
   LEVEL_TITLES,
   buildLessonExam,
+  getExamLesson,
   getExamLessonNumbers,
 } from "@/features/hw/data/exam";
 import {
@@ -29,8 +30,10 @@ import DialogueSection from "@/features/hw/components/DialogueSection";
 import McqSection from "@/features/hw/components/McqSection";
 import SpeakingSection from "@/features/hw/components/SpeakingSection";
 import DialoguePlayer from "@/features/hw/components/DialoguePlayer";
+import HandwritingAssignment from "@/features/hw/components/HandwritingAssignment";
 import { lesson1Dialogue } from "@/features/hw/data/hsk1/lesson1-dialogue";
 import { matchesPinyinAnswer } from "@/features/hw/pinyin";
+import { loadAccountPhone } from "@/features/student-auth";
 import ProGate from "@/features/chinese-words/components/ProGate";
 
 interface MistakeItem {
@@ -57,6 +60,16 @@ export default function HomeworkDynamicPage() {
     () => buildLessonExam(level, lessonNo),
     [level, lessonNo],
   );
+  // Handwritten assignment prompt: every Hanzi word of this lesson.
+  const handwritingItems = useMemo(
+    () =>
+      (getExamLesson(level, lessonNo)?.words ?? []).map((w) => ({
+        hanzi: w.h,
+        pinyin: w.p,
+        meaning: language === "bn" ? w.b || w.e : w.e || w.b,
+      })),
+    [level, lessonNo, language],
+  );
 
   const [answers, setAnswers] = useState<ExamAnswers>({});
   const [submitted, setSubmitted] = useState(false);
@@ -65,6 +78,22 @@ export default function HomeworkDynamicPage() {
   const [history, setHistory] = useState<ReturnType<typeof summarizeResults>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const requiredAnswerIds = useMemo(() => {
+    if (!exam) return [];
+    return [
+      ...exam.writing.map((question) => question.id),
+      ...exam.matching.flatMap((question) =>
+        question.pairs.map((pair) => `${question.id}:${pair.hanzi}`),
+      ),
+      ...exam.dialogues.flatMap((question) => question.blanks.map((blank) => blank.id)),
+      ...exam.mcq.map((question) => question.id),
+      ...exam.speaking.map((question) => question.id),
+    ];
+  }, [exam]);
+  const answeredCount = requiredAnswerIds.filter((id) => Boolean((answers[id] ?? "").trim())).length;
+  const remainingAnswerCount = requiredAnswerIds.length - answeredCount;
+  const allAnswersComplete = remainingAnswerCount === 0;
+  const answerProgress = requiredAnswerIds.length === 0 ? 100 : (answeredCount / requiredAnswerIds.length) * 100;
 
   // restore draft + history from localStorage on lesson change
   useEffect(() => {
@@ -123,6 +152,7 @@ export default function HomeworkDynamicPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!allAnswersComplete) return;
 
     const items: ExamResultItem[] = [];
     let totalScore = 0;
@@ -230,6 +260,23 @@ export default function HomeworkDynamicPage() {
     setSubmitted(true);
     saveResult(res);
     setHistory(summarizeResults());
+    // Sync to the student's account when logged in (silent, offline-safe).
+    const accountPhone = loadAccountPhone();
+    if (accountPhone) {
+      fetch("/api/hw/exam-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: accountPhone,
+          level,
+          lesson: lessonNo,
+          totalScore,
+          totalMarks: exam.totalMarks,
+        }),
+      }).catch(() => {
+        /* offline — local copy is the source of truth */
+      });
+    }
     setMistakes(
       items
         .filter((i) => i.earned < i.marks)
@@ -473,8 +520,25 @@ export default function HomeworkDynamicPage() {
         </div>
       )}
 
-      {/* Lesson-1 listening practice: playable dialogue script (not graded) */}
-      {isLesson1 && <DialoguePlayer lines={lesson1Dialogue} collapsible />}
+      {/* Listening practice: built-in script (lesson 1) or admin-saved
+          script for this lesson — the player hides itself otherwise. */}
+      <DialoguePlayer
+        level={level}
+        lesson={lessonNo}
+        builtin={isLesson1 ? lesson1Dialogue : undefined}
+        collapsible
+      />
+
+      {/* Handwritten assignment: write this lesson's Hanzi on paper, send a
+          photo, admin marks it by hand (0–10) — outside the auto exam. */}
+      <div className="mt-6">
+        <HandwritingAssignment
+          level={level}
+          lesson={lessonNo}
+          items={handwritingItems}
+          collapsible
+        />
+      </div>
 
       {/* Exam form */}
       {!submitted && (
@@ -487,18 +551,47 @@ export default function HomeworkDynamicPage() {
             collapsible
             acceptPinyin={isLesson1}
           />
-          <MatchingSection questions={exam.matching} answers={answers} onChange={handleInputChange} collapsible />
+          <MatchingSection questions={exam.matching} answers={answers} onChange={handleInputChange} collapsible twoSided />
           <DialogueSection questions={exam.dialogues} answers={answers} onChange={handleInputChange} collapsible />
           <McqSection questions={exam.mcq} answers={answers} onChange={handleInputChange} collapsible />
           <SpeakingSection questions={exam.speaking} answers={answers} onChange={handleInputChange} collapsible />
 
-          <div className="sticky bottom-4">
+          <div className="sticky bottom-4 space-y-2">
+            <div className="rounded-2xl border border-border bg-card/95 p-3 shadow-sm backdrop-blur">
+              <div className="mb-2 flex items-center justify-between text-xs font-semibold text-muted">
+                <span>{t("উত্তরের অগ্রগতি", "Answer progress")}</span>
+                <span className="font-mono tabular-nums">
+                  {answeredCount}/{requiredAnswerIds.length}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-text/10">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${answerProgress}%` }}
+                />
+              </div>
+            </div>
             <button
               type="submit"
-              className="w-full bg-primary text-primary-foreground font-semibold py-3.5 rounded-2xl hover:opacity-90 transition shadow-lg cursor-pointer text-base"
+              disabled={!allAnswersComplete}
+              className={`w-full font-semibold py-3.5 rounded-2xl transition shadow-lg text-base ${
+                allAnswersComplete
+                  ? "bg-primary text-primary-foreground hover:opacity-90 cursor-pointer"
+                  : "bg-text/20 text-text/50 cursor-not-allowed"
+              }`}
             >
-              {t("জমা দিন ও রেজাল্ট দেখুন", "Submit & See Result")} ({exam.totalMarks} {t("নম্বর", "marks")})
+              {allAnswersComplete
+                ? `${t("জমা দিন ও রেজাল্ট দেখুন", "Submit & See Result")} (${exam.totalMarks} ${t("নম্বর", "marks")})`
+                : t("সব উত্তর দেওয়ার পরে জমা দিন", "Complete all answers to submit")}
             </button>
+            {!allAnswersComplete && (
+              <p role="status" className="text-center text-xs text-muted">
+                {t(
+                  `${remainingAnswerCount} উত্তর বাকি আছে।`,
+                  `${remainingAnswerCount} answers remaining.`,
+                )}
+              </p>
+            )}
           </div>
         </form>
       )}
@@ -525,6 +618,7 @@ export default function HomeworkDynamicPage() {
             disabled
             results={matchingRes}
             collapsible
+            twoSided
           />
           <DialogueSection
             questions={exam.dialogues}

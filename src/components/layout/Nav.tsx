@@ -7,7 +7,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth";
 import ThemeButton from "./ThemeButton";
+import AccountButton from "./AccountButton";
 import PinyinToggle from "@/components/ui/PinyinToggle";
 import ProSubscriptionForm from "@/features/chinese-words/components/ProSubscriptionForm";
 import { FacebookIcon } from "@/components/icons/FacebookIcon";
@@ -99,6 +101,7 @@ export default function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
+  const { student: navAccount } = useAccount();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<DropdownId | null>(null);
@@ -170,8 +173,10 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-    setOpenDropdown(null);
+    queueMicrotask(() => {
+      setIsMobileMenuOpen(false);
+      setOpenDropdown(null);
+    });
   }, [pathname]);
 
   useEffect(() => {
@@ -527,6 +532,7 @@ export default function Nav() {
               </button>
 <PinyinToggle />
               <ThemeButton />
+              <AccountButton onNavigate={closeAll} />
               <a
                 href={FACEBOOK_GROUP_URL}
                 target="_blank"
@@ -578,6 +584,7 @@ export default function Nav() {
               </button>
               <PinyinToggle />
               <ThemeButton />
+              <AccountButton onNavigate={closeAll} />
               <button
                 type="button"
                 ref={mobileToggleRef}
@@ -696,13 +703,15 @@ export default function Nav() {
               </h2>
               <p className="text-xs sm:text-sm text-text/70 leading-relaxed max-w-lg mx-auto">
                 {t(
-                  "পূর্বে সাবস্ক্রিপশন থাকলে পাসওয়ার্ড দিয়ে সরাসরি আনলক করুন, অথবা নিচে বিকাশ পেমেন্ট ফর্ম পূরণ করে এখনই অ্যাক্সেস নিন।",
-                  "If you already have a subscription, enter your password to unlock. Otherwise, complete the bKash payment form below to get instant access."
+                  "Pro সদস্য হতে হবে শিক্ষার্থী — পাসওয়ার্ড শুধু লগইন করা শিক্ষার্থীর জন্য। নতুন Pro রেজিস্ট্রেশন শুধু admin দেয়।",
+                  "Pro members must be students — password works only when logged in. Only admin grants new Pro."
                 )}
               </p>
             </div>
 
-            {/* 1. Quick Password Unlock Section */}
+            {navAccount ? (
+            <>
+            {/* 1. Quick Password Unlock Section (logged-in students only) */}
             <div className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text/80">
                 {t("পাসওয়ার্ড দিয়ে দ্রুত আনলক করুন", "Quick Unlock With Password")}
@@ -732,12 +741,31 @@ export default function Nav() {
                 </p>
               )}
             </div>
+            </>
+            ) : (
+            <div className="p-5 rounded-2xl bg-text/5 border border-text/10 text-center space-y-3">
+              <p className="text-3xl">🔑</p>
+              <p className="text-sm font-semibold text-text">
+                {t(
+                  "Pro আনলক করতে আগে student অ্যাকাউন্টে লগইন করুন।",
+                  "Login with your student account first to unlock Pro."
+                )}
+              </p>
+              <Link
+                href="/login"
+                onClick={closeAll}
+                className="inline-block px-6 py-2.5 bg-secondary text-background font-bold rounded-xl text-sm hover:opacity-90 transition"
+              >
+                {t("লগইন", "Login")}
+              </Link>
+            </div>
+            )}
 
             {/* Separator */}
             <div className="relative flex py-1 items-center">
               <div className="flex-grow border-t border-text/10"></div>
               <span className="shrink mx-3 text-xs text-text/40 font-mono">
-                {t("নতুন সাবস্ক্রিপশন নিতে নিচের ফর্মটি পূরণ করুন", "OR SUBSCRIBE BELOW VIA BKASH")}
+                {t("নিচে প্রো অ্যাক্সেস নিন", "GET PRO ACCESS BELOW")}
               </span>
               <div className="flex-grow border-t border-text/10"></div>
             </div>

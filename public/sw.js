@@ -12,7 +12,7 @@
  * broken at the source.  Detected by hostname because `process.env` is
  * unavailable inside a service-worker scope.
  */
-const VERSION = "lcwkr-v3";
+const VERSION = "lcwkr-v4";
 
 const PRECACHE = [
   "/offline.html",
@@ -279,6 +279,12 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".ttf");
 
   if (isStatic) {
+    // Dev: Turbopack reuses chunk URLs across edits, so a cache would
+    // serve last version's code forever — always go to network in dev.
+    if (IS_DEV && url.pathname.startsWith("/_next/")) {
+      event.respondWith(fetch(req).catch(() => caches.match(req)));
+      return;
+    }
     event.respondWith(
       caches.match(req).then((hit) => {
         const refresh = fetch(req)

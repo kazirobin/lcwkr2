@@ -84,6 +84,7 @@ export interface IStudent {
   nameEnglish: string;
   whatsapp: string;
   isWhatsAppGroupJoined: boolean;
+  isPro?: boolean;
   location: string;
   avatarUrl?: string;
   enrolledCourseIds: string[];

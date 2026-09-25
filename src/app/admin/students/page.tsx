@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { ArrowRightLeft, Check, RefreshCw, Search, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Activity, Check, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import {
@@ -11,7 +11,6 @@ import {
   IconButton,
   InlineSelect,
   LoadingBlock,
-  SelectField,
   StatusMark,
   TableFrame,
   Td,
@@ -27,6 +26,7 @@ type Student = {
   nameEnglish: string;
   whatsapp: string;
   isWhatsAppGroupJoined: boolean;
+  isPro?: boolean;
   enrolledCourseId?: string;
   enrolledCourseIds?: string[];
 };
@@ -50,6 +50,33 @@ export default function AdminStudentsPage() {
   const [newTracks, setNewTracks] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
+  const [activityFor, setActivityFor] = useState<Student | null>(null);
+  const [activity, setActivity] = useState<{
+    exams: { level: number; lesson: number; best: number; latest: number; attempts: number; totalMarks: number }[];
+    subs: { _id: string; level: number; lesson: number; audioUrl: string; mark: number | null; status: string; createdAt: string }[];
+    marks: { _id: string; level: number; lesson: number; mark: number; source: string; createdAt: string }[];
+  } | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
+
+  const openActivity = (s: Student) => {
+    setActivityFor(s);
+    setActivity(null);
+    setActivityLoading(true);
+    const qp = encodeURIComponent(s.whatsapp);
+    Promise.all([
+      fetch(`/api/hw/exam-results?phone=${qp}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+      fetch(`/api/hw/dialogues?phone=${qp}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+      fetch(`/api/hw/marks?phone=${qp}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+    ])
+      .then(([e, d, m]) => {
+        setActivity({
+          exams: e?.success ? (e.results ?? []) : [],
+          subs: d?.success ? (d.submissions ?? []) : [],
+          marks: m?.success ? (m.marks ?? []) : [],
+        });
+      })
+      .finally(() => setActivityLoading(false));
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -68,7 +95,9 @@ export default function AdminStudentsPage() {
   }, [t, toast]);
 
   useEffect(() => {
-    fetchData();
+    queueMicrotask(() => {
+      void fetchData();
+    });
   }, [fetchData]);
 
   const trackOf = (s: Student) => s.enrolledCourseId || s.enrolledCourseIds?.[0] || "—";
@@ -108,6 +137,28 @@ export default function AdminStudentsPage() {
         body: JSON.stringify({
           rollNumber: s.rollNumber,
           isWhatsAppGroupJoined: !s.isWhatsAppGroupJoined,
+          adminPasscode: ADMIN_PASSCODE,
+        }),
+      });
+      const data = await res.json();
+      if (data.success ?? res.ok) fetchData();
+      else toast(data.message || t("আপডেট হয়নি।", "Update failed."), "error");
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const togglePro = async (s: Student) => {
+    setBusy(s.rollNumber);
+    try {
+      const res = await fetch("/api/academy/students/pro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rollNumber: s.rollNumber,
+          isPro: !s.isPro,
           adminPasscode: ADMIN_PASSCODE,
         }),
       });
@@ -245,6 +296,7 @@ export default function AdminStudentsPage() {
               <Th>{t("ট্র্যাক", "Track")}</Th>
               <Th>{t("হোয়াটসঅ্যাপ", "WhatsApp")}</Th>
               <Th>{t("গ্রুপ", "Group")}</Th>
+              <Th>{t("প্রো", "Pro")}</Th>
               <Th className="text-right">{t("কাজ", "Actions")}</Th>
             </>
           }
@@ -276,8 +328,28 @@ export default function AdminStudentsPage() {
                   </StatusMark>
                 </button>
               </Td>
+              <Td>
+                <button
+                  type="button"
+                  onClick={() => togglePro(s)}
+                  disabled={busy === s.rollNumber}
+                  title={t("Pro subscriber mark করুন", "Mark Pro subscriber")}
+                  className="rounded-md px-1.5 py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text disabled:opacity-50"
+                >
+                  <StatusMark tone={s.isPro ? "done" : "pending"}>
+                    {s.isPro ? "⭐ Pro" : t("সাধারণ", "Regular")}
+                  </StatusMark>
+                </button>
+              </Td>
               <Td className="text-right">
                 <div className="flex justify-end gap-1.5">
+                  <IconButton
+                    label={t("অ্যাক্টিভিটি দেখুন", "View activity")}
+                    size="sm"
+                    onClick={() => openActivity(s)}
+                  >
+                    <Activity className="h-4 w-4" />
+                  </IconButton>
                   <IconButton
                     label={t("কোর্স এনরোলমেন্ট", "Manage enrollment")}
                     size="sm"
@@ -307,6 +379,118 @@ export default function AdminStudentsPage() {
           ))}
         </TableFrame>
       )}
+
+      <Dialog
+        open={activityFor !== null}
+        onClose={() => setActivityFor(null)}
+        title={t("শিক্ষার্থী অ্যাক্টিভিটি", "Student activity")}
+        description={activityFor ? `${activityFor.nameEnglish} · #${activityFor.rollNumber}` : ""}
+        footer={
+          <Button variant="secondary" size="sm" onClick={() => setActivityFor(null)}>
+            {t("বন্ধ করুন", "Close")}
+          </Button>
+        }
+      >
+        {activityLoading ? (
+          <p className="py-6 text-center text-xs text-text/50">
+            {t("লোড হচ্ছে...", "Loading...")}
+          </p>
+        ) : !activity ? (
+          <p className="py-6 text-center text-xs text-text/50">
+            {t("তথ্য পাওয়া যায়নি।", "No data.")}
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {(() => {
+              const examBest = activity.exams.reduce((n, r) => n + r.best, 0);
+              const latestByLesson = new Map<string, number>();
+              for (const m of activity.marks) {
+                const key = `${m.level}-${m.lesson}`;
+                if (!latestByLesson.has(key)) latestByLesson.set(key, m.mark);
+              }
+              const dialogueTotal = [...latestByLesson.values()].reduce((n, v) => n + v, 0);
+              return (
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { v: String(activity.exams.reduce((n, r) => n + r.attempts, 0)), l: t("পরীক্ষা", "Exams") },
+                    { v: `${examBest}`, l: t("সেরা", "Best") },
+                    { v: String(activity.subs.length), l: t("রেকর্ডিং", "Recordings") },
+                    { v: String(examBest + dialogueTotal), l: t("মোট", "Total") },
+                  ].map((c) => (
+                    <div key={c.l} className="rounded-xl border border-text/10 bg-background px-2 py-2.5">
+                      <p className="font-mono text-base font-bold tabular-nums text-text">{c.v}</p>
+                      <p className="text-[10px] text-text/50">{c.l}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold text-text">
+                📝 {t("পরীক্ষা", "Exams")} ({activity.exams.length})
+              </h4>
+              {activity.exams.length === 0 ? (
+                <p className="text-[11px] text-text/40">{t("কিছু নেই।", "None.")}</p>
+              ) : (
+                <ul className="space-y-1">
+                  {activity.exams.map((r) => (
+                    <li key={`${r.level}-${r.lesson}`} className="flex justify-between text-xs">
+                      <span className="text-text/70">
+                        HSK {r.level} · {t("লেসন", "Lesson")} {r.lesson} ×{r.attempts}
+                      </span>
+                      <span className="font-mono font-bold tabular-nums text-text">
+                        {r.best}/{r.totalMarks}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold text-text">
+                🎙️ {t("রেকর্ডিং", "Recordings")} ({activity.subs.length})
+              </h4>
+              {activity.subs.length === 0 ? (
+                <p className="text-[11px] text-text/40">{t("কিছু নেই।", "None.")}</p>
+              ) : (
+                <div className="max-h-44 space-y-2 overflow-y-auto">
+                  {activity.subs.map((s) => (
+                    <div key={s._id} className="rounded-lg border border-text/10 bg-background p-2">
+                      <p className="mb-1 font-mono text-[11px] text-text/60">
+                        HSK {s.level} · {t("লেসন", "Lesson")} {s.lesson} ·{" "}
+                        {s.status === "Marked" && s.mark !== null ? `${s.mark}/10` : t("অপেক্ষমাণ", "Pending")}
+                      </p>
+                      <audio controls src={s.audioUrl} className="h-8 w-full" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold text-text">
+                ⭐ {t("মার্ক", "Marks")} ({activity.marks.length})
+              </h4>
+              {activity.marks.length === 0 ? (
+                <p className="text-[11px] text-text/40">{t("কিছু নেই।", "None.")}</p>
+              ) : (
+                <ul className="space-y-1">
+                  {activity.marks.slice(0, 10).map((m) => (
+                    <li key={m._id} className="flex justify-between text-xs">
+                      <span className="text-text/70">
+                        HSK {m.level} · {m.lesson === 0 ? t("সামগ্রিক", "Overall") : `${t("লেসন", "Lesson")} ${m.lesson}`}
+                      </span>
+                      <span className="font-mono font-bold tabular-nums text-ok">{m.mark}/10</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </Dialog>
 
       <Dialog
         open={transferring !== null}

@@ -9,6 +9,7 @@ import LiveClassBanner from "@/features/academy/components/LiveClassBanner";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import OfflineManager from "@/components/OfflineManager";
 import { LanguageProvider } from "@/i18n";
+import { AccountProvider } from "@/features/student-auth";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { PinyinProvider } from "@/providers/PinyinProvider";
 
@@ -118,7 +119,8 @@ export default function RootLayout({
         </a>
         <ThemeProvider>
           <PinyinProvider>
-            <LanguageProvider>
+          <LanguageProvider>
+            <AccountProvider>
               <Nav />
               <main id="main-content" className="flex-1 pt-16 sm:pt-20">
                 {children}
@@ -128,7 +130,8 @@ export default function RootLayout({
               <LiveClassBanner />
               <ServiceWorkerRegistrar />
               <OfflineManager />
-            </LanguageProvider>
+            </AccountProvider>
+          </LanguageProvider>
           </PinyinProvider>
         </ThemeProvider>
       </body>

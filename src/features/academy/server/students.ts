@@ -6,14 +6,19 @@ import { Student, Course } from "@/features/academy/models";
 
 export async function listStudents(status: string) {
   await connectDB();
+  // Never leak password hashes to list consumers.
   return Student.find(
     status === "All" ? {} : { registrationStatus: status },
-  ).sort({ rollNumber: 1 });
+  )
+    .select("-passwordHash")
+    .sort({ rollNumber: 1 });
 }
 
 export async function getStudentWithCourses(roll: string) {
   await connectDB();
-  const student = await Student.findOne({ rollNumber: Number(roll) });
+  const student = await Student.findOne({ rollNumber: Number(roll) }).select(
+    "-passwordHash",
+  );
   if (!student) return null;
   const courses = await Course.find({ courseId: student.enrolledCourseId });
   return { student, courses };
@@ -62,6 +67,15 @@ export async function setStudentGroupJoined(
   return Student.findOneAndUpdate(
     { rollNumber },
     { isWhatsAppGroupJoined: Boolean(isWhatsAppGroupJoined) },
+    { new: true },
+  );
+}
+
+export async function setStudentPro(rollNumber: unknown, isPro: unknown) {
+  await connectDB();
+  return Student.findOneAndUpdate(
+    { rollNumber },
+    { isPro: Boolean(isPro) },
     { new: true },
   );
 }

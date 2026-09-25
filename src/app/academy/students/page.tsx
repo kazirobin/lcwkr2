@@ -32,6 +32,9 @@ export default function ScholarsDirectoryPage() {
 
   const [students, setStudents] = useState<IStudent[]>([]);
   const [courses, setCourses] = useState<ICourse[]>([]);
+  const [marks, setMarks] = useState<
+    Record<string, { mark: number; level: number; lesson: number }>
+  >({});
   const [loading, setLoading] = useState(true);
 
   const [query, setQuery] = useState("");
@@ -47,18 +50,36 @@ export default function ScholarsDirectoryPage() {
   const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
   useEffect(() => {
-    setAdminUnlocked(sessionStorage.getItem("academy_admin_unlocked") === "true");
+    queueMicrotask(() => {
+      try {
+        setAdminUnlocked(sessionStorage.getItem("academy_admin_unlocked") === "true");
+      } catch {
+        /* storage unavailable */
+      }
+    });
   }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, c] = await Promise.all([
+      const [s, c, m] = await Promise.all([
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/hw/marks", { cache: "no-store" }).then((r) => r.json()).catch(() => null),
       ]);
       if (s.success && Array.isArray(s.students)) setStudents(s.students);
       if (c.success && Array.isArray(c.courses)) setCourses(c.courses);
+      if (m?.success && Array.isArray(m.marks)) {
+        const map: Record<string, { mark: number; level: number; lesson: number }> = {};
+        for (const item of m.marks) {
+          map[String(item.rollNumber)] = {
+            mark: item.mark,
+            level: item.level,
+            lesson: item.lesson,
+          };
+        }
+        setMarks(map);
+      }
     } catch (err) {
       console.error("Failed to load directory:", err);
     } finally {
@@ -67,7 +88,9 @@ export default function ScholarsDirectoryPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    queueMicrotask(() => {
+      void fetchData();
+    });
   }, [fetchData]);
 
   const enrolledIds = (s: IStudent): string[] => {
@@ -286,7 +309,14 @@ export default function ScholarsDirectoryPage() {
                       />
                     </span>
                     <div className="min-w-0">
-                      <h3 className="truncate text-sm font-bold text-text">{s.nameEnglish}</h3>
+                      <h3 className="flex items-center gap-1.5 truncate text-sm font-bold text-text">
+                        <span className="truncate">{s.nameEnglish}</span>
+                        {s.isPro && (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-500">
+                            ⭐ Pro
+                          </span>
+                        )}
+                      </h3>
                       <p className="text-xs tabular-nums text-text/45">
                         {t("রোল", "Roll")} #{s.rollNumber}
                       </p>
@@ -334,6 +364,28 @@ export default function ScholarsDirectoryPage() {
                   )}
 
                   <dl className="mt-4 space-y-2 rounded-xl border border-text/10 bg-text/3 p-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <dt className="text-text/50">{t("সংলাপ মার্ক", "Dialogue mark")}</dt>
+                      <dd>
+                        {marks[String(s.rollNumber)] ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <StatusMark tone="done">
+                              <span className="tabular-nums">
+                                {marks[String(s.rollNumber)].mark}/10
+                              </span>
+                            </StatusMark>
+                            <span className="font-mono text-[10px] text-text/40">
+                              HSK{marks[String(s.rollNumber)].level}
+                              {marks[String(s.rollNumber)].lesson > 0
+                                ? `·L${marks[String(s.rollNumber)].lesson}`
+                                : ""}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-text/45">{t("এখনও নেই", "—")}</span>
+                        )}
+                      </dd>
+                    </div>
                     <div className="flex items-center justify-between">
                       <dt className="text-text/50">{t("উপস্থিতি", "Attendance")}</dt>
                       <dd>

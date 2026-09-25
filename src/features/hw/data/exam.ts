@@ -1,5 +1,5 @@
 // Exam data registry — assembles the generated per-level lesson data and
-// derives the full exam (4 sections, 50 marks) for any HSK 1–3 lesson.
+// derives the full exam (5 sections, dynamic total) for any HSK 1–3 lesson.
 // Everything is local static data; no database involved.
 
 import type {
@@ -63,6 +63,34 @@ function shuffled<T>(items: T[], rand: () => number): T[] {
   return arr;
 }
 
+function maskPinyin(linePinyin: string, wordPinyin: string): string {
+  const chars: { value: string; index: number }[] = [];
+  for (let i = 0; i < linePinyin.length; i += 1) {
+    const normalized = linePinyin[i]
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    for (const value of normalized) {
+      if (/[a-z]/.test(value)) chars.push({ value, index: i });
+    }
+  }
+
+  const letters = chars.map(({ value }) => value).join("");
+  const target = wordPinyin
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  if (!target) return "____";
+
+  const start = letters.indexOf(target);
+  if (start < 0) return "____";
+
+  const from = chars[start].index;
+  const to = chars[start + target.length - 1].index + 1;
+  return `${linePinyin.slice(0, from)}____${linePinyin.slice(to)}`;
+}
+
 // ── section builders ────────────────────────────────────────────────────
 
 function buildWriting(data: GenLesson, rand: () => number): WritingQuestion[] {
@@ -111,7 +139,7 @@ function buildMatching(data: GenLesson, rand: () => number): MatchingQuestion[] 
 }
 
 function buildDialogues(data: GenLesson, rand: () => number): DialogueQuestion[] {
-  // 3 questions × 5 marks. A known lesson word is blanked out of a real
+  // 4 questions × 5 marks. A known lesson word is blanked out of a real
   // dialogue line; the user picks the missing hanzi from 4 choices.
   const questions: DialogueQuestion[] = [];
   const used = new Set<string>();
@@ -122,17 +150,15 @@ function buildDialogues(data: GenLesson, rand: () => number): DialogueQuestion[]
     .sort((a, b) => b.h.length - a.h.length);
 
   for (const d of data.dialogues) {
-    if (questions.length >= 3) break;
+    if (questions.length >= 4) break;
 
     for (let i = 0; i < d.lines.length; i++) {
-      if (questions.length >= 3) break;
+      if (questions.length >= 4) break;
       const line = d.lines[i];
       if (line.h.length < 4) continue;
 
       const word = words.find((w) => line.h.includes(w.h) && !used.has(`${d.title}-${w.h}`));
       if (!word) continue;
-      used.add(`${d.title}-${word.h}`);
-
       const distractors = shuffled(
         data.words.filter((w) => w.h !== word.h && w.h.length === word.h.length),
         rand,
@@ -144,25 +170,29 @@ function buildDialogues(data: GenLesson, rand: () => number): DialogueQuestion[]
       const wrong = [...distractors, ...fallback].slice(0, 3);
       if (wrong.length < 3) continue;
 
+      used.add(`${d.title}-${word.h}`);
+
       const blank: DialogueBlank = {
         id: `d${questions.length}b0`,
         lineIndex: i,
         hanzi: line.h.replace(word.h, "＿＿＿"),
         answer: word.h,
-        pinyin: line.p,
+        pinyin: maskPinyin(line.p, word.p),
         en: line.e,
-        choices: shuffled([word.h, ...wrong.map((w) => w.h)], rand),
+        choices: shuffled([word, ...wrong], rand).map((choice) => ({
+          hanzi: choice.h,
+          pinyin: choice.p,
+        })),
       };
 
       questions.push({
         kind: "dialogue",
         id: `dq${questions.length}`,
         title: d.title,
-        lines: d.lines.map((ln) => ({ s: ln.s, h: ln.h })),
+        lines: d.lines.map((ln) => ({ s: ln.s, h: ln.h, p: ln.p })),
         blanks: [blank],
         marks: 5,
       });
-      break;
     }
   }
 
@@ -240,7 +270,7 @@ function buildMcq(data: GenLesson, level: number, rand: () => number): McqQuesti
   });
 }
 
-/** Full exam: writing 10 + matching 10 + dialogue 15 + MCQ (1/word) + speaking 15. */
+/** Full exam: writing 10 + matching 10 + dialogue 20 + MCQ (1/word) + speaking 15. */
 export function buildLessonExam(level: number, lesson: number): LessonExam | null {
   const data = getExamLesson(level, lesson);
   if (!data) return null;

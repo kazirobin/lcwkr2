@@ -37,6 +37,20 @@ export default function StudentProfilePage() {
 
   const [student, setStudent] = useState<IStudent | null>(null);
   const [courses, setCourses] = useState<ICourse[]>([]);
+  const [dialogueMarks, setDialogueMarks] = useState<
+    {
+      _id: string;
+      mark: number;
+      level: number;
+      lesson: number;
+      source: string;
+      feedback: string;
+      createdAt: string;
+    }[]
+  >([]);
+  const [examRows, setExamRows] = useState<
+    { level: number; lesson: number; best: number; latest: number; attempts: number; totalMarks: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -47,7 +61,30 @@ export default function StudentProfilePage() {
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
       ]);
       if (s.success && Array.isArray(s.students)) {
-        setStudent(s.students.find((x: IStudent) => String(x.rollNumber).trim() === roll) ?? null);
+        const found = (s.students.find((x: IStudent) => String(x.rollNumber).trim() === roll) ?? null) as IStudent | null;
+        setStudent(found);
+        if (found?.whatsapp) {
+          const phoneParam = encodeURIComponent(found.whatsapp);
+          fetch(`/api/hw/marks?phone=${phoneParam}`, { cache: "no-store" })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.success && Array.isArray(d.marks)) setDialogueMarks(d.marks);
+            })
+            .catch(() => {
+              /* offline — ignore */
+            });
+          fetch(`/api/hw/exam-results?phone=${phoneParam}`, { cache: "no-store" })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.success && Array.isArray(d.results)) setExamRows(d.results);
+            })
+            .catch(() => {
+              /* offline — ignore */
+            });
+        } else {
+          setDialogueMarks([]);
+          setExamRows([]);
+        }
       }
       if (c.success && Array.isArray(c.courses)) setCourses(c.courses);
     } catch (err) {
@@ -58,7 +95,9 @@ export default function StudentProfilePage() {
   }, [roll]);
 
   useEffect(() => {
-    if (roll) fetchData();
+    queueMicrotask(() => {
+      if (roll) void fetchData();
+    });
   }, [roll, fetchData]);
 
   const enrolledIds = useMemo(() => {
@@ -147,8 +186,13 @@ export default function StudentProfilePage() {
             </span>
 
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-bold tracking-tight text-text sm:text-3xl">
-                {student.nameEnglish}
+              <h1 className="flex flex-wrap items-center justify-center gap-2 text-2xl font-bold tracking-tight text-text sm:justify-start sm:text-3xl">
+                <span>{student.nameEnglish}</span>
+                {student.isPro && (
+                  <span className="inline-flex items-center rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-bold text-amber-500">
+                    ⭐ {t("Pro সদস্য", "Pro member")}
+                  </span>
+                )}
               </h1>
               <p className="mt-1.5 flex items-center justify-center gap-1.5 text-sm text-text/55 sm:justify-start">
                 <MapPin className="h-4 w-4 shrink-0 text-text/35" aria-hidden="true" />
@@ -168,6 +212,12 @@ export default function StudentProfilePage() {
               </div>
             </div>
           </Card>
+
+          <HwTotalsStrip
+            t={t}
+            examRows={examRows}
+            dialogueMarks={dialogueMarks}
+          />
 
           <section className="mt-10">
             <Eyebrow seal="录" label={t("উপস্থিতির রেকর্ড", "Attendance record")} />
@@ -222,6 +272,70 @@ export default function StudentProfilePage() {
             )}
           </section>
 
+          <section className="mt-10">
+            <Eyebrow seal="話" label={t("সংলাপ মার্ক", "Dialogue marks")} />
+            {dialogueMarks.length === 0 ? (
+              <Card className="mt-4 p-6 text-sm text-text/60">
+                {t("এখনো কোনো সংলাপ mark নেই।", "No dialogue marks yet.")}
+              </Card>
+            ) : (
+              <Card className="mt-4 p-6">
+                <ul className="divide-y divide-text/10">
+                  {dialogueMarks.map((m) => (
+                    <li key={m._id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-text">
+                          HSK {m.level} ·{" "}
+                          {m.lesson === 0 ? t("সামগ্রিক", "Overall") : `${t("লেসন", "Lesson")} ${m.lesson}`}
+                        </span>
+                        <span className="block truncate text-xs text-text/45">
+                          {m.source === "manual" ? t("ম্যানুয়াল", "Manual") : t("রেকর্ডিং", "Recording")}
+                          {m.feedback ? ` · ${m.feedback}` : ""} ·{" "}
+                          {m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ""}
+                        </span>
+                      </span>
+                      <StatusMark tone="done">
+                        <span className="tabular-nums">{m.mark}/10</span>
+                      </StatusMark>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </section>
+
+          <section className="mt-10">
+            <Eyebrow seal="試" label={t("পরীক্ষার ফল", "Exam results")} />
+            {examRows.length === 0 ? (
+              <Card className="mt-4 p-6 text-sm text-text/60">
+                {t("এখনো কোনো পরীক্ষা দেয়নি।", "No exams taken yet.")}
+              </Card>
+            ) : (
+              <Card className="mt-4 p-6">
+                <ul className="divide-y divide-text/10">
+                  {examRows.map((r) => (
+                    <li
+                      key={`${r.level}-${r.lesson}`}
+                      className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                    >
+                      <span className="font-semibold text-text">
+                        HSK {r.level} · {t("লেসন", "Lesson")} {r.lesson}
+                        <span className="ml-2 text-[11px] font-normal text-text/45">
+                          ×{r.attempts}
+                        </span>
+                      </span>
+                      <StatusMark tone="done">
+                        <span className="tabular-nums">
+                          {t("সেরা", "Best")} {r.best}/{r.totalMarks}
+                        </span>
+                      </StatusMark>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </section>
+
           <ButtonLink
             href="/academy/students"
             variant="secondary"
@@ -233,6 +347,52 @@ export default function StudentProfilePage() {
           </ButtonLink>
         </>
       )}
+    </div>
+  );
+}
+
+function HwTotalsStrip({
+  t,
+  examRows,
+  dialogueMarks,
+}: {
+  t: (bn: string, en: string) => string;
+  examRows: { best: number; totalMarks: number }[];
+  dialogueMarks: { mark: number; level: number; lesson: number; createdAt: string }[];
+}) {
+  const examBest = examRows.reduce((n, r) => n + r.best, 0);
+  const examMax = examRows.reduce((n, r) => n + r.totalMarks, 0);
+  const latestByLesson = new Map<string, number>();
+  // History arrives newest-first — first hit per lesson wins.
+  for (const m of dialogueMarks) {
+    const key = `${m.level}-${m.lesson}`;
+    if (!latestByLesson.has(key)) latestByLesson.set(key, m.mark);
+  }
+  const dialogueTotal = [...latestByLesson.values()].reduce((n, v) => n + v, 0);
+  const cells = [
+    { value: `${examBest}/${examMax}`, label: t("পরীক্ষা", "Exams") },
+    { value: String(dialogueTotal), label: t("সংলাপ", "Dialogue") },
+    { value: String(examBest + dialogueTotal), label: t("মোট", "Total"), hot: true },
+  ];
+  return (
+    <div className="mt-6 grid grid-cols-3 gap-2">
+      {cells.map((c) => (
+        <div
+          key={c.label}
+          className={`rounded-2xl border px-3 py-3 text-center ${
+            c.hot ? "border-primary/25 bg-primary/5" : "border-text/10 bg-card"
+          }`}
+        >
+          <p
+            className={`font-mono text-xl font-bold tabular-nums ${
+              c.hot ? "text-primary" : "text-text"
+            }`}
+          >
+            {c.value}
+          </p>
+          <p className="mt-0.5 text-[11px] text-text/50">{c.label}</p>
+        </div>
+      ))}
     </div>
   );
 }

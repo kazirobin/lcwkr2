@@ -72,16 +72,16 @@ export interface DialogueBlank {
   answer: string; // the removed word
   pinyin: string;
   en: string;
-  choices: string[]; // 4 options
+  choices: { hanzi: string; pinyin: string }[];
 }
 
 export interface DialogueQuestion {
   kind: "dialogue";
   id: string;
   title: string;
-  lines: { s: string; h: string }[];
+  lines: { s: string; h: string; p: string }[];
   blanks: DialogueBlank[];
-  marks: number; // 3 per blank
+  marks: number; // 5 per blank
 }
 
 export interface SpeakingQuestion {
