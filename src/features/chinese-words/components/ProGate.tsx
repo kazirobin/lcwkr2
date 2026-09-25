@@ -156,7 +156,7 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
 
       {/* Bottom-left access chips */}
       {status === "guest" && (
-        <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2">
+        <div className="fixed bottom-16 left-4 z-50 flex items-center gap-2">
           <div
             className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-mono shadow-lg border ${
               trialEnding
@@ -181,7 +181,7 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => setModalOpen(true)}
           title={t("Pro সদস্য — ম্যানেজ করুন", "Pro member — manage")}
-          className="fixed bottom-6 left-6 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold shadow-lg bg-ok text-background border border-ok hover:opacity-90 transition"
+          className="fixed bottom-16 left-4 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold shadow-lg bg-ok text-background border border-ok hover:opacity-90 transition"
         >
           ✓ {t("Pro সদস্য", "Pro member")}
         </button>

@@ -28,6 +28,10 @@ import MatchingSection from "@/features/hw/components/MatchingSection";
 import DialogueSection from "@/features/hw/components/DialogueSection";
 import McqSection from "@/features/hw/components/McqSection";
 import SpeakingSection from "@/features/hw/components/SpeakingSection";
+import DialoguePlayer from "@/features/hw/components/DialoguePlayer";
+import { lesson1Dialogue } from "@/features/hw/data/hsk1/lesson1-dialogue";
+import { matchesPinyinAnswer } from "@/features/hw/pinyin";
+import ProGate from "@/features/chinese-words/components/ProGate";
 
 interface MistakeItem {
   section: string;
@@ -94,11 +98,13 @@ export default function HomeworkDynamicPage() {
 
   if (!exam) {
     return (
-      <main className="max-w-4xl mx-auto p-6 my-8 text-center">
-        <h1 className="text-2xl font-bold text-text">
-          {t("এই লেসনের পরীক্ষা পাওয়া যায়নি", "Exam not found for this lesson")}
-        </h1>
-      </main>
+      <ProGate>
+        <main className="max-w-4xl mx-auto p-6 my-8 text-center">
+          <h1 className="text-2xl font-bold text-text">
+            {t("এই লেসনের পরীক্ষা পাওয়া যায়নি", "Exam not found for this lesson")}
+          </h1>
+        </main>
+      </ProGate>
     );
   }
 
@@ -121,10 +127,11 @@ export default function HomeworkDynamicPage() {
     const items: ExamResultItem[] = [];
     let totalScore = 0;
 
-    // writing: exact hanzi match, trim spaces
+    // writing: exact hanzi match, trim spaces.
+    // Lesson 1 also accepts pinyin (recommended) for full marks.
     for (const q of exam.writing) {
       const user = (answers[q.id] ?? "").trim();
-      const ok = user === q.target;
+      const ok = user === q.target || (isLesson1 && matchesPinyinAnswer(user, q.pinyin));
       const earned = ok ? q.marks : 0;
       totalScore += earned;
       items.push({
@@ -248,6 +255,9 @@ export default function HomeworkDynamicPage() {
   };
 
   const scorePercent = result ? Math.round((result.totalScore / result.totalMarks) * 100) : 0;
+  // Lesson-1 mode: collapsible titles, pinyin-accepted writing, dialogue player.
+  // To roll out to every lesson later, change this to `true`.
+  const isLesson1 = level === 1 && lessonNo === 1;
   const writingRes = resultBySection();
   const matchingRes = resultBySection();
   const dialogueRes = resultBySection();
@@ -263,11 +273,12 @@ export default function HomeworkDynamicPage() {
   };
 
   return (
-    <main
-      className={`max-w-4xl mx-auto p-4 sm:p-6 bg-card border border-border shadow-sm rounded-3xl my-8 hsk-page ${
-        language === "bn" ? "font-bn" : "font-en"
-      }`}
-    >
+    <ProGate>
+      <main
+        className={`max-w-4xl mx-auto p-4 sm:p-6 bg-card border border-border shadow-sm rounded-3xl my-8 hsk-page ${
+          language === "bn" ? "font-bn" : "font-en"
+        }`}
+      >
       {/* Level & Lesson selectors */}
       <div className="bg-background p-4 rounded-2xl mb-6 border border-border flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-2 flex-wrap">
@@ -462,6 +473,9 @@ export default function HomeworkDynamicPage() {
         </div>
       )}
 
+      {/* Lesson-1 listening practice: playable dialogue script (not graded) */}
+      {isLesson1 && <DialoguePlayer lines={lesson1Dialogue} collapsible />}
+
       {/* Exam form */}
       {!submitted && (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -470,11 +484,13 @@ export default function HomeworkDynamicPage() {
             answers={answers}
             onChange={handleInputChange}
             results={undefined}
+            collapsible
+            acceptPinyin={isLesson1}
           />
-          <MatchingSection questions={exam.matching} answers={answers} onChange={handleInputChange} />
-          <DialogueSection questions={exam.dialogues} answers={answers} onChange={handleInputChange} />
-          <McqSection questions={exam.mcq} answers={answers} onChange={handleInputChange} />
-          <SpeakingSection questions={exam.speaking} answers={answers} onChange={handleInputChange} />
+          <MatchingSection questions={exam.matching} answers={answers} onChange={handleInputChange} collapsible />
+          <DialogueSection questions={exam.dialogues} answers={answers} onChange={handleInputChange} collapsible />
+          <McqSection questions={exam.mcq} answers={answers} onChange={handleInputChange} collapsible />
+          <SpeakingSection questions={exam.speaking} answers={answers} onChange={handleInputChange} collapsible />
 
           <div className="sticky bottom-4">
             <button
@@ -499,6 +515,8 @@ export default function HomeworkDynamicPage() {
             onChange={handleInputChange}
             disabled
             results={writingRes}
+            collapsible
+            acceptPinyin={isLesson1}
           />
           <MatchingSection
             questions={exam.matching}
@@ -506,6 +524,7 @@ export default function HomeworkDynamicPage() {
             onChange={handleInputChange}
             disabled
             results={matchingRes}
+            collapsible
           />
           <DialogueSection
             questions={exam.dialogues}
@@ -513,6 +532,7 @@ export default function HomeworkDynamicPage() {
             onChange={handleInputChange}
             disabled
             results={dialogueRes}
+            collapsible
           />
           <McqSection
             questions={exam.mcq}
@@ -520,6 +540,7 @@ export default function HomeworkDynamicPage() {
             onChange={handleInputChange}
             disabled
             results={mcqRes}
+            collapsible
           />
           <SpeakingSection
             questions={exam.speaking}
@@ -527,9 +548,11 @@ export default function HomeworkDynamicPage() {
             onChange={handleInputChange}
             disabled
             results={speakingRes}
+            collapsible
           />
         </div>
       )}
-    </main>
+      </main>
+    </ProGate>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLevelParams, getLessonParams, getTextParams } from "@/features/vocabulary/data";
+import { EXAM_LEVELS, getExamLessonNumbers } from "@/features/hw/data/exam";
 
 /** All public pages + read-only API endpoints the PWA preloads for offline use. */
 const PAGES = [
@@ -13,6 +14,9 @@ const PAGES = [
   "/community",
   "/hsk",
   "/hanzi-pro",
+  "/chinese-words",
+  "/todos",
+  "/msg",
   "/donate",
   "/pdf",
   "/apps",
@@ -44,10 +48,16 @@ function hskRoutes(): string[] {
   return [...levels, ...lessons, ...texts];
 }
 
+function hwRoutes(): string[] {
+  return EXAM_LEVELS.flatMap((level) =>
+    getExamLessonNumbers(level).map((lesson) => `/hw/hsk${level}/${lesson}`),
+  );
+}
+
 export async function GET() {
   return NextResponse.json({
     success: true,
-    pages: [...PAGES, ...hskRoutes()],
+    pages: [...PAGES, ...hskRoutes(), ...hwRoutes()],
     api: API_ENDPOINTS,
   });
 }

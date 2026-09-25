@@ -3,6 +3,7 @@
 import React from "react";
 import { useLanguage } from "@/i18n";
 import type { MatchingQuestion } from "../exam-types";
+import SectionShell from "./SectionShell";
 
 interface Props {
   questions: MatchingQuestion[];
@@ -10,22 +11,23 @@ interface Props {
   onChange: (id: string, value: string) => void;
   disabled?: boolean;
   results?: Record<string, { earned: number; marks: number }>;
+  collapsible?: boolean;
 }
 
-export default function MatchingSection({ questions, answers, onChange, disabled, results }: Props) {
+export default function MatchingSection({ questions, answers, onChange, disabled, results, collapsible }: Props) {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
+  const totalMarks = questions.reduce((n, q) => n + q.marks, 0);
+
   return (
-    <section className="bg-card border border-border p-5 sm:p-6 rounded-2xl shadow-sm space-y-4">
-      <div className="flex justify-between items-center border-b border-border pb-3">
-        <h2 className="text-base sm:text-xl font-semibold text-text">
-          2. {t("মিলকরণ — চাইনিজের সাথে বাংলা অর্থ মেলান", "Matching — Connect Chinese with Bengali Meaning")}
-        </h2>
-        <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full whitespace-nowrap">
-          {questions.reduce((n, q) => n + q.marks, 0)} {t("নম্বর", "Marks")}
-        </span>
-      </div>
+    <SectionShell
+      index="2"
+      title={t("মিলকরণ — চাইনিজের সাথে বাংলা অর্থ মেলান", "Matching — Connect Chinese with Bengali Meaning")}
+      marks={totalMarks}
+      marksLabel={t("নম্বর", "Marks")}
+      collapsible={collapsible}
+    >
 
       {questions.map((q, idx) => {
         const selected: Record<string, string> = {};
@@ -111,6 +113,6 @@ export default function MatchingSection({ questions, answers, onChange, disabled
           </div>
         );
       })}
-    </section>
+    </SectionShell>
   );
 }

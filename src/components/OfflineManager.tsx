@@ -4,17 +4,26 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { CloudDownload, CheckCircle2, WifiOff, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { Button, Dialog, Field } from "@/components/ui";
+import { isValidProPassword } from "@/features/chinese-words/data/pro-passwords";
 
 const LS = {
   seen: "lcwkr_offline_seen_v2",
   pro: "lcwkr_offline_pro_v2",
   downloaded: "lcwkr_offline_downloaded_v2",
   pillHidden: "lcwkr_offline_pill_hidden_v2",
+  savedCount: "lcwkr_offline_saved_v2",
+  updatedAt: "lcwkr_offline_updated_v2",
 };
 
 const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 
 type View = "welcome" | "unlock" | "progress" | "done" | null;
+
+/* Non-standard PWA install event (Chrome/Edge/Android). */
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 
 export default function OfflineManager() {
   const { language } = useLanguage();
@@ -59,6 +68,20 @@ export default function OfflineManager() {
   const [downloading, setDownloading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+  const [savedPages, setSavedPages] = useState<number | null>(() => {
+    const n = Number(load(LS.savedCount));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  });
+  const [savedMB, setSavedMB] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(() => {
+    const n = Number(load(LS.updatedAt));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  });
+  const [isOnline, setIsOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine,
+  );
+  const installEvtRef = useRef<BeforeInstallPromptEvent | null>(null);
   const alertTimerRef = useRef(false);
   const seenRef = useRef(seen);
   useEffect(() => { seenRef.current = seen; }, [seen]);
@@ -86,8 +109,10 @@ export default function OfflineManager() {
      const init = async () => {
        /* ServiceWorkerRegistrar handles registration in both dev and prod.
         * This init block stays for parity — SW is registered by the
-        * ServiceWorkerRegistrar component mounted above. */
-       if (load(LS.pillHidden) === "1") setPillHidden(true);
+        * ServiceWorkerRegistrar component mounted above.
+        * NOTE: pillHidden is intentionally NOT restored here — the pill
+        * (offline indicator + download button) must show on every page
+        * refresh. Dismiss (X) hides it only for the current session. */
        try {
          await navigator.serviceWorker.register("/sw.js");
        } catch {
@@ -101,13 +126,33 @@ export default function OfflineManager() {
       if (msg.type === "PROGRESS") {
         setProgress({ done: msg.done ?? 0, total: msg.total ?? 0 });
       }
+      if (msg.type === "STATUS") {
+        const n = typeof msg.downloaded === "number" ? msg.downloaded : null;
+        setSavedPages(n);
+        if (n !== null) store(LS.savedCount, String(n));
+      }
       if (msg.type === "DOWNLOAD_DONE") {
         store(LS.downloaded, "1");
+        const now = Date.now();
+        store(LS.updatedAt, String(now));
+        setUpdatedAt(now);
         setDownloaded(true);
         setView("done");
         downloadRef.current.active = false;
         setDownloading(false);
         setFeedback(null);
+        // Ask the SW how many pages are cached + measure storage used.
+        void sendToSW({ type: "STATUS" });
+        if (typeof navigator !== "undefined" && navigator.storage?.estimate) {
+          navigator.storage
+            .estimate()
+            .then(({ usage }) =>
+              setSavedMB(
+                typeof usage === "number" ? (usage / 1048576).toFixed(1) : null,
+              ),
+            )
+            .catch(() => setSavedMB(null));
+        }
       }
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
@@ -126,6 +171,54 @@ export default function OfflineManager() {
     const id = window.setInterval(silentRefresh, REFRESH_INTERVAL_MS);
     return () => window.clearInterval(id);
   }, [pro, downloaded, silentRefresh]);
+
+  /* PWA install prompt: capture beforeinstallprompt so we can show our own
+   * "Install app" button; hide it once the app is installed. */
+  useEffect(() => {
+    if (!supported) return;
+    const onBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      installEvtRef.current = e as BeforeInstallPromptEvent;
+      setCanInstall(true);
+    };
+    const onInstalled = () => {
+      installEvtRef.current = null;
+      setCanInstall(false);
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, [supported]);
+
+  /* Live online/offline connectivity for the pill indicator. */
+  useEffect(() => {
+    if (!supported) return;
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, [supported]);
+
+  const promptInstall = useCallback(async () => {
+    const evt = installEvtRef.current;
+    if (!evt) return;
+    try {
+      await evt.prompt();
+      await evt.userChoice;
+    } catch {
+      /* dismissed — keep the button for later */
+    } finally {
+      installEvtRef.current = null;
+      setCanInstall(false);
+    }
+  }, []);
 
   /* First open: show a transient offline alert for exactly 10 s,
    * then auto-dismiss. In dev the flag is not persisted so the alert
@@ -176,6 +269,20 @@ export default function OfflineManager() {
     if (!code.trim() || verifying) return;
     setVerifying(true);
     setFeedback(null);
+    const unlockLocally = () => {
+      store(LS.pro, "1");
+      setPro(true);
+      downloadRef.current.cancelled = false;
+      setView("progress");
+      void beginDownload();
+    };
+    // 1) Local list first (pro-passwords.ts) — works fully offline, no fetch.
+    if (isValidProPassword(code)) {
+      setVerifying(false);
+      unlockLocally();
+      return;
+    }
+    // 2) Server fallback (covers server-only PRO_CODE env).
     try {
       const res = await fetch("/api/offline/unlock", {
         method: "POST",
@@ -187,11 +294,7 @@ export default function OfflineManager() {
         setFeedback(data.error ?? t("কোডটি সঠিক নয়", "Code is not correct"));
         return;
       }
-      store(LS.pro, "1");
-      setPro(true);
-      downloadRef.current.cancelled = false;
-      setView("progress");
-      void beginDownload();
+      unlockLocally();
     } catch {
       setFeedback(t("কিছু সমস্যা হয়েছে। আবার চেষ্টা করুন।", "Something went wrong. Try again."));
     } finally {
@@ -226,6 +329,22 @@ export default function OfflineManager() {
       setBusy(false);
     }
   };
+
+  /* Update system: re-fetch the route manifest (picks up newly added
+   * pages/content) and re-download everything with progress. SW fetches
+   * with cache:"reload", so changed pages are refreshed too. */
+  const checkForUpdates = async () => {
+    setFeedback(null);
+    setView("progress");
+    await beginDownload();
+  };
+
+  const updatedLabel = updatedAt
+    ? new Date(updatedAt).toLocaleString(language === "bn" ? "bn-BD" : "en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : null;
 
   if (!supported) return null;
 
@@ -266,36 +385,68 @@ export default function OfflineManager() {
 
       {/* floating status pill, bottom-left (donation badge sits bottom-right) */}
       {!pillHidden && (
-        <>
+        <div className="fixed bottom-4 left-4 z-40 flex items-center gap-1 rounded-2xl border border-text/10 bg-card/95 py-1 pl-3 pr-1 text-xs font-semibold text-text shadow-xl shadow-black/10 backdrop-blur">
           {pro && downloaded ? (
-            <div className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-card px-2.5 py-1.5 shadow-lg shadow-black/10">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+            <>
+              <button
+                type="button"
+                onClick={openDialog}
+                aria-label={t("অফলাইন প্রস্তুত — বিস্তারিত দেখুন", "Offline ready — view details")}
+                title={t("অফলাইন প্রস্তুত — বিস্তারিত দেখুন", "Offline ready — view details")}
+                className="flex items-center gap-2 py-1.5 pr-1 transition-colors hover:opacity-80"
+              >
+                <span
+                  aria-hidden="true"
+                  title={isOnline ? "online" : "offline"}
+                  className={`h-2 w-2 shrink-0 rounded-full ring-2 ${
+                    isOnline ? "bg-emerald-500 ring-emerald-500/25" : "bg-warn ring-warn/25"
+                  }`}
+                />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                <span>{t("অফলাইন প্রস্তুত", "Offline ready")}</span>
+                {savedPages !== null && (
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-bold tabular-nums text-emerald-500">
+                    {savedPages}
+                  </span>
+                )}
+              </button>
               <button
                 type="button"
                 onClick={dismissPill}
                 aria-label={t("বন্ধ করুন", "Hide")}
-                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-text/40 transition-colors hover:bg-text/5 hover:text-text"
+                className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-text/40 transition-colors hover:bg-text/5 hover:text-text"
               >
-                <X className="h-3 w-3" aria-hidden="true" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
-            </div>
+            </>
           ) : (
-            <div className="fixed bottom-4 left-4 z-40 flex items-center gap-1 rounded-full border border-text/10 bg-card pl-3.5 pr-1 py-1 text-xs font-semibold text-text shadow-lg shadow-black/10">
+            <>
               <button
                 type="button"
                 onClick={openDialog}
                 aria-label={t("অফলাইন অবস্থা", "Offline status")}
                 className="flex items-center gap-2 py-1 transition-colors hover:opacity-80"
               >
+                <span
+                  aria-hidden="true"
+                  title={isOnline ? "online" : "offline"}
+                  className={`h-2 w-2 shrink-0 rounded-full ring-2 ${
+                    isOnline ? "bg-emerald-500 ring-emerald-500/25" : "bg-warn ring-warn/25"
+                  }`}
+                />
                 {downloading || (pro && !downloaded && percent > 0) ? (
                   <>
                     <CloudDownload className="h-4 w-4 animate-pulse text-primary" aria-hidden="true" />
-                    {t("ডাউনলোড", "Download")} {percent}%
+                    <span className="tabular-nums">
+                      {t("ডাউনলোড", "Download")} {percent}%
+                    </span>
                   </>
                 ) : (
                   <>
                     <WifiOff className="h-4 w-4 text-text/50" aria-hidden="true" />
-                    {t("অফলাইন", "Offline")}
+                    {isOnline
+                      ? t("অফলাইন সেটআপ", "Offline setup")
+                      : t("অফলাইন", "Offline")}
                   </>
                 )}
               </button>
@@ -307,9 +458,9 @@ export default function OfflineManager() {
               >
                 <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
-            </div>
+            </>
           )}
-        </>
+        </div>
       )}
 
       {/* ── welcome / first-open confirmation ── */}
@@ -344,6 +495,11 @@ export default function OfflineManager() {
             "You can also use the app without a Pro code — pages you have already visited stay available offline.",
           )}
         </p>
+        {canInstall && (
+          <Button variant="secondary" onClick={promptInstall} className="mt-4 w-full">
+            📲 {t("অ্যাপ ইনস্টল করুন", "Install app")}
+          </Button>
+        )}
       </Dialog>
 
       {/* ── Pro code entry ── */}
@@ -396,8 +552,8 @@ export default function OfflineManager() {
         size="sm"
         title={t("সাইট ডাউনলোড হচ্ছে", "Downloading site")}
         description={t(
-          "একবারি ডাউনলোড — তারপর সবার জন্য অফলাইন কাজ করবে।",
-          "One-time download — then the whole site works offline.",
+          "একবারি ডাউনলোড — তারপর সব offline-এ কাজ করবে।",
+          "One-time download — then everything works offline.",
         )}
       >
         <div className="space-y-3">
@@ -435,21 +591,43 @@ export default function OfflineManager() {
         onClose={closeDialog}
         title={t("অফলাইন প্রস্তুত", "Offline ready")}
         description={t(
-          "একবারি ডাউনলোড — তারপর সবার জন্য অফলাইন কাজ করবে।",
-          "One-time download — then the whole site works offline for everyone.",
+          "একবারি ডাউনলোড — তারপর সব offline-এ কাজ করবে।",
+          "One-time download — then everything works offline.",
         )}
         footer={
-          <Button onClick={closeDialog}>{t("চমৎকার!", "Great!")}</Button>
+          <>
+            <Button variant="ghost" onClick={checkForUpdates}>
+              🔄 {t("আপডেট চেক", "Check for updates")}
+            </Button>
+            <Button onClick={closeDialog}>{t("চমৎকার!", "Great!")}</Button>
+          </>
         }
       >
         <div className="flex flex-col items-center gap-3 py-2 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
             <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
           </span>
+          {(savedPages !== null || savedMB !== null) && (
+            <p className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-1.5 font-mono text-xs font-semibold text-emerald-500">
+              {savedPages !== null ? `${savedPages} ${t("পেজ", "pages")}` : ""}
+              {savedPages !== null && savedMB !== null ? " · " : ""}
+              {savedMB !== null ? `${savedMB} MB` : ""}
+            </p>
+          )}
+          {updatedLabel && (
+            <p className="text-[11px] text-text/40">
+              {t("সর্বশেষ আপডেট", "Last updated")}: {updatedLabel}
+            </p>
+          )}
+          {canInstall && (
+            <Button variant="secondary" onClick={promptInstall} className="w-full">
+              📲 {t("অ্যাপ ইনস্টল করুন", "Install app")}
+            </Button>
+          )}
           <p className="max-w-sm text-sm leading-relaxed text-text/70">
             {t(
-              "এখন থেকে ইন্টারনেট ছাড়াই সব পেজ খুলতে পারবেন। অনলাইনে থাকলে অ্যাপ নিজে থেকেই নতুন ডেটা আপডেট করে নেবে।",
-              "Now every page works without internet. When you are online, the app silently refreshes itself with the latest data.",
+              "এখন থেকে ইন্টারনেট ছাড়াই সব পেজ খুলতে পারবেন। নতুন কনটেন্ট যোগ হলে উপরের আপডেট বাটনে ডেটা রিফ্রেশ করে নিন — অনলাইনে থাকলে অ্যাপ নিজে থেকেও নতুন ডেটা আপডেট করে নেবে।",
+              "Now every page works without internet. When new content is added, refresh with the update button above — when online, the app also silently refreshes itself.",
             )}
           </p>
         </div>
