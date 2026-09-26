@@ -112,7 +112,9 @@ export function LessonPdfViewer({
   const [status, setStatus] = useState<Status>("loading");
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
-  const [rotation, setRotation] = useState(0);
+  // Extra rotation the reader has asked for on top of whatever the file itself
+  // asks for. Starts at 0 so every book opens the way its author intended.
+  const [userRotation, setUserRotation] = useState(0);
   const [mode, setMode] = useState<ViewMode>("width");
   const [custom, setCustom] = useState(1);
   const [scale, setScale] = useState(1);
@@ -146,10 +148,6 @@ export function LessonPdfViewer({
         }
         docRef.current = doc;
         setNumPages(doc.numPages);
-
-        const first = await doc.getPage(1);
-        const stored = ((4 - (((first.rotate % 360) + 360) % 360) / 90) % 4) * 90;
-        setRotation(stored);
         setStatus("ready");
       } catch {
         if (!cancelled) setStatus("error");
@@ -189,7 +187,7 @@ export function LessonPdfViewer({
   const zoomToPage = useCallback(() => setMode("page"), []);
 
   const rotate = useCallback(() => {
-    setRotation((value) => (value + 90) % 360);
+    setUserRotation((value) => (value + 90) % 360);
   }, []);
 
   const toggleFullscreen = useCallback(() => {
@@ -234,6 +232,11 @@ export function LessonPdfViewer({
         const pdfPage = await doc.getPage(page);
         if (disposed || id !== taskIdRef.current) return;
 
+        // pdf.js uses `page.rotate` as the default viewport rotation, and any
+        // rotation we pass replaces it rather than adding to it. So the book's
+        // own rotation is the base and the reader's button is layered on top.
+        const rotation = (((pdfPage.rotate % 360) + 360) % 360 + userRotation) % 360;
+
         const base = pdfPage.getViewport({ scale: 1, rotation });
         const fitWidth = (box.w - PAGE_PADDING) / base.width || 1;
         const fitPage =
@@ -266,7 +269,7 @@ export function LessonPdfViewer({
     return () => {
       disposed = true;
     };
-  }, [status, page, rotation, mode, custom, box.w, box.h]);
+  }, [status, page, userRotation, mode, custom, box.w, box.h]);
 
   /* keyboard: page turns, zoom, fit, full screen, close */
   useEffect(() => {

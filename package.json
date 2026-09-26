@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:pinyin-data": "node scripts/pinyin-data-check.mjs",
+    "check:pdf-upright": "node scripts/pdf-upright-check.mjs",
     "sync:pdf-worker": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
