@@ -1,11 +1,16 @@
 import mongoose, { Mongoose } from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "Please define the MONGODB_URI environment variable inside .env.local"
-  );
+// Read the URI lazily. Throwing at module scope would break `next build` on a
+// machine (or a CI preview) that has no database configured, even for routes
+// that never touch Mongo. Only the routes that actually query fail.
+function mongoUri(): string {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error(
+      "Please define the MONGODB_URI environment variable inside .env.local"
+    );
+  }
+  return uri;
 }
 
 interface MongooseCache {
@@ -15,11 +20,10 @@ interface MongooseCache {
 
 // Global scope-এ ক্যাশ টাইপ ডিক্লেয়ারেশন (Next.js hot-reload এ কানেকশন ডুপ্লিকেশন রোধে)
 declare global {
-  // eslint-disable-next-line no-var
   var mongoose: MongooseCache | undefined;
 }
 
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 
 if (!global.mongoose) {
   global.mongoose = cached;
@@ -37,7 +41,7 @@ export async function connectDB(): Promise<Mongoose> {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(mongoUri(), opts).then((mongooseInstance) => {
       return mongooseInstance;
     });
   }

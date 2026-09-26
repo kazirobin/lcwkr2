@@ -3,6 +3,7 @@
 import React from "react";
 import { useLanguage } from "@/i18n";
 import type { DialogueQuestion } from "../exam-types";
+import { sumMarks } from "../marks";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -18,7 +19,7 @@ export default function DialogueSection({ questions, answers, onChange, disabled
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
-  const totalMarks = questions.reduce((n, q) => n + q.marks, 0);
+  const totalMarks = sumMarks(questions);
 
   return (
     <SectionShell

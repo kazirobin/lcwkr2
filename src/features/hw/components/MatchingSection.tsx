@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/i18n";
 import type { MatchingQuestion } from "../exam-types";
+import { sumMarks } from "../marks";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -32,7 +33,7 @@ export default function MatchingSection({ questions, answers, onChange, disabled
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
-  const totalMarks = questions.reduce((n, q) => n + q.marks, 0);
+  const totalMarks = sumMarks(questions);
 
   interface Line {
     key: string;

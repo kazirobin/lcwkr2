@@ -11,7 +11,10 @@ interface Props {
   marksLabel: string;
   /** When true the title row toggles the body open/closed. */
   collapsible?: boolean;
+  /** Sections start closed so a lesson opens as a clean list of titles. */
   defaultOpen?: boolean;
+  /** Overrides the "N marks" pill, e.g. "Practice" for unmarked sections. */
+  badge?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -19,7 +22,8 @@ interface Props {
  * Shared homework section chrome: focused title row (numbered badge +
  * bold title + marks pill) with an optional click-to-collapse dropdown.
  * `collapsible` defaults to false so existing lessons render exactly
- * like before; pass it for the new dropdown behaviour.
+ * like before; pass it for the new dropdown behaviour. Collapsible
+ * sections start closed and open when the title is clicked.
  */
 export default function SectionShell({
   index,
@@ -27,7 +31,8 @@ export default function SectionShell({
   marks,
   marksLabel,
   collapsible = false,
-  defaultOpen = true,
+  defaultOpen = false,
+  badge,
   children,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
@@ -45,7 +50,7 @@ export default function SectionShell({
         {title}
       </h2>
       <span className="shrink-0 text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full whitespace-nowrap">
-        {marks} {marksLabel}
+        {badge ?? `${marks} ${marksLabel}`}
       </span>
       {collapsible && (
         <ChevronDown

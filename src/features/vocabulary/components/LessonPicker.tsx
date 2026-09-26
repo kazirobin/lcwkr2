@@ -4,6 +4,7 @@ import { useLanguage } from "@/i18n";
 import type { LevelDetail } from "@/features/vocabulary/types";
 import { vocabularyCopy, localizeNumber, localizePad2 } from "@/features/vocabulary/i18n";
 import { PaperPage, PaperHeader, Breadcrumb, Glance, NumberedList, NumberedRow } from "./workbook";
+import { LessonPdfButton } from "./LessonPdfViewer";
 
 /** `/hsk/[level]` — the lessons of one level, as a numbered sequence. */
 export default function LessonPicker({ detail }: { detail: LevelDetail }) {
@@ -63,6 +64,13 @@ export default function LessonPicker({ detail }: { detail: LevelDetail }) {
                 meta={meta}
                 cta={c.open}
                 ariaLabel={`${levelLabel} ${label} — ${c.open}`}
+                aside={
+                  <LessonPdfButton
+                    level={detail.level}
+                    lesson={lesson.lesson}
+                    variant="ghost"
+                  />
+                }
               />
             );
           })}

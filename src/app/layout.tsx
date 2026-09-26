@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Noto_Sans_Bengali, Lora, Noto_Serif_SC } from "next/font/google";
+import { Noto_Sans_Bengali, Lora, Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
@@ -39,11 +39,13 @@ const lora = Lora({
   display: "swap",
 });
 
-// Chinese serif font for Chinese characters (Fixed subsets)
-const notoSerifSC = Noto_Serif_SC({
-  variable: "--font-noto-serif-sc",
+// The one Chinese face for the whole site: Noto Sans SC (Hei). It is also a
+// fallback in .font-bn / .font-en, so hanzi renders in this font even where
+// the .font-chinese class is missing.
+const notoSansSC = Noto_Sans_SC({
+  variable: "--font-noto-sans-sc",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -107,7 +109,7 @@ export default function RootLayout({
   return (
     <html
       lang="bn"
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansBengali.variable} ${lora.variable} ${notoSerifSC.variable} font-bn h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansBengali.variable} ${lora.variable} ${notoSansSC.variable} font-bn h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col" suppressHydrationWarning>

@@ -6,6 +6,7 @@ import {
   getLessonParams,
 } from "@/features/vocabulary/data";
 import TextPicker from "@/features/vocabulary/components/TextPicker";
+import { LessonPdfButton } from "@/features/vocabulary/components/LessonPdfViewer";
 import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 
 const CANONICAL = /^[1-9]\d*$/;
@@ -45,7 +46,10 @@ export default async function LessonPage({ params }: Props) {
   if (!detail) notFound();
 
   return (
-    <ProLevelGate level={Number(level)}>
+    <ProLevelGate
+      level={Number(level)}
+      aside={<LessonPdfButton level={detail.level} lesson={detail.lesson} />}
+    >
       <TextPicker detail={detail} />
     </ProLevelGate>
   );

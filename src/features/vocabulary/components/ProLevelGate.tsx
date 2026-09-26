@@ -1,9 +1,52 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useRef,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { Lock } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
+
+const PRO_KEY = "cw:pro";
+
+const proListeners = new Set<() => void>();
+
+function emitPro() {
+  for (const listener of proListeners) listener();
+}
+
+function subscribePro(listener: () => void) {
+  proListeners.add(listener);
+  // Keeps other tabs in sync when the flag is cleared or set elsewhere.
+  window.addEventListener("storage", listener);
+  return () => {
+    proListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function getProSnapshot() {
+  try {
+    return localStorage.getItem(PRO_KEY) === "1";
+  } catch {
+    /* storage unavailable */
+    return false;
+  }
+}
+
+// The server has no localStorage, so it always renders the locked view. React
+// swaps in the real value on hydration, which is what `useSyncExternalStore`
+// is for — no setState-in-effect cascade.
+function getProServerSnapshot() {
+  return false;
+}
+
+const noopSubscribe = () => () => {};
+const getTrue = () => true;
+const getFalse = () => false;
 
 /**
  * Server-friendly Pro gate for a whole level track. HSK 1 is free; any
@@ -13,36 +56,37 @@ import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/
  * Guests see a lock screen with an unlock CTA; the corner Pro badge is
  * rendered too so subscribers can manage their status.
  */
-export default function ProLevelGate({ level, children }: { level: number; children: ReactNode }) {
+export default function ProLevelGate({
+  level,
+  aside,
+  children,
+}: {
+  level: number;
+  /** Shown on the lock screen only — e.g. the lesson book, which is free. */
+  aside?: ReactNode;
+  children: ReactNode;
+}) {
   const { language } = useLanguage();
   const t = useCallback(
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
   );
 
-  const [ready, setReady] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const isPro = useSyncExternalStore(
+    subscribePro,
+    getProSnapshot,
+    getProServerSnapshot,
+  );
+  // False on the server and on the very first client render, true right after
+  // hydration — lets subscribers render their children before the gate
+  // resolves instead of flashing the lock screen.
+  const hydrated = useSyncExternalStore(noopSubscribe, getTrue, getFalse);
   const proRef = useRef<ProAccessHandle>(null);
 
-  useEffect(() => {
-    try {
-      setIsPro(localStorage.getItem("cw:pro") === "1");
-    } catch {
-      /* storage unavailable */
-    }
-    setReady(true);
-  }, []);
-
-  const refreshPro = () => {
-    try {
-      setIsPro(localStorage.getItem("cw:pro") === "1");
-    } catch {
-      /* ignore */
-    }
-  };
+  const refreshPro = emitPro;
 
   if (level <= 1) return <>{children}</>;
-  if (!ready) return <>{children}</>; // avoid flashing the lock for pro users
+  if (!hydrated) return <>{children}</>; // avoid flashing the lock for pro users
 
   if (isPro) {
     return (
@@ -56,6 +100,7 @@ export default function ProLevelGate({ level, children }: { level: number; child
   return (
     <>
       <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center gap-4 px-5 py-16 text-center">
+        {aside}
         <div className="flex size-14 items-center justify-center rounded-2xl border border-text/12 bg-text/5">
           <Lock className="size-6 text-secondary" aria-hidden="true" />
         </div>

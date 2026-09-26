@@ -45,5 +45,6 @@ package-lock.json
 # dev logs
 dev.*
 devserver.*
-lcwkr-dev.log
+lcwkr-*.log
+
 

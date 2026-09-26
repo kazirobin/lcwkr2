@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 .font-en {
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: var(--font-geist-sans), var(--font-noto-sans-sc), sans-serif;
 }
 
 .font-bn {
-  font-family: var(--font-noto-sans-bengali), sans-serif;
+  font-family: var(--font-noto-sans-bengali), var(--font-noto-sans-sc), sans-serif;
 }
 
-/* Chinese font class */
+/* Chinese font class - the same Noto Sans SC face, kept for explicit use. */
 .font-chinese {
-  font-family: var(--font-noto-serif-sc), serif;
+  font-family: var(--font-noto-sans-sc), sans-serif;
 }
 
 /* Pinyin visibility: the Nav "拼" toggle adds .hide-pinyin on <html>; every
@@ -97,7 +97,7 @@
   --font-serif: var(--font-lora), Georgia, "Times New Roman", serif;
 
   /* Adding Chinese font variable to Tailwind theme */
-  --font-chinese: var(--font-noto-serif-sc), serif;
+  --font-chinese: var(--font-noto-sans-sc), sans-serif;
 
   --color-text: hsl(var(--text));
   --color-background: hsl(var(--background));

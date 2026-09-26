@@ -4,6 +4,7 @@ import React from "react";
 import { useLanguage } from "@/i18n";
 import SpeakerButton from "@/components/ui/SpeakerButton";
 import type { WritingQuestion } from "../exam-types";
+import { sumMarks } from "../marks";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -30,7 +31,7 @@ export default function WritingSection({
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
-  const totalMarks = questions.reduce((n, q) => n + q.marks, 0);
+  const totalMarks = sumMarks(questions);
 
   return (
     <SectionShell

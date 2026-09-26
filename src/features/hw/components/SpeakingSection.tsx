@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/i18n";
 import type { SpeakingQuestion } from "../exam-types";
+import { sumMarks } from "../marks";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -95,7 +96,8 @@ export default function SpeakingSection({ questions, answers, onChange, disabled
     <SectionShell
       index="5"
       title={t("ভয়েস রেকর্ডিং ও স্পিকিং এক্টিভিটি", "Voice Recording & Speaking Activity")}
-      marks={questions.reduce((n, q) => n + q.marks, 0)}
+      marks={sumMarks(questions)}
+      badge={<span className="rounded-full bg-warn/15 px-2 py-0.5 text-[10px] font-medium text-warn">{t("প্র্যাকটিশ মাত্র", "Practice only")}</span>}
       marksLabel={t("নম্বর", "Marks")}
       collapsible={collapsible}
     >

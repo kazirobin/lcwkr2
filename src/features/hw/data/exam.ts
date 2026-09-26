@@ -13,6 +13,7 @@ import type {
   SpeakingQuestion,
   WritingQuestion,
 } from "../exam-types";
+import { round2, sumMarks } from "../marks";
 import { hsk1ExamLessons } from "./generated/hsk1";
 import { hsk2ExamLessons } from "./generated/hsk2";
 import { hsk3ExamLessons } from "./generated/hsk3";
@@ -93,25 +94,35 @@ function maskPinyin(linePinyin: string, wordPinyin: string): string {
 
 // ── section builders ────────────────────────────────────────────────────
 
+/** Split `total` marks across `count` items. Marks are fractional so the
+ *  share is exactly equal and the part always adds back up to `total`
+ *  (10 over 5 = 2 each, 10 over 7 = 1.43 each). */
+function splitMarks(count: number, total = 10): number[] {
+  if (count <= 0) return [];
+  const each = total / count;
+  return Array.from({ length: count }, () => each);
+}
+
 function buildWriting(data: GenLesson, rand: () => number): WritingQuestion[] {
-  // 10 × 1 mark: show meaning (+pinyin hint), type the hanzi.
+  // Up to 10 words, each carrying an equal share of the part's 10 marks.
   const pool = shuffled(
     data.words.filter((w) => w.h && w.b),
     rand,
   );
   const picked = pool.slice(0, 10);
+  const marks = splitMarks(picked.length);
   return picked.map((w, i) => ({
     kind: "writing" as const,
     id: `w${i}`,
     prompt: w.b,
     target: w.h,
     pinyin: w.p,
-    marks: 1,
+    marks: marks[i],
   }));
 }
 
 function buildMatching(data: GenLesson, rand: () => number): MatchingQuestion[] {
-  // 1 question, 5 pairs × 2 marks: hanzi ↔ Bangla meaning.
+  // 1 question; its pairs split the part's 10 marks evenly.
   const pool = shuffled(
     data.words.filter((w) => w.h && w.b),
     rand,
@@ -120,11 +131,13 @@ function buildMatching(data: GenLesson, rand: () => number): MatchingQuestion[] 
   if (picked.length < 2) return [];
 
   const allBn = picked.map((w) => w.b);
-  const pairs: MatchingPair[] = picked.map((w) => ({
+  const pairMarks = splitMarks(picked.length);
+  const pairs: MatchingPair[] = picked.map((w, i) => ({
     hanzi: w.h,
     pinyin: w.p,
     bn: w.b,
     en: w.e,
+    marks: pairMarks[i],
   }));
 
   return [
@@ -133,14 +146,13 @@ function buildMatching(data: GenLesson, rand: () => number): MatchingQuestion[] 
       id: "m0",
       pairs,
       options: shuffled(allBn, rand),
-      marks: 2 * pairs.length,
+      marks: sumMarks(pairs),
     },
   ];
 }
 
 function buildDialogues(data: GenLesson, rand: () => number): DialogueQuestion[] {
-  // 4 questions × 5 marks. A known lesson word is blanked out of a real
-  // dialogue line; the user picks the missing hanzi from 4 choices.
+  // Up to 4 questions, one blank each; the blanks split the part's 10 marks.
   const questions: DialogueQuestion[] = [];
   const used = new Set<string>();
 
@@ -183,6 +195,7 @@ function buildDialogues(data: GenLesson, rand: () => number): DialogueQuestion[]
           hanzi: choice.h,
           pinyin: choice.p,
         })),
+        marks: 0, // filled in below, once the part's 10 marks are split
       };
 
       questions.push({
@@ -196,11 +209,17 @@ function buildDialogues(data: GenLesson, rand: () => number): DialogueQuestion[]
     }
   }
 
-  return questions;
+  // The blanks share the part's 10 marks evenly.
+  const blankMarks = splitMarks(questions.length);
+  return questions.map((q, i) => ({
+    ...q,
+    marks: round2(q.blanks.length * blankMarks[i]),
+    blanks: q.blanks.map((b) => ({ ...b, marks: blankMarks[i] })),
+  }));
 }
 
 function buildSpeaking(data: GenLesson, rand: () => number): SpeakingQuestion[] {
-  // 3 × 5 marks: read a dialogue line / example aloud and record it.
+  // Practice only - read a line aloud and record it. Worth 0 marks.
   const prompts: { h: string; p: string; e: string; b: string }[] = [];
 
   for (const d of data.dialogues) {
@@ -233,13 +252,13 @@ function buildSpeaking(data: GenLesson, rand: () => number): SpeakingQuestion[] 
     pinyin: p.p,
     en: p.e,
     bn: p.b,
-    marks: 5,
+    marks: 0,
   }));
 }
 
 function buildMcq(data: GenLesson, level: number, rand: () => number): McqQuestion[] {
   // One MCQ per unique lesson word: hanzi shown, pick the Bangla meaning.
-  // 1 mark each — every word in the lesson is asked.
+  // Every word in the lesson is asked and shares the part's 10 marks.
   const words = data.words.filter((w) => w.h && w.b);
   // Bangla distractor pool: same lesson first, then the whole level
   const levelPool = ALL_LESSONS.filter((l) => l.level === level).flatMap(
@@ -248,6 +267,7 @@ function buildMcq(data: GenLesson, level: number, rand: () => number): McqQuesti
   const seenBn = new Set<string>();
   const bnPool = [...new Set([...words.map((w) => w.b), ...levelPool])];
 
+  const marks = splitMarks(words.length);
   return words.map((w, i) => {
     const distractors: string[] = [];
     for (const bn of shuffled(bnPool, rand)) {
@@ -265,12 +285,13 @@ function buildMcq(data: GenLesson, level: number, rand: () => number): McqQuesti
       en: w.e,
       bn: w.b,
       choices,
-      marks: 1,
+      marks: marks[i],
     };
   });
 }
 
-/** Full exam: writing 10 + matching 10 + dialogue 20 + MCQ (1/word) + speaking 15. */
+/** Full exam: writing 10 + matching 10 + dialogue 10 + MCQ 10. Speaking is
+ *  practice only and carries no marks. */
 export function buildLessonExam(level: number, lesson: number): LessonExam | null {
   const data = getExamLesson(level, lesson);
   if (!data) return null;
@@ -283,11 +304,7 @@ export function buildLessonExam(level: number, lesson: number): LessonExam | nul
   const speaking = buildSpeaking(data, rand);
 
   const totalMarks =
-    writing.reduce((n, q) => n + q.marks, 0) +
-    matching.reduce((n, q) => n + q.marks, 0) +
-    dialogues.reduce((n, q) => n + q.marks, 0) +
-    mcq.reduce((n, q) => n + q.marks, 0) +
-    speaking.reduce((n, q) => n + q.marks, 0);
+    sumMarks(writing) + sumMarks(matching) + sumMarks(dialogues) + sumMarks(mcq);
 
   return {
     level,

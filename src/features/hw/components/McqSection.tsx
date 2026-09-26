@@ -3,6 +3,7 @@
 import React from "react";
 import { useLanguage } from "@/i18n";
 import type { McqQuestion } from "../exam-types";
+import { sumMarks } from "../marks";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -19,7 +20,7 @@ export default function McqSection({ questions, answers, onChange, disabled, res
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
   const answered = questions.filter((q) => answers[q.id]).length;
-  const totalMarks = questions.reduce((n, q) => n + q.marks, 0);
+  const totalMarks = sumMarks(questions);
 
   return (
     <SectionShell

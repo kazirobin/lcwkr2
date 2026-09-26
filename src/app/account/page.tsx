@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import { summarizeDialogueMarks } from "@/features/hw/dialogue-store";
+import { EXAM_LEVELS, getExamLessonNumbers } from "@/features/hw/data/exam";
 import { Button, Card, Field } from "@/components/ui";
 
 interface ExamRow {
@@ -106,6 +107,34 @@ export default function AccountPage() {
   const grand = examBest + dialogueTotal;
   const initial = (student.nameEnglish.trim()[0] ?? "•").toUpperCase();
 
+  // HW roadmap: how many lessons each HSK level has and how many this
+  // student has already sent handwriting for.
+  const roadmap = EXAM_LEVELS.map((level) => {
+    const lessons = getExamLessonNumbers(level);
+    const done = new Set(
+      handwriting.filter((h) => h.level === level).map((h) => h.lesson),
+    );
+    const marked = handwriting.filter(
+      (h) => h.level === level && typeof h.mark === "number",
+    ).length;
+    const pending = handwriting.filter(
+      (h) => h.level === level && h.mark === null,
+    ).length;
+    const next =
+      lessons.find((n) => !done.has(n)) ?? lessons[0] ?? 1;
+    return {
+      level,
+      total: lessons.length,
+      done: done.size,
+      marked,
+      pending,
+      next,
+      pct: lessons.length ? Math.round((done.size / lessons.length) * 100) : 0,
+    };
+  });
+  const roadmapTotal = roadmap.reduce((n, r) => n + r.total, 0);
+  const roadmapDone = roadmap.reduce((n, r) => n + r.done, 0);
+
   const submitPw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pwBusy) return;
@@ -173,6 +202,62 @@ export default function AccountPage() {
             <p className="font-mono text-lg font-bold tabular-nums text-primary">{grand}</p>
             <p className="text-[10px] text-text/50">{t("মোট", "Total")}</p>
           </div>
+        </div>
+      </Card>
+
+      {/* ── HW roadmap ── */}
+      <Card className="p-6">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-bold text-text">
+            🗺️ {t("আমার HW রোডম্যাপ", "My HW roadmap")}
+          </h2>
+          <p className="font-mono text-xs tabular-nums text-text/55">
+            {roadmapDone}/{roadmapTotal} {t("লেসন", "lessons")}
+          </p>
+        </div>
+        <div className="mt-3 space-y-2">
+          {roadmap.map((r) => (
+            <div
+              key={r.level}
+              className="rounded-xl border border-text/10 bg-background p-3"
+            >
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="font-semibold text-text">HSK {r.level}</span>
+                <span className="font-mono text-xs tabular-nums text-text/60">
+                  {t("লেসন", "lessons")} {r.total} ·{" "}
+                  <span className={r.done ? "text-ok font-bold" : "text-muted"}>
+                    {r.done} {t("টি HW হয়েছে", "done")}
+                  </span>
+                </span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-text/10">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${r.pct}%` }}
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-text/55">
+                {r.marked > 0 && (
+                  <span className="rounded-full bg-ok/15 px-2 py-0.5 font-semibold text-ok">
+                    {r.marked} {t("মার্কড", "marked")}
+                  </span>
+                )}
+                {r.pending > 0 && (
+                  <span className="rounded-full bg-warn/15 px-2 py-0.5 font-semibold text-warn">
+                    {r.pending} {t("অপেক্ষমাণ", "waiting")}
+                  </span>
+                )}
+                <Link
+                  href={`/hw/hsk${r.level}/${r.next}`}
+                  className="ml-auto rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary hover:bg-primary/20"
+                >
+                  {r.done >= r.total
+                    ? t("সব শেষ — আবার দেখুন", "All done — review")
+                    : `${t("পরের লেসন", "Next lesson")} ${r.next} →`}
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 

@@ -47,7 +47,7 @@ export interface WritingQuestion {
   prompt: string; // meaning shown (En per language handled at render)
   target: string; // the hanzi to type
   pinyin: string;
-  marks: number; // 1 each
+  marks: number; // equal share of the part's 10 marks
 }
 
 export interface MatchingPair {
@@ -55,6 +55,7 @@ export interface MatchingPair {
   pinyin: string;
   bn: string;
   en: string;
+  marks: number; // equal share of the part's 10 marks
 }
 
 export interface MatchingQuestion {
@@ -62,7 +63,7 @@ export interface MatchingQuestion {
   id: string;
   pairs: MatchingPair[]; // 5 per question
   options: string[]; // shuffled Bangla meanings to choose from
-  marks: number; // 2 per correct pair
+  marks: number; // sum of the pair marks
 }
 
 export interface DialogueBlank {
@@ -73,6 +74,7 @@ export interface DialogueBlank {
   pinyin: string;
   en: string;
   choices: { hanzi: string; pinyin: string }[];
+  marks: number; // equal share of the part's 10 marks
 }
 
 export interface DialogueQuestion {
@@ -81,7 +83,7 @@ export interface DialogueQuestion {
   title: string;
   lines: { s: string; h: string; p: string }[];
   blanks: DialogueBlank[];
-  marks: number; // 5 per blank
+  marks: number; // sum of the blank marks
 }
 
 export interface SpeakingQuestion {
@@ -91,10 +93,11 @@ export interface SpeakingQuestion {
   pinyin: string;
   en: string;
   bn: string;
-  marks: number; // 5 each
+  marks: number; // 0 - practice only, not graded
 }
 
-/** MCQ: hanzi shown, pick the correct Bangla meaning. 1 mark each. */
+/** MCQ: hanzi shown, pick the correct Bangla meaning. Each question carries an
+ *  equal share of the part's 10 marks. */
 export interface McqQuestion {
   kind: "mcq";
   id: string;

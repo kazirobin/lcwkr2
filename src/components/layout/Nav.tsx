@@ -54,6 +54,7 @@ const DROPDOWNS = {
     en: "Vocabulary",
     bn: "ভোকাবুলারি",
     items: [
+      { href: "/hsk/pinyin", en: "Pinyin", bn: "পিনয়িন" },
       { href: "/hsk", en: "HSK Vocabulary", bn: "HSK ভোকাবুলারি" },
       { href: "/hsk/1", en: "HSK 1", bn: "HSK ১" },
       { href: "/hsk/2", en: "HSK 2", bn: "HSK ২", isPro: true },
@@ -572,18 +573,10 @@ export default function Nav() {
               </a>
             </div>
 
-            {/* Mobile Controls */}
+            {/* Mobile Controls — keep only the persistent action chips;
+                the language and theme toggles live inside the hamburger. */}
             <div className="md:hidden flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={toggleLanguage}
-                className="px-2.5 py-2 text-sm font-medium text-text/80 hover:text-secondary hover:bg-secondary/7 rounded-full transition-colors"
-                aria-label="Toggle language"
-              >
-                {language === "en" ? "বাংলা" : "English"}
-              </button>
               <PinyinToggle />
-              <ThemeButton />
               <AccountButton onNavigate={closeAll} />
               <button
                 type="button"
@@ -619,14 +612,26 @@ export default function Nav() {
             </div>
           </div>
 
-          {/* Mobile Menu */}
-          {isMobile && isMobileMenuOpen && (
-            <div
-              ref={mobileMenuRef}
-              className={`md:hidden mx-4 mb-2 rounded-2xl py-3 px-2 animate-in fade-in slide-in-from-top-2 duration-150 ${PANEL_GLASS}`}
-            >
-              <div className="flex flex-col space-y-1">
-                {MAIN_LINKS.map((link) => (
+            {/* Mobile Menu */}
+            {isMobile && isMobileMenuOpen && (
+              <div
+                ref={mobileMenuRef}
+                className={`md:hidden mx-4 mb-2 rounded-2xl py-3 px-2 animate-in fade-in slide-in-from-top-2 duration-150 ${PANEL_GLASS}`}
+              >
+                <div className="flex flex-col space-y-1">
+                  {/* language + theme toggles live inside the hamburger on small screens */}
+                  <div className="flex items-center gap-2 border-b border-text/10 pb-2 mb-1">
+                    <button
+                      type="button"
+                      onClick={toggleLanguage}
+                      className="px-3 py-1.5 text-sm font-medium rounded-full border border-text/15 text-text/80 hover:text-secondary hover:border-secondary/40 transition-colors"
+                    >
+                      {language === "en" ? "বাংলা" : "English"}
+                    </button>
+                    <ThemeButton />
+                  </div>
+
+                  {MAIN_LINKS.map((link) => (
                   <div key={link.id}>
                     {renderLink(link.href, t(link.en, link.bn))}
                   </div>

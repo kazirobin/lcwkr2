@@ -12,8 +12,6 @@ import {
 } from "@/features/hw/data/exam";
 import {
   clearAnswers,
-  loadAnswers,
-  loadResults,
   saveAnswers,
   saveResult,
   summarizeResults,
@@ -33,6 +31,7 @@ import DialoguePlayer from "@/features/hw/components/DialoguePlayer";
 import HandwritingAssignment from "@/features/hw/components/HandwritingAssignment";
 import { lesson1Dialogue } from "@/features/hw/data/hsk1/lesson1-dialogue";
 import { matchesPinyinAnswer } from "@/features/hw/pinyin";
+import { round2 } from "@/features/hw/marks";
 import { loadAccountPhone } from "@/features/student-auth";
 import ProGate from "@/features/chinese-words/components/ProGate";
 
@@ -78,6 +77,8 @@ export default function HomeworkDynamicPage() {
   const [history, setHistory] = useState<ReturnType<typeof summarizeResults>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  // Everything that carries marks. Speaking is practice (0 marks), so it is
+  // deliberately not required to submit.
   const requiredAnswerIds = useMemo(() => {
     if (!exam) return [];
     return [
@@ -87,7 +88,6 @@ export default function HomeworkDynamicPage() {
       ),
       ...exam.dialogues.flatMap((question) => question.blanks.map((blank) => blank.id)),
       ...exam.mcq.map((question) => question.id),
-      ...exam.speaking.map((question) => question.id),
     ];
   }, [exam]);
   const answeredCount = requiredAnswerIds.filter((id) => Boolean((answers[id] ?? "").trim())).length;
@@ -95,19 +95,15 @@ export default function HomeworkDynamicPage() {
   const allAnswersComplete = remainingAnswerCount === 0;
   const answerProgress = requiredAnswerIds.length === 0 ? 100 : (answeredCount / requiredAnswerIds.length) * 100;
 
-  // restore draft + history from localStorage on lesson change
+  // Reset on every mount/lesson change. Neither the result nor the previous
+  // answers come back: every page load starts on an empty exam form, so the
+  // student always sits the exam again. Past scores stay in the history panel.
   useEffect(() => {
     queueMicrotask(() => {
       setHydrated(false);
-      setAnswers(loadAnswers(level, lessonNo));
-      const prior = loadResults().find((r) => r.key === `${level}-${lessonNo}`);
-      if (prior) {
-        setResult(prior);
-        setSubmitted(true);
-      } else {
-        setResult(null);
-        setSubmitted(false);
-      }
+      setAnswers({});
+      setResult(null);
+      setSubmitted(false);
       setHistory(summarizeResults());
       setHydrated(true);
     });
@@ -117,6 +113,11 @@ export default function HomeworkDynamicPage() {
   useEffect(() => {
     if (hydrated) saveAnswers(level, lessonNo, answers);
   }, [answers, hydrated, level, lessonNo]);
+
+  // Leaving the lesson drops the draft, so a reload always starts fresh.
+  useEffect(() => {
+    return () => clearAnswers(level, lessonNo);
+  }, [level, lessonNo]);
 
   // redirect invalid lesson numbers to the first available lesson
   useEffect(() => {
@@ -175,12 +176,12 @@ export default function HomeworkDynamicPage() {
       });
     }
 
-    // matching: 2 marks per correct pair
+    // matching: each pair carries its own share of the part's 10 marks
     for (const q of exam.matching) {
       let earned = 0;
       for (const pair of q.pairs) {
         const user = (answers[`${q.id}:${pair.hanzi}`] ?? "").trim();
-        if (user === pair.bn) earned += 2;
+        if (user === pair.bn) earned += pair.marks;
       }
       totalScore += earned;
       items.push({
@@ -199,7 +200,7 @@ export default function HomeworkDynamicPage() {
       for (const blank of q.blanks) {
         const user = (answers[blank.id] ?? "").trim();
         const ok = user === blank.answer;
-        const earned = ok ? q.marks : 0;
+        const earned = ok ? blank.marks : 0;
         totalScore += earned;
         items.push({
           section: "dialogue",
@@ -208,7 +209,7 @@ export default function HomeworkDynamicPage() {
           userAnswer: user || "—",
           correctAnswer: blank.answer,
           earned,
-          marks: q.marks,
+          marks: blank.marks,
         });
       }
     }
@@ -230,19 +231,17 @@ export default function HomeworkDynamicPage() {
       });
     }
 
-    // speaking: full marks when a recording exists
+    // speaking: practice only, never scored
     for (const q of exam.speaking) {
       const has = Boolean(answers[q.id]);
-      const earned = has ? q.marks : 0;
-      totalScore += earned;
       items.push({
         section: "speaking",
         id: q.id,
         prompt: `${q.line} (${q.pinyin})`,
         userAnswer: has ? "🎙️" : "—",
         correctAnswer: q.line,
-        earned,
-        marks: q.marks,
+        earned: 0,
+        marks: 0,
       });
     }
 
@@ -250,7 +249,7 @@ export default function HomeworkDynamicPage() {
       key: `${level}-${lessonNo}`,
       level,
       lesson: lessonNo,
-      totalScore,
+      totalScore: round2(totalScore),
       totalMarks: exam.totalMarks,
       items,
       submittedAt: new Date().toISOString(),
@@ -270,7 +269,7 @@ export default function HomeworkDynamicPage() {
           phone: accountPhone,
           level,
           lesson: lessonNo,
-          totalScore,
+          totalScore: round2(totalScore),
           totalMarks: exam.totalMarks,
         }),
       }).catch(() => {
@@ -302,8 +301,9 @@ export default function HomeworkDynamicPage() {
   };
 
   const scorePercent = result ? Math.round((result.totalScore / result.totalMarks) * 100) : 0;
-  // Lesson-1 mode: collapsible titles, pinyin-accepted writing, dialogue player.
-  // To roll out to every lesson later, change this to `true`.
+  // Lesson-1 mode: pinyin-accepted writing + the bundled dialogue script.
+  // Every section collapses on every lesson. To roll the lesson-1 extras out
+  // later, change this to `true`.
   const isLesson1 = level === 1 && lessonNo === 1;
   const writingRes = resultBySection();
   const matchingRes = resultBySection();
@@ -316,7 +316,7 @@ export default function HomeworkDynamicPage() {
     matching: t("সেকশন ২ — মিলকরণ", "Section 2 — Matching"),
     dialogue: t("সেকশন ৩ — ডায়লগ", "Section 3 — Dialogue"),
     mcq: t("সেকশন ৪ — MCQ", "Section 4 — MCQ"),
-    speaking: t("সেকশন ৫ — স্পিকিং", "Section 5 — Speaking"),
+    speaking: t("সেকশন ৫ — স্পিকিং (প্র্যাকটিস, নম্বর নেই)", "Section 5 — Speaking (practice, no marks)"),
   };
 
   return (
@@ -378,8 +378,8 @@ export default function HomeworkDynamicPage() {
           </h1>
           <p className="text-sm text-muted mt-1">
             {t(
-              `লেখা, মিলকরণ, ডায়লগ, MCQ ও স্পিকিং — প্রতিটি শব্দে ১ নম্বর করে।`,
-              `Writing, matching, dialogue, MCQ and speaking — 1 mark per word.`
+              `লেখা, মিলকরণ, ডায়লগ ও MCQ — প্রতিটি অংশে ১০ নম্বর, মোট ৪০। স্পিকিং শুধু প্র্যাকটিস।`,
+              `Writing, matching, dialogue and MCQ — 10 marks each, 40 in total. Speaking is practice only.`
             )}
           </p>
         </div>

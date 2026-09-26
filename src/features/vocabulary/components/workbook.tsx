@@ -157,6 +157,7 @@ export function NumberedRow({
   disabled = false,
   disabledLabel,
   ariaLabel,
+  aside,
 }: {
   href: string;
   index: string;
@@ -167,6 +168,8 @@ export function NumberedRow({
   disabled?: boolean;
   disabledLabel?: string;
   ariaLabel?: string;
+  /** A control beside the row — a button cannot live inside the row's link. */
+  aside?: React.ReactNode;
 }) {
   const body = (
     <>
@@ -229,7 +232,25 @@ export function NumberedRow({
 
   if (disabled) {
     return (
-      <li className="flex gap-4 border-b border-text/10 py-5">{body}</li>
+      <li className="flex gap-4 border-b border-text/10 py-5">
+        {body}
+        {aside && <span className="flex shrink-0 items-center pl-2">{aside}</span>}
+      </li>
+    );
+  }
+
+  if (aside) {
+    return (
+      <li className="flex items-center border-b border-text/10">
+        <Link
+          href={href}
+          aria-label={ariaLabel}
+          className="group flex flex-1 gap-4 py-5 transition-colors hover:bg-text/[0.025] focus-visible:bg-text/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-text"
+        >
+          {body}
+        </Link>
+        <span className="flex shrink-0 items-center pr-5">{aside}</span>
+      </li>
     );
   }
 

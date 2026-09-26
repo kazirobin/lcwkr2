@@ -4,6 +4,7 @@ import { useLanguage } from "@/i18n";
 import type { LessonDetail } from "@/features/vocabulary/types";
 import { vocabularyCopy, localizeNumber, localizePad2 } from "@/features/vocabulary/i18n";
 import { PaperPage, PaperHeader, Breadcrumb, NumberedList, NumberedRow } from "./workbook";
+import { LessonPdfButton } from "./LessonPdfViewer";
 
 /** `/hsk/[level]/lesson/[lessonNumber]` — the texts in one lesson. */
 export default function TextPicker({ detail }: { detail: LessonDetail }) {
@@ -36,9 +37,12 @@ export default function TextPicker({ detail }: { detail: LessonDetail }) {
       />
 
       <div className="mx-auto max-w-3xl px-5 pt-12 pb-24 sm:px-6 md:pt-16">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text/45">
-          {c.textList}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text/45">
+            {c.textList}
+          </h2>
+          <LessonPdfButton level={detail.level} lesson={detail.lesson} />
+        </div>
         <NumberedList>
           {detail.texts.map((text) => {
             const label = `${c.text} ${n(text.text)}`;
