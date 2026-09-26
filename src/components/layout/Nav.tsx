@@ -54,7 +54,7 @@ const DROPDOWNS = {
     en: "Vocabulary",
     bn: "ভোকাবুলারি",
     items: [
-      { href: "/hsk/pinyin", en: "Pinyin", bn: "পিনয়িন" },
+      { href: "/pinyin", en: "Pinyin", bn: "পিনয়িন" },
       { href: "/hsk", en: "HSK Vocabulary", bn: "HSK ভোকাবুলারি" },
       { href: "/hsk/1", en: "HSK 1", bn: "HSK ১" },
       { href: "/hsk/2", en: "HSK 2", bn: "HSK ২", isPro: true },
