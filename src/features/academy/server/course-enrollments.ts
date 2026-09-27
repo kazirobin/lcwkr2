@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/db";
 import { Course, CourseEnrollment, Student } from "@/features/academy/models";
 import type { ICourseDoc } from "@/features/academy/models";
 import { normalizePhone, type SubmitResult } from "./registrations";
+import { findStudentDocByPhone } from "./student-auth";
 
 /**
  * Paid enrollment into a launched course.
@@ -222,7 +223,7 @@ export async function approveCourseEnrollment(
     return { ok: false, code: "invalid", message: "ইতিমধ্যে অনুমোদিত।" };
   }
 
-  const student = await Student.findOne({ whatsapp: row.whatsapp });
+  const student = await findStudentDocByPhone(row.whatsapp);
   if (student) {
     const existing = Array.isArray(student.enrolledCourseIds)
       ? (student.enrolledCourseIds as string[])
@@ -273,7 +274,7 @@ export async function deleteCourseEnrollment(
 
   let removedFromCourse = false;
   if (alsoRemoveFromStudent) {
-    const student = await Student.findOne({ whatsapp: row.whatsapp });
+    const student = await findStudentDocByPhone(row.whatsapp);
     if (student) {
       const existing = Array.isArray(student.enrolledCourseIds)
         ? (student.enrolledCourseIds as string[])

@@ -55,6 +55,35 @@ async function findByPhone(phone: string) {
   return hit ?? null;
 }
 
+/**
+ * The same tolerant lookup as findByPhone, but returning a live document so a
+ * caller can save changes to it.
+ *
+ * A Pro approval and a course enrollment both look the student up by a stored
+ * `whatsapp` string. That field is not normalised — it holds whatever shape the
+ * number arrived in, and for imported students that is `+880…`. Comparing it
+ * with `=`, as those two paths used to, missed every one of them, so approving
+ * a real payment reported success and unlocked nothing. Matching the normalised
+ * value instead is what makes the payment take effect.
+ */
+export async function findStudentDocByPhone(phone: string) {
+  await connectDB();
+  const norm = normalizePhone(phone);
+  if (!norm) return null;
+
+  // Try the shapes worth guessing cheaply first, then fall back to comparing
+  // the normalised value across the collection.
+  const guessed = await Student.findOne({
+    $or: [{ whatsapp: norm }, { whatsapp: `+${norm}` }, { whatsapp: `88${norm}` }, { whatsapp: `+88${norm}` }],
+  });
+  if (guessed) return guessed;
+
+  const all = await Student.find({}).select("whatsapp");
+  const hit = all.find((s) => normalizePhone(s.whatsapp) === norm);
+  if (!hit) return null;
+  return Student.findById(hit._id);
+}
+
 /** Approved students only. Upgrades default-password logins to a hash. */
 export async function verifyStudentLogin(
   phone: string,

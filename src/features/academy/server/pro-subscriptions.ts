@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db";
 import { ProSubscription, Student } from "@/features/academy/models";
 import { normalizePhone, type SubmitResult } from "./registrations";
+import { findStudentDocByPhone } from "./student-auth";
 
 /**
  * Pro is ৳500 for life. A student sends the money and types the TrxID, the
@@ -50,7 +51,7 @@ export async function submitProSubscription(input: {
     return { ok: false, code: "invalid", message: "মোবাইল নম্বর ও TrxID লিখুন।" };
   }
 
-  const student = await Student.findOne({ whatsapp });
+  const student = await findStudentDocByPhone(whatsapp);
   if (!student) {
     return {
       ok: false,
@@ -93,7 +94,7 @@ export async function approveProSubscription(id: string): Promise<SubmitResult<{
     return { ok: false, code: "invalid", message: "ইতিমধ্যে চালু করা হয়েছে।" };
   }
 
-  const student = await Student.findOne({ whatsapp: row.whatsapp });
+  const student = await findStudentDocByPhone(row.whatsapp);
   if (!student) {
     return {
       ok: false,

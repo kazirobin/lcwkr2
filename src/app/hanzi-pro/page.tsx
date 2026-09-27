@@ -21,6 +21,7 @@ import {
   FREE_CURRICULUM_LESSONS,
 } from "@/features/hanzi-pro/components/WordStrokePractice";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
+import { useProAccess } from "@/features/chinese-words/components/pro-access";
 
 const BKASH_NUMBER = "01787881334";
 const ADMIN_WHATSAPP = "8801787881334";
@@ -70,29 +71,15 @@ export default function HanziProPage() {
   const [sessions, setSessions] = useState<HPSession[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Pro subscription gate — shares the same localStorage key as the
-  // Chinese Core Words builder, so one subscription unlocks both.
-  const [isPro, setIsPro] = useState(false);
-  const [proReady, setProReady] = useState(false);
+  // Pro entitlement. This used to read only the legacy `cw:pro` localStorage
+  // key, but nothing writes that key any more, so a student the admin approved
+  // through /admin/pro stayed locked out of lessons 6+ here forever. Asking
+  // useProAccess means the account flag wins, so approval now works here too.
+  const { isPro, resolving } = useProAccess();
+  const proReady = !resolving;
   const proRef = useRef<ProAccessHandle>(null);
 
-  useEffect(() => {
-    try {
-      setIsPro(localStorage.getItem("cw:pro") === "1");
-    } catch {
-      /* localStorage unavailable */
-    }
-    setProReady(true);
-  }, []);
-
   const openSubscribe = () => proRef.current?.open();
-  const refreshPro = () => {
-    try {
-      setIsPro(localStorage.getItem("cw:pro") === "1");
-    } catch {
-      /* localStorage unavailable */
-    }
-  };
 
   const [copied, setCopied] = useState(false);
   const [regOpen, setRegOpen] = useState(false);

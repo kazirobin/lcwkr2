@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db";
 import { Student, StudentRegistration } from "@/features/academy/models";
+import { normalizePhone } from "./dialogues";
 
 /**
  * The two ways a visitor becomes part of the academy:
@@ -24,10 +25,16 @@ export type SubmitResult<T> =
   | { ok: true; data: T }
   | { ok: false; code: "invalid" | "duplicate-trx" | "exists" | "not-launched" | "full" | "closed"; message: string };
 
-/** Strip the spaces and dashes people paste phone numbers with. */
-export function normalizePhone(raw: string): string {
-  return (raw ?? "").replace(/[\s\-()]/g, "").replace(/^\+?88/, "0");
-}
+/**
+ * Reduce any of the shapes a phone number arrives in to one local 11-digit
+ * string, so a student is found whichever way they typed it.
+ *
+ * Re-exported from dialogues.ts, which is the single home for this. It used to
+ * have its own weaker copy here, and the two disagreed on `+880…`, `00880…`
+ * and bare national numbers — which is how an approved Pro payment could
+ * silently fail to match the student it was meant to unlock.
+ */
+export { normalizePhone } from "./dialogues";
 
 export async function listRegistrations(status = "Pending") {
   await connectDB();

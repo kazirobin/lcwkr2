@@ -87,8 +87,14 @@ export function useProAccess() {
 
   const isPro = localPro || accountPro;
 
+  // The window in which we do not yet know the answer. `status` deliberately
+  // reports "pro" throughout it so an entitled student never sees a lock flash,
+  // which means a caller that wants to hold back its own lock screen has to ask
+  // for this instead of checking for "checking".
+  const resolving = accountChecking || (guestState === null && !isPro);
+
   let status: ProAccessStatus;
-  if (accountChecking || (guestState === null && !isPro)) {
+  if (resolving) {
     // Still resolving: render unlocked rather than flashing a lock at someone
     // who is actually entitled to see the content.
     status = "pro";
@@ -113,7 +119,7 @@ export function useProAccess() {
     setGuestState({ remainingMs: TRIAL_MS });
   }, []);
 
-  return { status, remainingMs, isPro, resetTrial };
+  return { status, remainingMs, isPro, resolving, resetTrial };
 }
 
 /** "9:41" style countdown for the trial badge. */

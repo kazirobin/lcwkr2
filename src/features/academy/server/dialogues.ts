@@ -4,10 +4,30 @@ import { connectDB } from "@/lib/db";
 import { DialogueMark, DialogueSubmission } from "@/features/academy/models";
 import { Student } from "@/features/academy/models";
 
-/** Normalize BD mobiles to 01XXXXXXXXX for comparison + storage. */
+/**
+ * Normalize BD mobiles to 01XXXXXXXXX for comparison + storage.
+ *
+ * This is the only phone normaliser in the app. A second, weaker copy lived in
+ * registrations.ts and the two disagreed — the one here accepted `+880…` but
+ * left `00880…` and a bare national number untouched, while that one handled
+ * those but mishandled `+880…`. Login, homework, exams and Pro purchases all
+ * compare against this, so any disagreement shows up as a student who cannot
+ * sign in or cannot be approved. Keep it in one place.
+ */
 export function normalizePhone(raw: unknown): string {
-  const digits = String(raw ?? "").replace(/\D/g, "");
-  if (digits.startsWith("880") && digits.length >= 12) return `0${digits.slice(3)}`;
+  let digits = String(raw ?? "").replace(/\D/g, "");
+
+  // `00` is how a dialler writes the international prefix. It is not part of
+  // the number, so it goes before the country code is looked for.
+  while (digits.startsWith("00") && digits.length > 11) digits = digits.slice(2);
+
+  // 880 is the country code, and a local number already carries its own 0, so
+  // 880 is removed rather than swapped for one.
+  if (digits.startsWith("880") && digits.length > 11) digits = digits.slice(3);
+
+  // A national number typed without its leading 0 gets one back.
+  if (digits.length === 10) digits = `0${digits}`;
+
   return digits;
 }
 
