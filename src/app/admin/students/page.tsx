@@ -33,6 +33,33 @@ type Student = {
 };
 type Course = { courseId: string; courseName: string };
 
+/** Sign-in totals the students table shows next to each name. */
+type SessionInfo = {
+  logins: number;
+  totalSeconds: number;
+  lastLoginAt: string | null;
+  active: boolean;
+};
+
+/** "2h 15m" reads faster than a minute count when a row is 60 students tall. */
+function humanTime(seconds: number): string {
+  if (!seconds || seconds < 60) return seconds ? `${Math.round(seconds)}s` : "—";
+  const m = Math.round(seconds / 60);
+  if (m < 60) return `${m}m`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
+function daysAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "—";
+  const days = Math.floor((Date.now() - then) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "1d ago";
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
 export default function AdminStudentsPage() {
   const { language } = useLanguage();
   const t = useCallback(
@@ -44,6 +71,8 @@ export default function AdminStudentsPage() {
 
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  /** Keyed by the student's phone, the same identity the login uses. */
+  const [sessions, setSessions] = useState<Record<string, SessionInfo>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "joined" | "pending">("all");
 
@@ -82,12 +111,18 @@ export default function AdminStudentsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, c] = await Promise.all([
+      // The session summary is a separate read so a database hiccup there
+      // cannot stop the student list itself from rendering.
+      const [s, c, sess] = await Promise.all([
         fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/academy/students/sessions", { cache: "no-store" })
+          .then((r) => r.json())
+          .catch(() => null),
       ]);
       if (s.success) setStudents(s.students || []);
       if (c.success) setCourses(c.courses || []);
+      if (sess?.success) setSessions(sess.sessions || {});
     } catch {
       toast(t("তথ্য লোড করা যায়নি।", "Couldn't load data."), "error");
     } finally {
@@ -289,12 +324,15 @@ export default function AdminStudentsPage() {
       ) : (
         <TableFrame
           caption={t("অনুমোদিত শিক্ষার্থীর তালিকা", "Approved students")}
-          minWidth="48rem"
+          minWidth="72rem"
           head={
             <>
               <Th className="w-14">{t("রোল", "Roll")}</Th>
               <Th>{t("নাম", "Name")}</Th>
               <Th>{t("ট্র্যাক", "Track")}</Th>
+              <Th>{t("লগইন", "Sign-ins")}</Th>
+              <Th>{t("সময় দিয়েছেন", "Time spent")}</Th>
+              <Th>{t("শেষ এসেছেন", "Last seen")}</Th>
               <Th>{t("হোয়াটসঅ্যাপ", "WhatsApp")}</Th>
               <Th>{t("গ্রুপ", "Group")}</Th>
               <Th>{t("প্রো", "Pro")}</Th>
@@ -313,6 +351,31 @@ export default function AdminStudentsPage() {
                 </Link>
               </Td>
               <Td className="tabular-nums">{trackOf(s)}</Td>
+              {/* How engaged each student is: sign-in count, time on the
+                  site, and when they were last here. */}
+              <Td className="tabular-nums">
+                {(() => {
+                  const info = sessions[s.whatsapp];
+                  if (!info) return <span className="text-text/40">—</span>;
+                  return (
+                    <span className="inline-flex items-center gap-1.5">
+                      {info.logins}
+                      {info.active && (
+                        <span
+                          className="size-1.5 rounded-full bg-ok"
+                          title={t("এখন অনলাইন", "online now")}
+                        />
+                      )}
+                    </span>
+                  );
+                })()}
+              </Td>
+              <Td className="tabular-nums">
+                {humanTime(sessions[s.whatsapp]?.totalSeconds ?? 0)}
+              </Td>
+              <Td className="whitespace-nowrap text-text/60">
+                {daysAgo(sessions[s.whatsapp]?.lastLoginAt ?? null)}
+              </Td>
               <Td className="tabular-nums">
                 <a
                   href={`https://wa.me/${String(s.whatsapp).replace(/[^0-9]/g, "")}`}

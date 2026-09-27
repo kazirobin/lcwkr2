@@ -1,119 +1,21 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import ProSubscriptionForm from "./ProSubscriptionForm";
+import { formatRemaining, useProAccess } from "./pro-access";
 
 /**
- * Guest preview system: visitors who have not subscribed can browse the
- * Pro pages for a limited trial. Everything is localStorage-based —
- * no account, no server.
+ * Wrap any Pro page content.
  *
- * Keys:
- *   cw:pro          = "1"  → unlocked (subscribed / valid password entered)
- *   cw:guest-start  = ms timestamp of the first visit (trial start)
+ * Everyone gets a ten-minute preview so a visitor can actually try the thing
+ * before being asked for money. After that the page becomes the join panel,
+ * which is where the ৳500 student account and the ৳500 lifetime Pro live.
  */
-
-const PRO_KEY = "cw:pro";
-const GUEST_KEY = "cw:guest-start";
-export const TRIAL_MS = 10 * 60 * 1000; // 10 minutes
-
-export type ProAccessStatus = "checking" | "pro" | "guest" | "expired";
-
-export function useProAccess() {
-  const [status, setStatus] = useState<ProAccessStatus>("checking");
-  const [remainingMs, setRemainingMs] = useState(TRIAL_MS);
-
-  useEffect(() => {
-    const compute = () => {
-      try {
-        if (localStorage.getItem(PRO_KEY) === "1") {
-          setStatus("pro");
-          return;
-        }
-        let start = Number(localStorage.getItem(GUEST_KEY));
-        if (!start || Number.isNaN(start)) {
-          start = Date.now();
-          localStorage.setItem(GUEST_KEY, String(start));
-        }
-        const remain = start + TRIAL_MS - Date.now();
-        if (remain <= 0) {
-          setRemainingMs(0);
-          setStatus("expired");
-        } else {
-          setRemainingMs(remain);
-          setStatus("guest");
-        }
-      } catch {
-        // localStorage unavailable — never lock the user out
-        setStatus("pro");
-      }
-    };
-
-    compute();
-    const interval = setInterval(compute, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const unlock = useCallback(() => {
-    try {
-      localStorage.setItem(PRO_KEY, "1");
-    } catch {
-      /* ignore */
-    }
-    setStatus("pro");
-  }, []);
-
-  /** Back to guest/expired after removing the Pro flag. */
-  const logout = useCallback(() => {
-    try {
-      localStorage.removeItem(PRO_KEY);
-      const start = Number(localStorage.getItem(GUEST_KEY));
-      const remain = (start || Date.now()) + TRIAL_MS - Date.now();
-      if (remain <= 0) {
-        setRemainingMs(0);
-        setStatus("expired");
-      } else {
-        setRemainingMs(remain);
-        setStatus("guest");
-      }
-    } catch {
-      setStatus("pro");
-    }
-  }, []);
-
-  /** Start the trial over (testing / support). */
-  const resetTrial = useCallback(() => {
-    try {
-      localStorage.removeItem(GUEST_KEY);
-      localStorage.removeItem(PRO_KEY);
-      localStorage.setItem(GUEST_KEY, String(Date.now()));
-    } catch {
-      /* ignore */
-    }
-    setRemainingMs(TRIAL_MS);
-    setStatus("guest");
-  }, []);
-
-  return { status, remainingMs, unlock, logout, resetTrial };
-}
-
-function formatRemaining(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-/** Wrap any Pro page content: guests get TRIAL_MS, then the paywall.
- * Pro = local unlock (legacy) OR logged-in student with admin-granted
- * isPro (server truth — the only way to newly become Pro). */
 export default function ProGate({ children }: { children: React.ReactNode }) {
-  const { status, remainingMs, logout, resetTrial } = useProAccess();
+  const { status, remainingMs, isPro, resetTrial } = useProAccess();
   const { student: account } = useAccount();
-  const serverPro = !!account?.isPro;
-  const isPro = status === "pro" || serverPro;
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
   const [modalOpen, setModalOpen] = useState(false);
@@ -125,7 +27,7 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
     }
   }, [isPro]);
 
-  if (status === "expired" && !serverPro) {
+  if (status === "expired") {
     return (
       <div className="min-h-[70vh] py-12 px-4 flex flex-col items-center justify-center gap-6">
         <div className="text-center space-y-2">
@@ -161,7 +63,7 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Bottom-left access chips */}
-      {status === "guest" && !serverPro && (
+      {status === "guest" && (
         <div className="fixed bottom-16 left-4 z-50 flex items-center gap-2">
           <div
             className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-mono shadow-lg border ${
@@ -217,30 +119,14 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-semibold text-ok">
                   ✓ {t("আপনি Pro সদস্য — সব কনটেন্ট আনলক করা আছে।", "You're a Pro member — all content is unlocked.")}
                 </p>
-                {serverPro && account ? (
+                {account ? (
                   <p className="text-[11px] text-muted">
                     {t(
                       `Admin থেকে দেওয়া Pro (${account.nameEnglish}) — অ্যাকাউন্টে সব ডিভাইসে চলবে।`,
                       `Admin-granted Pro (${account.nameEnglish}) — works on all devices with this account.`
                     )}
                   </p>
-                ) : (
-                  <>
-                    <p className="text-[11px] text-muted">
-                      {t(
-                        "নতুন ডিভাইসে বা ভুলে গেলে নিচে আবার পাসওয়ার্ড দিন। লগ আউট করলে গেস্ট মোডে ফিরে যাবেন।",
-                        "On a new device (or if forgotten) enter the password again below. Logging out returns you to guest mode."
-                      )}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={logout}
-                      className="px-3.5 py-1.5 rounded-xl border border-danger/40 bg-danger/10 text-danger text-xs font-semibold hover:bg-danger/20 transition"
-                    >
-                      {t("Pro থেকে লগ আউট", "Log out of Pro")}
-                    </button>
-                  </>
-                )}
+                ) : null}
               </div>
             )}
 

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setCourseLaunched, updateCourse, updateCourseOffer } from "@/features/academy/server/courses";
+import { messageOf } from "@/lib/api-error";
+import {
+  setCourseCompleted,
+  setCourseLaunched,
+  updateCourse,
+  updateCourseOffer,
+} from "@/features/academy/server/courses";
 
 type Props = { params: Promise<{ id: string }> };
 
 // PUT /api/academy/courses/[id]/settings — admin sets lessons, next-class
-// topic, the launch state, and the fee/duration a course is sold at.
+// topic, the launch state, the fee/duration a course is sold at, and marks a
+// finished batch complete.
 export async function PUT(req: NextRequest, props: Props) {
   try {
     const { id } = await props.params;
@@ -15,12 +22,29 @@ export async function PUT(req: NextRequest, props: Props) {
       return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
     }
 
+    if (typeof fields.completed === "boolean") {
+      const updated = await setCourseCompleted(id, fields.completed);
+      if (!updated) {
+        return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, course: updated });
+    }
+
     // Launch is its own action so it can stamp launchedAt and keep the legacy
     // registrationOpen flag in step.
     if (typeof fields.launched === "boolean") {
       const launched = await setCourseLaunched(id, fields.launched);
       if (!launched) {
-        return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              fields.launched === true
+                ? "This course is marked complete. Reopen it first, then put it on sale."
+                : "Course not found",
+          },
+          { status: 400 },
+        );
       }
       return NextResponse.json({ success: true, course: launched });
     }
@@ -44,7 +68,10 @@ export async function PUT(req: NextRequest, props: Props) {
       return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
     }
     return NextResponse.json({ success: true, course: updated });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { success: false, error: messageOf(error, "Could not save the course.") },
+      { status: 500 },
+    );
   }
 }

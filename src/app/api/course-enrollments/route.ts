@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { messageOf } from "@/lib/api-error";
 import {
   approveCourseEnrollment,
+  deleteCourseEnrollment,
+  enrollStudentDirectly,
   listCourseEnrollments,
   rejectCourseEnrollment,
   submitCourseEnrollment,
@@ -51,6 +53,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
     }
 
+    // The admin adding a student who is already registered — no payment step.
+    if (body.action === "ADD_STUDENT") {
+      const result = await enrollStudentDirectly({
+        courseId: String(body.courseId ?? ""),
+        rollNumber: Number(body.rollNumber),
+        note: typeof body.note === "string" ? body.note : "",
+      });
+      if (!result.ok) {
+        return NextResponse.json({ success: false, message: result.message }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, ...result.data });
+    }
+
     if (body.action === "APPROVE") {
       const result = await approveCourseEnrollment(String(body.id ?? ""));
       if (!result.ok) {
@@ -65,6 +80,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, message: result.message }, { status: 400 });
       }
       return NextResponse.json({ success: true });
+    }
+
+    // Removing a row altogether — for a wrong entry or a duplicate payment.
+    if (body.action === "DELETE") {
+      const result = await deleteCourseEnrollment(
+        String(body.id ?? ""),
+        body.alsoRemoveFromStudent === true,
+      );
+      if (!result.ok) {
+        return NextResponse.json({ success: false, message: result.message }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, ...result.data });
     }
 
     return NextResponse.json({ success: false, message: "Unknown action" }, { status: 400 });

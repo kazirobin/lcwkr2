@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 export interface ICourseDoc {
   courseId: string;
@@ -25,6 +25,13 @@ export interface ICourseDoc {
   /** Once true the course is open for paid enrollment. */
   launched: boolean;
   launchedAt?: Date;
+  /**
+   * Set when the batch has finished. A completed course stops accepting new
+   * enrollments and drops off the academy list, but its class log and students
+   * stay exactly where they are for the record.
+   */
+  completed: boolean;
+  completedAt?: Date;
   /** Date the paid enrollment window closes, YYYY-MM-DD. Empty = no deadline. */
   enrollmentDeadline?: string;
   // ── new professional LMS fields ──
@@ -91,6 +98,8 @@ const CourseSchema = new Schema<ICourseDoc>(
     seats: { type: Number, default: 0, min: 0 },
     launched: { type: Boolean, default: false, index: true },
     launchedAt: { type: Date, default: null },
+    completed: { type: Boolean, default: false, index: true },
+    completedAt: { type: Date, default: null },
     enrollmentDeadline: { type: String, default: "" },
     // ── new professional LMS fields ──
     lessons: [

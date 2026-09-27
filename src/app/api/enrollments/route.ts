@@ -1,21 +1,48 @@
 import { NextResponse } from "next/server";
-import {
-  createEnrollment,
-  enrollmentCounts,
-} from "@/features/academy/server/enrollments";
+import { messageOf } from "@/lib/api-error";
+import { Course, CourseEnrollment } from "@/features/academy/models";
+import { submitCourseEnrollment } from "@/features/academy/server/course-enrollments";
+import { connectDB } from "@/lib/db";
 
+/**
+ * GET /api/enrollments?courseId= — kept for the seat counter on the academy
+ * page, which expects { enrolled, capacity, remaining }.
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("courseId") || "HSK-101";
-    const counts = await enrollmentCounts(courseId);
-    return NextResponse.json({ success: true, ...counts });
+    await connectDB();
+    const [enrolled, course] = await Promise.all([
+      CourseEnrollment.countDocuments({ courseId, status: { $ne: "Rejected" } }),
+      Course.findOne({ courseId }).select("seats").lean(),
+    ]);
+    // The capacity now lives on the course rather than in a constant, so a
+    // course with no seat limit reports 0 and the UI hides the meter.
+    const capacity = course?.seats ?? 0;
+    return NextResponse.json({
+      success: true,
+      enrolled,
+      capacity,
+      remaining: capacity ? Math.max(0, capacity - enrolled) : null,
+    });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load enrollments";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: messageOf(error, "Failed to load enrollments") },
+      { status: 500 },
+    );
   }
 }
 
+/**
+ * POST /api/enrollments — the academy page's seat-reservation form.
+ *
+ * This used to write to its own `enrollments` collection, which the admin
+ * could not see, approve or undo. It now goes through the same
+ * CourseEnrollment path as every other course, so all courses share one queue.
+ * The TrxID stays mandatory here because this form is only ever used for a paid
+ * seat.
+ */
 export async function POST(req: Request) {
   try {
     const { courseId, name, whatsapp, trxId, location, note } = await req.json();
@@ -25,24 +52,30 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const result = await createEnrollment({ courseId, name, whatsapp, trxId, location: location || "", note });
-    if (result.kind === "full") {
-      return NextResponse.json(
-        { success: false, message: "Batch is full — all seats booked.", enrolled: result.enrolled, remaining: result.remaining },
-        { status: 409 },
-      );
+
+    const result = await submitCourseEnrollment({
+      courseId,
+      name,
+      whatsapp,
+      trxId,
+      location: location || "",
+    });
+    if (!result.ok) {
+      const status = result.code === "full" || result.code === "closed" ? 409 : 400;
+      return NextResponse.json({ success: false, message: result.message }, { status });
     }
-    if (result.kind === "duplicate-trx") {
-      return NextResponse.json(
-        { success: false, message: "This TrxID was already submitted.", enrolled: undefined, remaining: undefined },
-        { status: 409 },
-      );
-    }
-    return NextResponse.json(
-      { success: true, message: "Seat reserved. Your details were sent to the academy.", enrolled: result.enrolled, remaining: result.remaining },
-    );
+
+    void note;
+    return NextResponse.json({
+      success: true,
+      message: "Seat reserved. Your details were sent to the academy.",
+      enrolled: undefined,
+      remaining: undefined,
+    });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Enrollment failed";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: messageOf(error, "Enrollment failed") },
+      { status: 500 },
+    );
   }
 }

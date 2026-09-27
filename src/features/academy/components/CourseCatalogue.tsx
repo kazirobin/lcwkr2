@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarClock, CheckCircle2, Gift, Ticket, Users } from "lucide-react";
+import { CalendarClock, Check, CheckCircle2, ChevronDown, Gift, Ticket, Users } from "lucide-react";
 import { useLanguage } from "@/i18n";
-import { Button, Dialog, Field, LoadingBlock, useToast } from "@/components/ui";
+import { Button, Card, Dialog, Field, LoadingBlock, useToast } from "@/components/ui";
 
 /**
  * The course catalogue on the academy page.
@@ -26,9 +26,26 @@ type CourseSummary = {
   covers: string[];
   seats: number;
   launched: boolean;
+  completed: boolean;
   enrollmentDeadline: string;
   enrolled: number;
   remaining: number | null;
+  lessons: Array<{ lessonNumber: number; title: string; description?: string }>;
+  topics: string[];
+  totalLessons: number;
+  totalClassesPlanned: number;
+  completedClassesCount: number;
+  classesHeld: number;
+  classLog: Array<{
+    classId: string;
+    date: string;
+    time: string;
+    topic?: string;
+    summary?: string;
+    fromLesson?: number;
+    toLesson?: number;
+  }>;
+  coveredLessons: number[];
 };
 
 const BKASH_NUMBER = "01787881334";
@@ -47,7 +64,10 @@ export default function CourseCatalogue() {
   );
 
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
+  /** How many batches have been finished — proof the school actually runs. */
+  const [completedCourses, setCompletedCourses] = useState(0);
   const [open, setOpen] = useState<CourseSummary | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", whatsapp: "", trxId: "", location: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -57,8 +77,12 @@ export default function CourseCatalogue() {
     try {
       const res = await fetch("/api/course-enrollments/summary", { cache: "no-store" });
       const data = await res.json();
-      if (data.success) setCourses(data.courses as CourseSummary[]);
-      else setCourses([]);
+      if (data.success) {
+        setCourses(data.courses as CourseSummary[]);
+        setCompletedCourses(Number(data.completedCourses) || 0);
+      } else {
+        setCourses([]);
+      }
     } catch {
       setCourses([]);
     }
@@ -126,7 +150,26 @@ export default function CourseCatalogue() {
     );
   }
 
-  if (courses.length === 0) return null;
+  // Nothing on sale yet, but if batches have already been run, that number is
+  // still worth showing — it says the school is real and has been teaching.
+  if (courses.length === 0) {
+    if (completedCourses <= 0) return null;
+    return (
+      <section id="courses" className="mt-16">
+        <Card className="px-5 py-6 text-center">
+          <p className="font-mono text-3xl font-bold tabular-nums text-text">
+            {completedCourses}
+          </p>
+          <p className="mt-1 text-sm text-text/65">
+            {t(
+              "টি কোর্স সফলভাবে সম্পন্ন হয়েছে। নতুন ব্যাচ শীঘ্রই চালু হবে।",
+              "courses completed so far. The next batch is opening soon.",
+            )}
+          </p>
+        </Card>
+      </section>
+    );
+  }
 
   return (
     <section id="courses" className="mt-16">
@@ -139,6 +182,15 @@ export default function CourseCatalogue() {
           "Each course lists its fee, length and what it covers. Pay the fee and you join the course directly.",
         )}
       </p>
+      {completedCourses > 0 && (
+        <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-ok/35 bg-ok-surface px-3.5 py-1.5 text-xs font-semibold text-ok">
+          <CheckCircle2 className="size-3.5" aria-hidden="true" />
+          {t(
+            `এখন পর্যন্ত ${completedCourses} টি কোর্স সম্পন্ন হয়েছে`,
+            `${completedCourses} courses completed so far`,
+          )}
+        </p>
+      )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {courses.map((c) => {
@@ -211,6 +263,101 @@ export default function CourseCatalogue() {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {/* Roadmap and class log, folded away until asked for so the
+                  list stays scannable when several courses are on sale. */}
+              {(c.lessons.length > 0 || c.classLog.length > 0) && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(expanded === c.courseId ? null : c.courseId)}
+                    aria-expanded={expanded === c.courseId}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-text/12 bg-background px-3 py-2 text-xs font-semibold text-text/70 transition hover:border-text/25 hover:text-text"
+                  >
+                    <span>
+                      {expanded === c.courseId
+                        ? t("রোডম্যাপ লুকান", "Hide the roadmap")
+                        : t("রোডম্যাপ ও ক্লাস লগ", "Roadmap and class log")}
+                    </span>
+                    <ChevronDown
+                      className={`size-4 transition-transform ${expanded === c.courseId ? "rotate-180" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {expanded === c.courseId && (
+                    <div className="mt-3 space-y-4">
+                      {c.lessons.length > 0 && (
+                        <div>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text/50">
+                            {t("পাঠসমূহ", "Syllabus")}
+                          </p>
+                          <ol className="space-y-1">
+                            {c.lessons.map((l) => {
+                              const done = c.coveredLessons.includes(l.lessonNumber);
+                              return (
+                                <li
+                                  key={l.lessonNumber}
+                                  className="flex items-start gap-2.5 text-[13px]"
+                                >
+                                  <span
+                                    className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-bold ${
+                                      done
+                                        ? "bg-ok text-background"
+                                        : "bg-text/8 text-text/50"
+                                    }`}
+                                  >
+                                    {done ? (
+                                      <Check className="size-3" aria-hidden="true" />
+                                    ) : (
+                                      l.lessonNumber
+                                    )}
+                                  </span>
+                                  <span className={done ? "text-text/50 line-through" : "text-text/75"}>
+                                    {l.title}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        </div>
+                      )}
+
+                      {c.classLog.length > 0 && (
+                        <div>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text/50">
+                            {t("ক্লাস লগ", "Class log")} · {c.classesHeld}
+                            {c.totalClassesPlanned ? `/${c.totalClassesPlanned}` : ""}
+                          </p>
+                          <ul className="space-y-1.5">
+                            {c.classLog.map((k) => (
+                              <li
+                                key={k.classId}
+                                className="rounded-lg border border-text/10 bg-background px-3 py-2 text-[13px]"
+                              >
+                                <span className="block font-semibold text-text/80">
+                                  {k.topic || k.summary || k.classId}
+                                </span>
+                                <span className="mt-0.5 block font-mono text-[10px] text-text/45">
+                                  {k.date}
+                                  {k.time ? ` · ${k.time}` : ""}
+                                  {k.fromLesson != null
+                                    ? ` · ${t("পাঠ", "Lesson")} ${k.fromLesson}${
+                                        k.toLesson && k.toLesson !== k.fromLesson
+                                          ? `–${k.toLesson}`
+                                          : ""
+                                      }`
+                                    : ""}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="mt-5 pt-1">

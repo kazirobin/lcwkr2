@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Lock } from "lucide-react";
 
 import { useLanguage } from "@/i18n";
-import { useAccount } from "@/features/student-auth";
 import type { LevelSummary } from "@/features/vocabulary/types";
 import { vocabularyCopy, localizeNumber } from "@/features/vocabulary/i18n";
 import { PaperPage, PaperHeader } from "./workbook";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
+import { useProAccess } from "@/features/chinese-words/components/pro-access";
 
-const PRO_KEY = "cw:pro";
+/** Levels every visitor can use without paying anything. */
 const FREE_LEVELS = [1];
 
 /** `/hsk` — the whole track. Levels 4–6 show as "coming". */
@@ -21,31 +21,10 @@ export default function LevelPicker({ levels }: { levels: LevelSummary[] }) {
   const isBn = language === "bn";
   const n = (x: number) => localizeNumber(x, language);
 
-  const [isPro, setIsPro] = useState(false);
-  const [ready, setReady] = useState(false);
   const proRef = useRef<ProAccessHandle>(null);
-  const { student: account } = useAccount();
-
-  // Read the legacy local key once on mount, deferred through a microtask so
-  // the state update is not synchronous inside the effect body. Pro itself
-  // comes from the account — the admin decides that.
-  useEffect(() => {
-    let alive = true;
-    queueMicrotask(() => {
-      if (!alive) return;
-      try {
-        setIsPro(localStorage.getItem(PRO_KEY) === "1");
-      } catch {
-        /* storage unavailable */
-      }
-      setReady(true);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const pro = isPro || Boolean(account?.isPro);
+  // A visitor on the ten-minute preview can open a level, so the lock on a
+  // level card has to respect the trial as well as the account.
+  const { isPro } = useProAccess();
 
   return (
     <PaperPage isBn={isBn}>
@@ -96,7 +75,7 @@ export default function LevelPicker({ levels }: { levels: LevelSummary[] }) {
                     {label}
                   </span>
                   <span className="text-sm text-text/60">{scope}</span>
-                  {ready && !pro && !FREE_LEVELS.includes(level.level) && (
+                  {!isPro && !FREE_LEVELS.includes(level.level) && (
                     <span className="inline-flex items-center gap-1 self-start rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-secondary sm:self-center">
                       <Lock className="size-3" aria-hidden="true" />
                       Pro

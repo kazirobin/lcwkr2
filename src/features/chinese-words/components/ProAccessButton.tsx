@@ -1,24 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useImperativeHandle, useState } from "react";
+import { useCallback, useImperativeHandle, useState } from "react";
 import { useLanguage } from "@/i18n";
-import { useAccount } from "@/features/student-auth";
 import ProSubscriptionForm from "./ProSubscriptionForm";
+import { useProAccess } from "./pro-access";
 
 /**
- * Corner Pro access badge shared across all Pro-gated pages (Core Words,
+ * Corner Pro badge shared across all Pro-gated pages (Core Words,
  * Hanzi Pro, HSK Homework).
  *
- * Pro is granted by the admin on the student's account — there is no password
- * box and no self-serve upgrade. This badge simply reflects the account flag
- * (plus the legacy `cw:pro` key, so anyone already unlocked on this device
- * keeps access) and opens the request panel.
+ * Access comes from the account — the admin switches Pro on the student's
+ * record and it works on every device — or from the ten-minute preview a
+ * visitor is given to try the thing before being asked for money.
  *
  * Passing a `ref` exposes `{ open() }` so pages can open the panel from
  * elsewhere (e.g. a locked lesson button).
  */
-const PRO_KEY = "cw:pro";
-
 export type ProAccessHandle = { open: () => void };
 
 export default function ProAccessButton({
@@ -32,21 +29,12 @@ export default function ProAccessButton({
     [language],
   );
 
-  const [localPro, setLocalPro] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const { student: account } = useAccount();
-  // Server truth (admin-granted) counts alongside the legacy local flag.
-  const showPro = localPro || !!account?.isPro;
+  const { isPro } = useProAccess();
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      try {
-        setLocalPro(localStorage.getItem(PRO_KEY) === "1");
-      } catch {
-        /* storage unavailable */
-      }
-    });
-  }, []);
+  useImperativeHandle(ref, () => ({
+    open: () => setModalOpen(true),
+  }));
 
   useImperativeHandle(ref, () => ({
     open: () => setModalOpen(true),
@@ -54,7 +42,7 @@ export default function ProAccessButton({
 
   return (
     <>
-      {showPro ? (
+      {isPro ? (
         <button
           type="button"
           onClick={() => setModalOpen(true)}
@@ -88,7 +76,7 @@ export default function ProAccessButton({
               ✕
             </button>
 
-            {showPro && (
+            {isPro && (
               <div className="mb-4 p-4 rounded-2xl bg-ok-surface border border-ok/30 space-y-1">
                 <p className="text-sm font-semibold text-ok">
                   ✓ {t("আপনি Pro সদস্য — সব কনটেন্ট আনলক করা আছে।", "You're a Pro member — all content is unlocked.")}

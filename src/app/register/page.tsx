@@ -70,8 +70,8 @@ export default function RegisterPage() {
     }
   };
 
-  // A WhatsApp copy of the same details, in case someone prefers to send it
-  // by hand. The database is the source of truth either way.
+  // A WhatsApp copy of the same details. The form has already been saved by
+  // the time this runs, so this is a courtesy for the student, not the record.
   const sendWhatsAppCopy = () => {
     const msg =
       `*নতুন স্টুডেন্ট রেজিস্ট্রেশন* 🎓\n` +
@@ -199,23 +199,35 @@ export default function RegisterPage() {
             </span>
           </Button>
           {done && (
-            <div className="rounded-xl border border-ok/40 bg-ok-surface p-4 text-center">
-              <p className="text-sm font-semibold text-ok">
-                {t("আবেদন গ্রহণ হয়েছে!", "Application received!")}
+            <div className="space-y-3 rounded-xl border border-ok/40 bg-ok-surface p-4">
+              <p className="text-center text-sm font-semibold text-ok">
+                ✓ {t("আবেদন admin-এর কাছে পৌঁছেছে!", "Sent to the admin!")}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-text/70">
+              <p className="text-center text-xs leading-relaxed text-text/70">
                 {t(
-                  "আপনার TrxID যাচাই হলে অ্যাকাউন্ট চালু হবে। তখন মোবাইল নম্বর ও ডিফল্ট পাসওয়ার্ড (lcwkr2026) দিয়ে লগইন করবেন।",
-                  "Once your TrxID is verified the account will be activated. Then log in with your mobile number and the default password (lcwkr2026).",
+                  "আপনার নাম, মোবাইল ও TrxID সরাসরি admin-এর তালিকায় জমা হয়েছে। TrxID যাচাই করে admin অনুমোদন দিলে অ্যাকাউন্ট চালু হবে — তখন মোবাইল নম্বর ও ডিফল্ট পাসওয়ার্ড (lcwkr2026) দিয়ে লগইন করবেন।",
+                  "Your name, mobile and TrxID are now in the admin's queue. Once the payment is checked and approved the account opens, and you log in with your mobile number and the default password (lcwkr2026).",
                 )}
               </p>
-              <button
+              {/* The one thing the student still has to do: nudge the admin on
+                  WhatsApp so it does not sit in the queue unnoticed. */}
+              <Button
                 type="button"
+                variant="secondary"
+                className="w-full"
                 onClick={sendWhatsAppCopy}
-                className="mt-2 text-xs text-text/55 underline-offset-2 hover:underline"
               >
-                {t("WhatsApp-এও একটি কপি পাঠাতে চাই", "Also send a copy on WhatsApp")}
-              </button>
+                <span className="inline-flex items-center gap-2">
+                  <Send className="h-4 w-4" />
+                  {t("Admin-কে WhatsApp-এ জানান", "Message the admin on WhatsApp")}
+                </span>
+              </Button>
+              <p className="text-center text-[11px] text-text/50">
+                {t(
+                  "এটি শুধু একটি মনে করানো — আবেদন ইতিমধ্যে জমা হয়ে গেছে।",
+                  "This is just a reminder — the application is already saved.",
+                )}
+              </p>
             </div>
           )}
         </form>

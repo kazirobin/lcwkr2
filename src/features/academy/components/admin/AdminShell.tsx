@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -9,9 +9,12 @@ import {
   HandCoins,
   Languages,
   LogOut,
+  Megaphone,
   MessageSquareQuote,
   PenLine,
   ShieldCheck,
+  Sparkles,
+  Ticket,
   Trophy,
   UserPlus,
   Users,
@@ -39,7 +42,10 @@ const ADMIN_MODULES = [
   { href: "/admin/admissions", bn: "ভর্তি", en: "Admissions", icon: UserPlus },
   { href: "/admin/students", bn: "শিক্ষার্থী", en: "Students", icon: Users },
   { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen },
+  { href: "/admin/enrollments", bn: "ভর্তির তালিকা", en: "Enrollments", icon: Ticket },
+  { href: "/admin/pro", bn: "Pro সাবস্ক্রিপশন", en: "Pro", icon: Sparkles },
   { href: "/admin/analytics", bn: "ট্রাফিক", en: "Traffic", icon: BarChart3 },
+  { href: "/admin/announcements", bn: "ঘোষণা", en: "Announcements", icon: Megaphone },
   { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
   { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
   { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },
@@ -261,45 +267,111 @@ function AdminQuickBar() {
     }
   };
 
+  // The bar scrolls sideways on narrow screens. Without this the current page
+  // can sit off-screen after a jump, and there is no clue that more modules
+  // exist to the right.
+  const listRef = useRef<HTMLUListElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+
+  const measure = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setEdges({ left: el.scrollLeft > 4, right: el.scrollLeft < max - 4 });
+  }, []);
+
+  useEffect(() => {
+    measure();
+    const el = listRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  // Bring the active module into view whenever the route changes.
+  useEffect(() => {
+    const el = listRef.current;
+    const active = el?.querySelector<HTMLElement>('[aria-current="page"]');
+    active?.scrollIntoView({ block: "nearest", inline: "center" });
+    measure();
+  }, [pathname, measure]);
+
+  const nudge = (dir: 1 | -1) => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.6), behavior: "smooth" });
+  };
+
   return (
     <nav
       aria-label={t("অ্যাডমিন মডিউল", "Admin modules")}
       className="sticky top-16 z-30 border-b border-text/10 bg-background/90 backdrop-blur-sm"
     >
-      <ul className="mx-auto flex max-w-5xl items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] sm:px-6 lg:px-8 [&::-webkit-scrollbar]:hidden">
-        {ADMIN_MODULES.map((m) => {
-          const Icon = m.icon;
-          const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
-          const count = countFor(m.href);
-          return (
-            <li key={m.href} className="shrink-0">
-              <Link
-                href={m.href}
-                aria-current={active ? "page" : undefined}
-                className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
-                  active
-                    ? "border-primary/60 bg-primary/10 text-primary"
-                    : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
-                }`}
-              >
-                <Icon className="size-4" aria-hidden="true" />
-                {t(m.bn, m.en)}
-                {count != null && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-                      active
-                        ? "bg-primary/15 text-primary"
-                        : "bg-text/8 text-text/60"
-                    }`}
-                  >
-                    {loading ? "—" : count}
-                  </span>
-                )}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="relative mx-auto flex max-w-5xl items-center">
+        {/* Arrows only when there is somewhere to scroll, and never on phones
+            where a swipe is the natural gesture. */}
+        <button
+          type="button"
+          onClick={() => nudge(-1)}
+          aria-label={t("বাঁয়ে", "Scroll left")}
+          className={`absolute left-0 z-10 hidden h-full w-9 shrink-0 items-center justify-center bg-gradient-to-r from-background to-transparent text-lg leading-none text-text/60 transition-opacity hover:text-text sm:flex ${
+            edges.left ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          ‹
+        </button>
+
+        <ul
+          ref={listRef}
+          onScroll={measure}
+          className="flex flex-1 items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] sm:px-10 lg:px-12 [&::-webkit-scrollbar]:hidden"
+        >
+          {ADMIN_MODULES.map((m) => {
+            const Icon = m.icon;
+            const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
+            const count = countFor(m.href);
+            return (
+              <li key={m.href} className="shrink-0">
+                <Link
+                  href={m.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                    active
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
+                  }`}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {t(m.bn, m.en)}
+                  {count != null && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                        active
+                          ? "bg-primary/15 text-primary"
+                          : "bg-text/8 text-text/60"
+                      }`}
+                    >
+                      {loading ? "—" : count}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <button
+          type="button"
+          onClick={() => nudge(1)}
+          aria-label={t("ডানে", "Scroll right")}
+          className={`absolute right-0 z-10 hidden h-full w-9 shrink-0 items-center justify-center bg-gradient-to-l from-background to-transparent text-lg leading-none text-text/60 transition-opacity hover:text-text sm:flex ${
+            edges.right ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
+          ›
+        </button>
+      </div>
     </nav>
   );
 }

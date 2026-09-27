@@ -1,5 +1,6 @@
 import { connectDB } from "@/lib/db";
 import { Course } from "@/features/academy/models";
+import { upsertAnnouncement, launchBroadcastText } from "./announcements";
 
 export async function listCourses() {
   await connectDB();
@@ -71,11 +72,37 @@ export async function updateCourseOffer(courseId: string, patch: CourseOffer) {
 }
 
 /**
+ * Mark a batch finished, or reopen it. Completing takes the course off sale and
+ * off the academy list; reopening puts it back exactly as it was, so a course
+ * that was never launched does not silently start accepting enrollments.
+ */
+export async function setCourseCompleted(courseId: string, completed: boolean) {
+  await connectDB();
+  const course = await Course.findOne({ courseId });
+  if (!course) return null;
+  const update: Record<string, unknown> = { completed: Boolean(completed) };
+  if (completed) {
+    update.completedAt = new Date();
+    update.launched = false;
+    update.registrationOpen = false;
+  } else {
+    update.completedAt = null;
+  }
+  return Course.findOneAndUpdate({ courseId }, { $set: update }, { new: true });
+}
+
+/**
  * Open or close paid enrollment. The first launch stamps `launchedAt`, so the
- * admin can see when a course actually went on sale.
+ * admin can see when a course actually went on sale. A completed course has to
+ * be reopened before it can go on sale again.
  */
 export async function setCourseLaunched(courseId: string, launched: boolean) {
   await connectDB();
+  const course = await Course.findOne({ courseId });
+  if (!course) return null;
+  if (launched && course.completed) {
+    return null; // caller turns this into a clear message
+  }
   const update: Record<string, unknown> = { launched: Boolean(launched) };
   if (launched) {
     update.launchedAt = new Date();
@@ -84,5 +111,56 @@ export async function setCourseLaunched(courseId: string, launched: boolean) {
   } else {
     update.registrationOpen = false;
   }
-  return Course.findOneAndUpdate({ courseId }, { $set: update }, { new: true });
+  const updated = await Course.findOneAndUpdate({ courseId }, { $set: update }, { new: true });
+  if (updated && launched) {
+    // A launch is news, so put a banner up automatically rather than trusting
+    // anyone to remember. Failures here must not undo the launch itself.
+    try {
+      await upsertAnnouncement({
+        key: `course-launch:${courseId}`,
+        title: `নতুন কোর্স চালু: ${updated.courseName}`,
+        body:
+          updated.fee > 0
+            ? `৳${updated.fee.toLocaleString("en-US")}${updated.duration ? ` · ${updated.duration}` : ""} — এখনই ভর্তি করুন।`
+            : `ফ্রি কোর্স${updated.duration ? ` · ${updated.duration}` : ""} — এখনই যুক্ত হোন।`,
+        href: "/academy#courses",
+        courseId,
+        tone: "success",
+      });
+    } catch {
+      /* the course is live either way */
+    }
+  }
+  if (updated && !launched) {
+    try {
+      await upsertAnnouncement({
+        key: `course-launch:${courseId}`,
+        title: `${updated.courseName}`,
+        body: "এই কোর্সে এখন ভর্তি বন্ধ হয়েছে।",
+        href: "/academy#courses",
+        courseId,
+        tone: "info",
+        active: false,
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+  return updated;
+}
+
+/** The ready-to-paste WhatsApp message for a course launch. */
+export async function courseBroadcastText(courseId: string): Promise<string | null> {
+  await connectDB();
+  const course = await Course.findOne({ courseId }).lean();
+  if (!course) return null;
+  return launchBroadcastText({
+    courseName: course.courseName,
+    targetLevel: course.targetLevel,
+    tagline: course.tagline,
+    duration: course.duration,
+    fee: course.fee ?? 0,
+    freeClassCount: course.freeClassCount ?? 0,
+    covers: course.covers ?? [],
+  });
 }

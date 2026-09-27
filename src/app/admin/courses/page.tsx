@@ -13,11 +13,13 @@ import {
   BookOpen,
   ClipboardList,
   Link2,
+  Share2,
   GraduationCap,
   Tags,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
+import { COURSE_TEMPLATES } from "@/features/academy/data/course-templates";
 import {
   Button,
   Card,
@@ -64,6 +66,7 @@ type Course = {
   covers?: string[];
   seats?: number;
   launched?: boolean;
+  completed?: boolean;
   launchedAt?: string;
   enrollmentDeadline?: string;
   lessons: { lessonNumber: number; title: string; description?: string }[];
@@ -300,8 +303,10 @@ export default function AdminCoursesPage() {
 
   // the "launch & fee" dialog, which replaces the old registration toggle
   const [offerOpen, setOfferOpen] = useState<Course | null>(null);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [offerBusy, setOfferBusy] = useState(false);
   const [launchBusy, setLaunchBusy] = useState<string | null>(null);
+  const [completeBusy, setCompleteBusy] = useState<string | null>(null);
   const [offerForm, setOfferForm] = useState({
     tagline: "",
     duration: "",
@@ -639,7 +644,7 @@ export default function AdminCoursesPage() {
   /** Put a course on sale, or take it off sale. */
   const setLaunched = async (course: Course, launched: boolean) => {
     setLaunchBusy(course.courseId);
-    await saveSettings(
+    const ok = await saveSettings(
       course.courseId,
       { launched },
       launched
@@ -647,6 +652,55 @@ export default function AdminCoursesPage() {
         : t("কোর্স বন্ধ করা হয়েছে।", "Course taken off sale."),
     );
     setLaunchBusy(null);
+    // A launch is news, so offer the WhatsApp message while it is fresh.
+    if (ok && launched) setBroadcastCourse(course.courseId);
+  };
+
+  /** Mark a batch finished, or reopen it. */
+  const setCompleted = async (course: Course, completed: boolean) => {
+    setCompleteBusy(course.courseId);
+    await saveSettings(
+      course.courseId,
+      { completed },
+      completed
+        ? t("কোর্স সম্পন্ন হিসেবে চিহ্নিত — ভর্তি বন্ধ।", "Marked complete — enrollment closed.")
+        : t("কোর্স আবার চালু করা হয়েছে।", "Course reopened."),
+    );
+    setCompleteBusy(null);
+  };
+
+  /** Load the ready-to-paste WhatsApp message for a course. */
+  const [broadcastCourse, setBroadcastCourse] = useState<string | null>(null);
+  const [broadcastText, setBroadcastText] = useState("");
+
+  const openBroadcast = async (courseId: string) => {
+    setBroadcastCourse(courseId);
+    setBroadcastText(t("তৈরি হচ্ছে…", "Preparing…"));
+    try {
+      const res = await fetch(`/api/academy/courses/${courseId}/broadcast`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      setBroadcastText(data.success ? data.text : "");
+    } catch {
+      setBroadcastText("");
+    }
+  };
+
+  const openWhatsApp = () => {
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(broadcastText)}`,
+      "_blank",
+    );
+  };
+
+  const copyBroadcast = async () => {
+    try {
+      await navigator.clipboard.writeText(broadcastText);
+      toast(t("কপি হয়েছে।", "Copied."), "success");
+    } catch {
+      /* the WhatsApp button is the fallback */
+    }
   };
 
   const saveMarks = async (e: React.FormEvent) => {
@@ -930,6 +984,16 @@ export default function AdminCoursesPage() {
       )}
       actions={
         <>
+          {/* A template fills in the syllabus, fee and duration so a new
+              course looks like a real product before it is even launched. */}
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<ClipboardList className="h-4 w-4" />}
+            onClick={() => setTemplateOpen(true)}
+          >
+            {t("টেমপ্লেট থেকে", "From template")}
+          </Button>
           <Button
             size="sm"
             variant="secondary"
@@ -1005,23 +1069,75 @@ export default function AdminCoursesPage() {
                         </Button>
                       );
                     })()}
-                    <StatusPill tone={c.launched ? "done" : "pending"}>
-                      {c.launched
-                        ? t("ভর্তি চালু", "On sale")
-                        : t("প্রস্তুত নয়", "Not launched")}
-                    </StatusPill>
-                    <IconButton
-                      label={t("কোর্স সম্পাদনা", "Edit course")}
-                      size="sm"
-                      onClick={() => {
-                        setEditing(true);
-                        setForm({ ...EMPTY_COURSE, ...c });
-                      }}
+                    <StatusPill
+                      tone={
+                        c.completed
+                          ? "neutral"
+                          : c.launched
+                            ? "done"
+                            : "pending"
+                      }
                     >
-                      <Pencil className="h-4 w-4" />
+                      {c.completed
+                        ? t("সম্পন্ন", "Completed")
+                        : c.launched
+                          ? t("ভর্তি চালু", "On sale")
+                          : t("প্রস্তুত নয়", "Not launched")}
+                    </StatusPill>
+                  <IconButton
+                    label={t("কোর্স সম্পাদনা", "Edit course")}
+                    size="sm"
+                    onClick={() => {
+                      setEditing(true);
+                      setForm({ ...EMPTY_COURSE, ...c });
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </IconButton>
+                  {!c.completed && (
+                    <IconButton
+                      label={t("সম্পন্ন হিসেবে চিহ্নিত করুন", "Mark as complete")}
+                      size="sm"
+                      disabled={completeBusy === c.courseId}
+                      onClick={() => setCompleted(c, true)}
+                    >
+                      <Check className="h-4 w-4" />
                     </IconButton>
+                  )}
                   </div>
                 </div>
+
+                {/* What the course is and what it sells for. The fee has to be
+                    visible here at a glance — it used to live only in a dialog,
+                    so a ৳1,000 course looked identical to a free one. */}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-secondary/10 px-2.5 py-1 font-mono text-xs font-bold tabular-nums text-secondary">
+                    {(c.fee ?? 0) > 0
+                      ? `৳${(c.fee ?? 0).toLocaleString("en-US")}`
+                      : t("ফ্রি", "Free")}
+                  </span>
+                  {c.duration && (
+                    <span className="rounded-full border border-text/12 px-2.5 py-1 text-[11px] text-text/60">
+                      {c.duration}
+                    </span>
+                  )}
+                  {c.freeClassCount != null && c.freeClassCount > 0 && (
+                    <span className="rounded-full border border-text/12 px-2.5 py-1 text-[11px] text-text/60">
+                      {t(`${c.freeClassCount} ফ্রি ক্লাস`, `${c.freeClassCount} free classes`)}
+                    </span>
+                  )}
+                  {c.seats ? (
+                    <span className="rounded-full border border-text/12 px-2.5 py-1 text-[11px] text-text/60">
+                      {t(`${c.seats} সিট`, `${c.seats} seats`)}
+                    </span>
+                  ) : null}
+                </div>
+
+                {c.tagline && (
+                  <p className="mt-2 text-[13px] leading-snug text-text/60">
+                    {c.tagline}
+                  </p>
+                )}
 
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-text/55">
                   <span className="tabular-nums">
@@ -1056,15 +1172,34 @@ export default function AdminCoursesPage() {
                   </Button>
                   {/* Launching is the only on/off a course has now: the price is
                       set in the dialog, and this puts it on sale. */}
+                  {!c.completed ? (
+                    <Button
+                      size="sm"
+                      variant={c.launched ? "danger" : "secondary"}
+                      disabled={launchBusy === c.courseId}
+                      onClick={() => setLaunched(c, !c.launched)}
+                    >
+                      {c.launched
+                        ? t("ভর্তি বন্ধ করুন", "Take off sale")
+                        : t("ভর্তি চালু করুন", "Put on sale")}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={completeBusy === c.courseId}
+                      onClick={() => setCompleted(c, false)}
+                    >
+                      {t("আবার চালু করুন", "Reopen")}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    variant={c.launched ? "danger" : "secondary"}
-                    disabled={launchBusy === c.courseId}
-                    onClick={() => setLaunched(c, !c.launched)}
+                    variant="ghost"
+                    iconLeft={<Share2 className="h-4 w-4" />}
+                    onClick={() => openBroadcast(c.courseId)}
                   >
-                    {c.launched
-                      ? t("ভর্তি বন্ধ করুন", "Take off sale")
-                      : t("ভর্তি চালু করুন", "Put on sale")}
+                    {t("WhatsApp মেসেজ", "WhatsApp message")}
                   </Button>
                   <Button
                     size="sm"
@@ -1398,6 +1533,57 @@ export default function AdminCoursesPage() {
                 }
                 className="tabular-nums"
               />
+            </div>
+            {/* What the course covers — the bullets a prospective student reads
+                on the academy page, so they belong in the main dialog too. */}
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-text">
+                {t("কোর্সে যা যা আছে", "What the course covers")}
+              </p>
+              <p className="mb-2 text-xs text-text/55">
+                {t(
+                  "প্রতি লাইনে একটি বিষয় — এগুলো একাডেমি পেজে দেখানো হবে।",
+                  "One topic per line — these show on the academy page.",
+                )}
+              </p>
+              <div className="space-y-2">
+                {(form.covers?.length ? form.covers : [""]).map((line, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={line}
+                      onChange={(e) => {
+                        const next = [...(form.covers ?? [])];
+                        next[i] = e.target.value;
+                        set("covers", next);
+                      }}
+                      className="flex-1 rounded-lg border border-text/15 bg-background px-3 py-2 text-sm text-text outline-none focus:border-secondary/60"
+                      placeholder={t("যেমন: প্রতি সপ্তাহে ২টি লাইভ ক্লাস", "e.g. two live classes a week")}
+                    />
+                    <IconButton
+                      label={t("মুছুন", "Remove")}
+                      size="sm"
+                      onClick={() =>
+                        set(
+                          "covers",
+                          (form.covers ?? []).filter((_, j) => j !== i),
+                        )
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </IconButton>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="mt-2"
+                onClick={() => set("covers", [...(form.covers ?? []), ""])}
+              >
+                {t("+ আরেকটি বিষয়", "+ Add a topic")}
+              </Button>
             </div>
           </form>
         )}
@@ -1957,6 +2143,56 @@ export default function AdminCoursesPage() {
         )}
       </Dialog>
 
+      {/* ── course template picker ── */}
+      <Dialog
+        open={templateOpen}
+        onClose={() => setTemplateOpen(false)}
+        title={t("টেমপ্লেট থেকে কোর্স তৈরি করুন", "Create a course from a template")}
+        description={t(
+          "সিলেবাস, ফি ও সময়কাল আগে থেকেই সাজানো — পরে সব বদলাতে পারবেন।",
+          "The syllabus, fee and duration are laid out already — change anything afterwards.",
+        )}
+        size="md"
+      >
+        <div className="space-y-2">
+          {COURSE_TEMPLATES.map((tpl) => (
+            <button
+              key={tpl.key}
+              type="button"
+              onClick={() => {
+                setEditing(false);
+                setForm({
+                  ...EMPTY_COURSE,
+                  ...tpl,
+                  covers: tpl.covers,
+                  lessons: tpl.lessons,
+                  startDate: "",
+                  enrollmentDeadline: "",
+                  launched: false,
+                  completed: false,
+                });
+                setTemplateOpen(false);
+              }}
+              className="w-full rounded-xl border border-text/15 bg-card px-4 py-3 text-left transition-colors hover:border-secondary/50 hover:bg-secondary/[0.06]"
+            >
+              <span className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-text">{tpl.courseName}</span>
+                <span className="shrink-0 rounded-full bg-text/8 px-2.5 py-0.5 font-mono text-[11px] font-bold text-text/70">
+                  {tpl.fee > 0 ? `৳${tpl.fee}` : t("ফ্রি", "free")}
+                </span>
+              </span>
+              <span className="mt-0.5 block text-[13px] leading-snug text-text/60">
+                {tpl.tagline}
+              </span>
+              <span className="mt-1 block text-[11px] text-text/40">
+                {tpl.targetLevel} · {tpl.duration} · {tpl.lessons.length || tpl.totalLessons}{" "}
+                {t("পাঠ", "lessons")}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Dialog>
+
       {/* ── fee & course-details dialog ──
           Replaces the old registration on/off switch. The price, duration and
           free-class count set here are what students see on the academy page
@@ -2090,6 +2326,36 @@ export default function AdminCoursesPage() {
             </p>
           </div>
         )}
+      </Dialog>
+
+      {/* ── WhatsApp broadcast message for a launch ── */}
+      <Dialog
+        open={broadcastCourse !== null}
+        onClose={() => setBroadcastCourse(null)}
+        title={t("WhatsApp মেসেজ", "WhatsApp message")}
+        description={t(
+          "গ্রুপে পাঠাতে চাইলে কপি করুন বা সরাসরি WhatsApp খুলুন।",
+          "Copy it into your group, or open WhatsApp straight from here.",
+        )}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={copyBroadcast}>
+              {t("কপি করুন", "Copy")}
+            </Button>
+            <Button size="sm" onClick={openWhatsApp}>
+              {t("WhatsApp-এ খুলুন", "Open WhatsApp")}
+            </Button>
+          </>
+        }
+      >
+        <TextArea
+          label={t("বার্তা", "Message")}
+          rows={12}
+          readOnly
+          value={broadcastText}
+          className="font-mono text-[11px] leading-relaxed"
+        />
       </Dialog>
 
       {/* ── study groups dialog ── */}
