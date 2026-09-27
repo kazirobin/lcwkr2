@@ -110,7 +110,7 @@ function formatRemaining(ms: number): string {
  * Pro = local unlock (legacy) OR logged-in student with admin-granted
  * isPro (server truth — the only way to newly become Pro). */
 export default function ProGate({ children }: { children: React.ReactNode }) {
-  const { status, remainingMs, unlock, logout, resetTrial } = useProAccess();
+  const { status, remainingMs, logout, resetTrial } = useProAccess();
   const { student: account } = useAccount();
   const serverPro = !!account?.isPro;
   const isPro = status === "pro" || serverPro;
@@ -141,7 +141,7 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
           </p>
         </div>
 
-        <ProSubscriptionForm onUnlock={unlock} />
+        <ProSubscriptionForm />
 
         <button
           type="button"
@@ -244,12 +244,7 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
-            <ProSubscriptionForm
-              onUnlock={() => {
-                unlock();
-                setModalOpen(false);
-              }}
-            />
+            <ProSubscriptionForm />
           </div>
         </div>
       )}

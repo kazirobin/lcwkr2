@@ -10,6 +10,9 @@ import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import OfflineManager from "@/components/OfflineManager";
 import { LanguageProvider } from "@/i18n";
 import { AccountProvider } from "@/features/student-auth";
+import { AcademyProviders } from "@/components/ui/feedback";
+import AnalyticsTracker from "@/features/analytics/AnalyticsTracker";
+import ReviewNudge from "@/features/analytics/ReviewNudge";
 import ThemeProvider from "@/providers/ThemeProvider";
 import { PinyinProvider } from "@/providers/PinyinProvider";
 
@@ -122,6 +125,9 @@ export default function RootLayout({
         <ThemeProvider>
           <PinyinProvider>
           <LanguageProvider>
+            {/* Toast + confirm live at the root so any page can use them —
+                previously they only existed under /academy and /admin. */}
+            <AcademyProviders>
             <AccountProvider>
               <Nav />
               <main id="main-content" className="flex-1 pt-16 sm:pt-20">
@@ -132,7 +138,10 @@ export default function RootLayout({
               <LiveClassBanner />
               <ServiceWorkerRegistrar />
               <OfflineManager />
+              <AnalyticsTracker />
+              <ReviewNudge />
             </AccountProvider>
+            </AcademyProviders>
           </LanguageProvider>
           </PinyinProvider>
         </ThemeProvider>

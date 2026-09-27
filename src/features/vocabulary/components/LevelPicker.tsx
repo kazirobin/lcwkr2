@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Lock } from "lucide-react";
 
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth";
 import type { LevelSummary } from "@/features/vocabulary/types";
 import { vocabularyCopy, localizeNumber } from "@/features/vocabulary/i18n";
 import { PaperPage, PaperHeader } from "./workbook";
@@ -23,23 +24,28 @@ export default function LevelPicker({ levels }: { levels: LevelSummary[] }) {
   const [isPro, setIsPro] = useState(false);
   const [ready, setReady] = useState(false);
   const proRef = useRef<ProAccessHandle>(null);
+  const { student: account } = useAccount();
 
+  // Read the legacy local key once on mount, deferred through a microtask so
+  // the state update is not synchronous inside the effect body. Pro itself
+  // comes from the account — the admin decides that.
   useEffect(() => {
-    try {
-      setIsPro(localStorage.getItem(PRO_KEY) === "1");
-    } catch {
-      /* storage unavailable */
-    }
-    setReady(true);
+    let alive = true;
+    queueMicrotask(() => {
+      if (!alive) return;
+      try {
+        setIsPro(localStorage.getItem(PRO_KEY) === "1");
+      } catch {
+        /* storage unavailable */
+      }
+      setReady(true);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const refreshPro = () => {
-    try {
-      setIsPro(localStorage.getItem(PRO_KEY) === "1");
-    } catch {
-      /* ignore */
-    }
-  };
+  const pro = isPro || Boolean(account?.isPro);
 
   return (
     <PaperPage isBn={isBn}>
@@ -90,7 +96,7 @@ export default function LevelPicker({ levels }: { levels: LevelSummary[] }) {
                     {label}
                   </span>
                   <span className="text-sm text-text/60">{scope}</span>
-                  {ready && !isPro && !FREE_LEVELS.includes(level.level) && (
+                  {ready && !pro && !FREE_LEVELS.includes(level.level) && (
                     <span className="inline-flex items-center gap-1 self-start rounded-full border border-secondary/30 bg-secondary/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-secondary sm:self-center">
                       <Lock className="size-3" aria-hidden="true" />
                       Pro
@@ -112,7 +118,7 @@ export default function LevelPicker({ levels }: { levels: LevelSummary[] }) {
         </ol>
       </div>
 
-      <ProAccessButton ref={proRef} onUnlock={refreshPro} />
+      <ProAccessButton ref={proRef} />
     </PaperPage>
   );
 }

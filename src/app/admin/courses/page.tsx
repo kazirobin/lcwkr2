@@ -13,7 +13,6 @@ import {
   BookOpen,
   ClipboardList,
   Link2,
-  Save,
   GraduationCap,
   Tags,
 } from "lucide-react";
@@ -27,7 +26,6 @@ import {
   Field,
   IconButton,
   LoadingBlock,
-  SelectField,
   StatusPill,
   TextArea,
   useConfirm,
@@ -57,14 +55,20 @@ type Course = {
   courseId: string;
   courseName: string;
   targetLevel: string;
-  status: string;
   startDate?: string;
-  nextBatchRegistrationDate?: string;
+  // ── how the course is sold ──
+  tagline?: string;
+  duration?: string;
+  fee?: number;
+  freeClassCount?: number;
+  covers?: string[];
+  seats?: number;
+  launched?: boolean;
+  launchedAt?: string;
+  enrollmentDeadline?: string;
   lessons: { lessonNumber: number; title: string; description?: string }[];
   nextClassTopic?: string;
   topics: string[];
-  registrationOpen: boolean;
-  registrationLastDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
   classes?: ClassRow[];
@@ -99,14 +103,18 @@ const EMPTY_COURSE: Course = {
   courseId: "",
   courseName: "",
   targetLevel: "HSK 1",
-  status: "Coming Soon",
   startDate: "",
-  nextBatchRegistrationDate: "",
+  tagline: "",
+  duration: "",
+  fee: 0,
+  freeClassCount: 0,
+  covers: [],
+  seats: 0,
+  launched: false,
+  enrollmentDeadline: "",
   lessons: [],
   nextClassTopic: "",
   topics: [],
-  registrationOpen: false,
-  registrationLastDate: "",
   totalLessons: 15,
   totalClassesPlanned: 24,
 };
@@ -174,7 +182,7 @@ export default function AdminCoursesPage() {
     assignmentPrompt: "",
   });
   const [liveSaving, setLiveSaving] = useState(false);
-  const [busyLive, setBusyLive] = useState<string | null>(null);
+  const [busyLive] = useState<string | null>(null);
 
   // ── saved Google Meet links per course ─────────────────────────────────
   const [linksOpen, setLinksOpen] = useState<Course | null>(null);
@@ -290,7 +298,32 @@ export default function AdminCoursesPage() {
   const [markMap, setMarkMap] = useState<Record<string, { mark: string; feedback: string }>>({});
   const [markBusy, setMarkBusy] = useState(false);
 
-  const [regOpen, setRegOpen] = useState<Course | null>(null); // registration dialog
+  // the "launch & fee" dialog, which replaces the old registration toggle
+  const [offerOpen, setOfferOpen] = useState<Course | null>(null);
+  const [offerBusy, setOfferBusy] = useState(false);
+  const [launchBusy, setLaunchBusy] = useState<string | null>(null);
+  const [offerForm, setOfferForm] = useState({
+    tagline: "",
+    duration: "",
+    fee: "0",
+    freeClassCount: "0",
+    seats: "0",
+    covers: [] as string[],
+    enrollmentDeadline: "",
+  });
+
+  const openOffer = (c: Course) => {
+    setOfferForm({
+      tagline: c.tagline ?? "",
+      duration: c.duration ?? "",
+      fee: String(c.fee ?? 0),
+      freeClassCount: String(c.freeClassCount ?? 0),
+      seats: String(c.seats ?? 0),
+      covers: c.covers?.length ? [...c.covers] : [""],
+      enrollmentDeadline: c.enrollmentDeadline ?? "",
+    });
+    setOfferOpen(c);
+  };
 
   // edit an already-live class (fix Meet link / topic / assignment)
   const [liveEdit, setLiveEdit] = useState<{ course: Course; session: { _id: string; meetLink: string; topic?: string; assignmentPrompt?: string } } | null>(null);
@@ -574,21 +607,46 @@ export default function AdminCoursesPage() {
     if (ok) setLessonsOpen(null);
   };
 
-  const saveRegistration = async (e: React.FormEvent) => {
+  /**
+   * Save how the course is sold: the one-off price, how long it runs, how many
+   * free trial classes a new student gets, what it covers, and how many seats.
+   * This replaces the old registration on/off toggle — a course is on sale
+   * because it has a price and is launched, not because a switch was flipped.
+   */
+  const saveOffer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regOpen) return;
+    if (!offerOpen) return;
+    setOfferBusy(true);
     const ok = await saveSettings(
-      regOpen.courseId,
+      offerOpen.courseId,
       {
-        registrationOpen: !regOpen.registrationOpen,
-        registrationLastDate: regOpen.registrationLastDate || null,
-        nextBatchRegistrationDate: regOpen.nextBatchRegistrationDate || null,
+        offer: {
+          tagline: offerForm.tagline,
+          duration: offerForm.duration,
+          fee: Number(offerForm.fee) || 0,
+          freeClassCount: Number(offerForm.freeClassCount) || 0,
+          seats: Number(offerForm.seats) || 0,
+          covers: offerForm.covers.map((c) => c.trim()).filter(Boolean),
+          enrollmentDeadline: offerForm.enrollmentDeadline,
+        },
       },
-      regOpen.registrationOpen
-        ? t("রেজিস্ট্রেশন বন্ধ করা হয়েছে।", "Registration turned off.")
-        : t("রেজিস্ট্রেশন চালু করা হয়েছে।", "Registration turned on."),
+      t("কোর্সের তথ্য সংরক্ষিত হয়েছে।", "Course details saved."),
     );
-    if (ok) setRegOpen(null);
+    setOfferBusy(false);
+    if (ok) setOfferOpen(null);
+  };
+
+  /** Put a course on sale, or take it off sale. */
+  const setLaunched = async (course: Course, launched: boolean) => {
+    setLaunchBusy(course.courseId);
+    await saveSettings(
+      course.courseId,
+      { launched },
+      launched
+        ? t("কোর্স চালু হয়েছে — এখন ভর্তি নেওয়া যাচ্ছে।", "Course launched — enrollment is open.")
+        : t("কোর্স বন্ধ করা হয়েছে।", "Course taken off sale."),
+    );
+    setLaunchBusy(null);
   };
 
   const saveMarks = async (e: React.FormEvent) => {
@@ -651,9 +709,15 @@ export default function AdminCoursesPage() {
       courseId: form.courseId,
       courseName: form.courseName,
       targetLevel: form.targetLevel,
-      status: form.status,
       startDate: form.startDate,
-      nextBatchRegistrationDate: form.nextBatchRegistrationDate,
+      tagline: form.tagline ?? "",
+      duration: form.duration ?? "",
+      fee: Number(form.fee) || 0,
+      freeClassCount: Number(form.freeClassCount) || 0,
+      seats: Number(form.seats) || 0,
+      covers: (form.covers ?? []).map((c) => c.trim()).filter(Boolean),
+      enrollmentDeadline: form.enrollmentDeadline ?? "",
+      launched: Boolean(form.launched),
       totalLessons: Number(form.totalLessons),
       totalClassesPlanned: Number(form.totalClassesPlanned),
     };
@@ -941,10 +1005,10 @@ export default function AdminCoursesPage() {
                         </Button>
                       );
                     })()}
-                    <StatusPill
-                      tone={c.status === "Running" ? "done" : c.status === "Completed" ? "neutral" : "pending"}
-                    >
-                      {c.status}
+                    <StatusPill tone={c.launched ? "done" : "pending"}>
+                      {c.launched
+                        ? t("ভর্তি চালু", "On sale")
+                        : t("প্রস্তুত নয়", "Not launched")}
                     </StatusPill>
                     <IconButton
                       label={t("কোর্স সম্পাদনা", "Edit course")}
@@ -972,7 +1036,7 @@ export default function AdminCoursesPage() {
                   </span>
                 </div>
 
-                {/* ── LMS controls: registration, lessons, topic, groups ── */}
+                {/* ── LMS controls: price & launch, lessons, topic, groups ── */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-text/10 pt-3">
                   <Button
                     size="sm"
@@ -984,15 +1048,23 @@ export default function AdminCoursesPage() {
                   </Button>
                   <Button
                     size="sm"
-                    variant={c.registrationOpen ? "secondary" : "ghost"}
+                    variant="ghost"
                     iconLeft={<GraduationCap className="h-4 w-4" />}
-                    onClick={() => {
-                      setRegOpen(c);
-                    }}
+                    onClick={() => openOffer(c)}
                   >
-                    {c.registrationOpen
-                      ? t("রেজিস্ট্রেশন চালু", "Registration open")
-                      : t("রেজিস্ট্রেশন বন্ধ", "Registration off")}
+                    {t("ফি ও বিবরণ", "Fee & details")}
+                  </Button>
+                  {/* Launching is the only on/off a course has now: the price is
+                      set in the dialog, and this puts it on sale. */}
+                  <Button
+                    size="sm"
+                    variant={c.launched ? "danger" : "secondary"}
+                    disabled={launchBusy === c.courseId}
+                    onClick={() => setLaunched(c, !c.launched)}
+                  >
+                    {c.launched
+                      ? t("ভর্তি বন্ধ করুন", "Take off sale")
+                      : t("ভর্তি চালু করুন", "Put on sale")}
                   </Button>
                   <Button
                     size="sm"
@@ -1241,25 +1313,71 @@ export default function AdminCoursesPage() {
               onChange={(e) => set("courseName", e.target.value)}
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <SelectField label={t("অবস্থা", "Status")} value={form.status} onChange={(e) => set("status", e.target.value)}>
-                <option value="Coming Soon">{t("আসছে", "Coming Soon")}</option>
-                <option value="Running">{t("চলমান", "Running")}</option>
-                <option value="Completed">{t("সম্পন্ন", "Completed")}</option>
-              </SelectField>
+              <Field
+                label={t("কোর্সের মূল কথা", "Tagline")}
+                hint={t("এক লাইনে কী শেখাবে", "One line on what it teaches")}
+                value={form.tagline ?? ""}
+                onChange={(e) => set("tagline", e.target.value)}
+              />
+              <Field
+                label={t("সময়কাল", "Duration")}
+                hint={t("যেমন: ৩ মাস", "e.g. 3 months")}
+                value={form.duration ?? ""}
+                onChange={(e) => set("duration", e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Field
+                type="number"
+                min={0}
+                label={t("ফি (টাকা)", "Fee (BDT)")}
+                value={form.fee ?? 0}
+                onChange={(e) =>
+                  set("fee", e.target.value === "" ? ("" as unknown as number) : Number(e.target.value))
+                }
+                className="tabular-nums"
+              />
+              <Field
+                type="number"
+                min={0}
+                label={t("ফ্রি ক্লাস", "Free classes")}
+                value={form.freeClassCount ?? 0}
+                onChange={(e) =>
+                  set(
+                    "freeClassCount",
+                    e.target.value === "" ? ("" as unknown as number) : Number(e.target.value),
+                  )
+                }
+                className="tabular-nums"
+              />
+              <Field
+                type="number"
+                min={0}
+                label={t("সিট", "Seats")}
+                hint={t("০ মানে সীমা নেই", "0 means unlimited")}
+                value={form.seats ?? 0}
+                onChange={(e) =>
+                  set("seats", e.target.value === "" ? ("" as unknown as number) : Number(e.target.value))
+                }
+                className="tabular-nums"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field
                 type="date"
                 label={t("শুরুর তারিখ", "Start date")}
                 value={form.startDate ?? ""}
                 onChange={(e) => set("startDate", e.target.value)}
               />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Field
-                label={t("পরবর্তী ভর্তি", "Next intake")}
-                hint={t("যেমন: 20 Sept 2026", "e.g. Sept 20, 2026")}
-                value={form.nextBatchRegistrationDate ?? ""}
-                onChange={(e) => set("nextBatchRegistrationDate", e.target.value)}
+                type="date"
+                label={t("ভর্তির শেষ তারিখ", "Enrollment closes")}
+                hint={t("খালি রাখলে সীমা নেই", "Leave blank for no deadline")}
+                value={form.enrollmentDeadline ?? ""}
+                onChange={(e) => set("enrollmentDeadline", e.target.value)}
               />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field
                 type="number"
                 min={1}
@@ -1839,65 +1957,135 @@ export default function AdminCoursesPage() {
         )}
       </Dialog>
 
-      {/* ── registration dialog ── */}
+      {/* ── fee & course-details dialog ──
+          Replaces the old registration on/off switch. The price, duration and
+          free-class count set here are what students see on the academy page
+          and what a paid enrollment is charged. */}
       <Dialog
-        open={regOpen !== null}
-        onClose={() => setRegOpen(null)}
-        title={t("রেজিস্ট্রেশন নিয়ন্ত্রণ", "Registration control")}
-        description={regOpen ? `${regOpen.courseName} (${regOpen.courseId})` : undefined}
+        open={offerOpen !== null}
+        onClose={() => setOfferOpen(null)}
+        title={t("ফি ও কোর্সের বিবরণ", "Fee & course details")}
+        description={offerOpen ? `${offerOpen.courseName} (${offerOpen.courseId})` : undefined}
         size="md"
         footer={
           <>
-            <Button variant="secondary" size="sm" onClick={() => setRegOpen(null)}>
+            <Button variant="secondary" size="sm" onClick={() => setOfferOpen(null)}>
               {t("বাতিল", "Cancel")}
             </Button>
-            <Button
-              size="sm"
-              variant={regOpen?.registrationOpen ? "danger" : "secondary"}
-              onClick={saveRegistration}
-            >
-              {regOpen?.registrationOpen
-                ? t("রেজিস্ট্রেশন বন্ধ করুন", "Turn off registration")
-                : t("রেজিস্ট্রেশন চালু করুন", "Turn on registration")}
+            <Button size="sm" onClick={saveOffer} disabled={offerBusy}>
+              {offerBusy ? t("সংরক্ষণ হচ্ছে…", "Saving…") : t("সংরক্ষণ করুন", "Save")}
             </Button>
           </>
         }
       >
-        {regOpen && (
+        {offerOpen && (
           <div className="space-y-4">
-            <div
-              className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
-                regOpen.registrationOpen ? "border-ok/40 bg-ok-surface" : "border-text/15 bg-card"
-              }`}
-            >
-              <span className="text-sm font-semibold text-text">
-                {t("রেজিস্ট্রেশন", "Registration")}
-              </span>
-              <span className={`text-sm font-bold ${regOpen.registrationOpen ? "text-ok" : "text-text/55"}`}>
-                {regOpen.registrationOpen ? t("চালু", "ON") : t("বন্ধ", "OFF")}
-              </span>
+            <Field
+              label={t("কোর্সের মূল কথা", "Tagline")}
+              hint={t("এক লাইনে কী শেখাবে", "One line on what it teaches")}
+              value={offerForm.tagline}
+              onChange={(e) => setOfferForm({ ...offerForm, tagline: e.target.value })}
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                label={t("সময়কাল", "Duration")}
+                hint={t("যেমন: ৩ মাস", "e.g. 3 months")}
+                value={offerForm.duration}
+                onChange={(e) => setOfferForm({ ...offerForm, duration: e.target.value })}
+              />
+              <Field
+                type="number"
+                min={0}
+                label={t("ফি (টাকা)", "Fee (BDT)")}
+                hint={t("০ দিলে কোর্সটি ফ্রি", "0 makes the course free")}
+                value={offerForm.fee}
+                onChange={(e) => setOfferForm({ ...offerForm, fee: e.target.value })}
+                className="tabular-nums"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                type="number"
+                min={0}
+                label={t("ফ্রি ক্লাস সংখ্যা", "Free trial classes")}
+                hint={t("ফি দেওয়ার আগে কত ক্লাস", "Classes before paying")}
+                value={offerForm.freeClassCount}
+                onChange={(e) => setOfferForm({ ...offerForm, freeClassCount: e.target.value })}
+                className="tabular-nums"
+              />
+              <Field
+                type="number"
+                min={0}
+                label={t("সিট সংখ্যা", "Seats")}
+                hint={t("০ মানে সীমা নেই", "0 means unlimited")}
+                value={offerForm.seats}
+                onChange={(e) => setOfferForm({ ...offerForm, seats: e.target.value })}
+                className="tabular-nums"
+              />
             </div>
             <Field
               type="date"
-              label={t("রেজিস্ট্রেশন শেষ তারিখ (ঐচ্ছিক)", "Registration last date (optional)")}
-              value={regOpen.registrationLastDate ?? ""}
-              onChange={(e) => setRegOpen({ ...regOpen, registrationLastDate: e.target.value })}
-              hint={t("খালি রাখলে শেষ তারিখ থাকবে না।", "Leave blank for no deadline.")}
+              label={t("ভর্তির শেষ তারিখ (ঐচ্ছিক)", "Enrollment closes (optional)")}
+              value={offerForm.enrollmentDeadline}
+              onChange={(e) => setOfferForm({ ...offerForm, enrollmentDeadline: e.target.value })}
+              hint={t("খালি রাখলে সীমা থাকবে না।", "Leave blank for no deadline.")}
             />
-            <Field
-              type="date"
-              label={t("পরবর্তী ভর্তির তারিখ (ঐচ্ছিক)", "Next admission date (optional)")}
-              value={regOpen.nextBatchRegistrationDate ?? ""}
-              onChange={(e) => setRegOpen({ ...regOpen, nextBatchRegistrationDate: e.target.value })}
-              hint={t(
-                "রেজিস্ট্রেশন বন্ধ থাকলে শিক্ষার্থীরা এই তারিখটি 'পরবর্তী ভর্তি' হিসেবে দেখবে।",
-                "When registration is off, students see this date as the next intake.",
-              )}
-            />
+
+            {/* What the course covers, one bullet per line. */}
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-text">
+                {t("কোর্সে যা যা আছে", "What the course covers")}
+              </p>
+              <p className="mb-2 text-xs text-text/55">
+                {t(
+                  "প্রতি লাইনে একটি বিষয় — এগুলো একাডেমি পেজে দেখানো হবে।",
+                  "One topic per line — these show on the academy page.",
+                )}
+              </p>
+              <div className="space-y-2">
+                {offerForm.covers.map((line, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={line}
+                      onChange={(e) => {
+                        const next = [...offerForm.covers];
+                        next[i] = e.target.value;
+                        setOfferForm({ ...offerForm, covers: next });
+                      }}
+                      className="flex-1 rounded-lg border border-text/15 bg-background px-3 py-2 text-sm text-text outline-none focus:border-secondary/60"
+                      placeholder={t("যেমন: বাংলা ব্যাকরণ", "e.g. Chinese grammar")}
+                    />
+                    <IconButton
+                      label={t("মুছুন", "Remove")}
+                      size="sm"
+                      onClick={() =>
+                        setOfferForm({
+                          ...offerForm,
+                          covers: offerForm.covers.filter((_, j) => j !== i),
+                        })
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </IconButton>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="mt-2"
+                onClick={() => setOfferForm({ ...offerForm, covers: [...offerForm.covers, ""] })}
+              >
+                {t("+ আরেকটি বিষয়", "+ Add a topic")}
+              </Button>
+            </div>
+
             <p className="text-xs text-text/55">
               {t(
-                "চালু করলে একাডেমি পেজে কোর্সটি ভর্তির জন্য দেখানো হবে।",
-                "When on, the course is shown for enrolment on the academy page.",
+                "ফি ঠিক করার পর 'ভর্তি চালু করুন' চাপলে কোর্সটি একাডেমি পেজে ভর্তির জন্য দেখানো হবে।",
+                "Once the price is set, press 'Put on sale' and the course appears on the academy page.",
               )}
             </p>
           </div>

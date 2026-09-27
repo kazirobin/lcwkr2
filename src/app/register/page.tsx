@@ -20,6 +20,8 @@ export default function RegisterPage() {
   const [trxId, setTrxId] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
   const copyNumber = async () => {
     try {
@@ -31,7 +33,7 @@ export default function RegisterPage() {
     }
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !mobile.trim() || !trxId.trim()) {
       setError(
@@ -40,6 +42,37 @@ export default function RegisterPage() {
       return;
     }
     setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/registrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fullName.trim(),
+          whatsapp: mobile.trim(),
+          trxId: trxId.trim(),
+          location: location.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(
+          data.message ||
+            t("জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।", "Could not submit. Please try again.")
+        );
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError(t("নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।", "Network problem. Try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // A WhatsApp copy of the same details, in case someone prefers to send it
+  // by hand. The database is the source of truth either way.
+  const sendWhatsAppCopy = () => {
     const msg =
       `*নতুন স্টুডেন্ট রেজিস্ট্রেশন* 🎓\n` +
       `-----------------------------------\n` +
@@ -49,7 +82,7 @@ export default function RegisterPage() {
       `💰 *ফি:* ৳${FEE_BDT} (bKash)\n` +
       `🧾 *TrxID:* ${trxId.trim().toUpperCase()}\n` +
       `-----------------------------------\n` +
-      `পেমেন্ট সম্পন্ন করেছি। অ্যাকাউন্ট active করে ডিফল্ট পাসওয়ার্ড (lcwkr2026) দিয়ে লগইন করতে চাই।`;
+      `ফর্ম জমা দিয়েছি। অ্যাকাউন্ট active করে ডিফল্ট পাসওয়ার্ড (lcwkr2026) দিয়ে লগইন করতে চাই।`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -157,12 +190,34 @@ export default function RegisterPage() {
               className={`${inputCls} font-mono uppercase`}
             />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={busy || done}>
             <span className="inline-flex items-center gap-2">
               <Send className="w-4 h-4" />
-              {t("WhatsApp-এ পাঠান", "Send via WhatsApp")}
+              {busy
+                ? t("জমা হচ্ছে…", "Submitting…")
+                : t("ফর্ম জমা দিন", "Submit the form")}
             </span>
           </Button>
+          {done && (
+            <div className="rounded-xl border border-ok/40 bg-ok-surface p-4 text-center">
+              <p className="text-sm font-semibold text-ok">
+                {t("আবেদন গ্রহণ হয়েছে!", "Application received!")}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-text/70">
+                {t(
+                  "আপনার TrxID যাচাই হলে অ্যাকাউন্ট চালু হবে। তখন মোবাইল নম্বর ও ডিফল্ট পাসওয়ার্ড (lcwkr2026) দিয়ে লগইন করবেন।",
+                  "Once your TrxID is verified the account will be activated. Then log in with your mobile number and the default password (lcwkr2026).",
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={sendWhatsAppCopy}
+                className="mt-2 text-xs text-text/55 underline-offset-2 hover:underline"
+              >
+                {t("WhatsApp-এও একটি কপি পাঠাতে চাই", "Also send a copy on WhatsApp")}
+              </button>
+            </div>
+          )}
         </form>
 
         <p className="mt-4 text-center text-xs text-text/55">

@@ -1,28 +1,91 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getStudentWithCourses } from "@/features/academy/server/students";
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/db";
+import {
+  Course,
+  CourseEnrollment,
+  DialogueMark,
+  DialogueSubmission,
+  HandwritingSubmission,
+  HwExamResult,
+  Student,
+  StudentRegistration,
+} from "@/features/academy/models";
+import { sessionSummaries } from "@/features/analytics/server/sessions";
 
-type Props = {
-  params: Promise<{ roll: string }>;
-};
-
-export async function GET(req: NextRequest, props: Props) {
+/**
+ * GET /api/academy/students/[roll] — everything the owner needs about one
+ * student on a single page: the account itself, which courses they are on and
+ * what they have paid for, every homework item ever submitted with its mark,
+ * exam results, and their sign-in history.
+ *
+ * Read-only and ungated in the same way as the other academy reads; the admin
+ * page that calls it is behind the passcode gate.
+ */
+export async function GET(
+  _req: Request,
+  props: { params: Promise<{ roll: string }> },
+) {
   try {
     const { roll } = await props.params;
-
-    const result = await getStudentWithCourses(roll);
-
-    if (!result) {
-      return NextResponse.json(
-        { success: false, message: "Student not found" },
-        { status: 404 }
-      );
+    const rollNumber = Number(roll);
+    if (!Number.isInteger(rollNumber)) {
+      return NextResponse.json({ success: false, error: "Bad roll" }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, ...result });
+    await connectDB();
+
+    const student = await Student.findOne({ rollNumber })
+      .select("-passwordHash")
+      .lean();
+    if (!student) {
+      return NextResponse.json({ success: false, error: "Student not found" }, { status: 404 });
+    }
+
+    const [
+      courses,
+      enrollments,
+      registration,
+      dialogues,
+      dialogueMarks,
+      handwriting,
+      exams,
+      sessions,
+    ] = await Promise.all([
+      Course.find({ courseId: student.enrolledCourseId }).lean(),
+      CourseEnrollment.find({ whatsapp: student.whatsapp }).sort({ createdAt: -1 }).lean(),
+      StudentRegistration.findOne({ whatsapp: student.whatsapp }).sort({ createdAt: -1 }).lean(),
+      DialogueSubmission.find({ whatsapp: student.whatsapp })
+        .sort({ createdAt: -1 })
+        .lean(),
+      DialogueMark.find({ whatsapp: student.whatsapp })
+        .sort({ createdAt: -1 })
+        .lean(),
+      HandwritingSubmission.find({ whatsapp: student.whatsapp })
+        .sort({ createdAt: -1 })
+        .lean(),
+      HwExamResult.find({ whatsapp: student.whatsapp }).lean(),
+      sessionSummaries(500),
+    ]);
+
+    // The session summary for this student comes back inside the full list, so
+    // pull just their row rather than querying twice.
+    const mine = sessions.find((s) => s.whatsapp === student.whatsapp) ?? null;
+
+    return NextResponse.json({
+      success: true,
+      student,
+      courses,
+      enrollments,
+      registration,
+      activity: {
+        dialogues: dialogues.slice(0, 40),
+        dialogueMarks: dialogueMarks.slice(0, 40),
+        handwriting: handwriting.slice(0, 40),
+        exams,
+      },
+      session: mine,
+    });
   } catch (error: any) {
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

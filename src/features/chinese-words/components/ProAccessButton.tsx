@@ -7,15 +7,14 @@ import ProSubscriptionForm from "./ProSubscriptionForm";
 
 /**
  * Corner Pro access badge shared across all Pro-gated pages (Core Words,
- * Hanzi Pro, HSK Homework). Reads the same `cw:pro` localStorage flag as
- * ProGate so one subscription unlocks every Pro tool.
+ * Hanzi Pro, HSK Homework).
  *
- * - Not subscribed → an "Unlock Pro" pill; clicking opens the subscription
- *   modal (password or bKash).
- * - Subscribed → a green "✓ Pro member" pill; clicking opens a manage modal
- *   with log-out.
+ * Pro is granted by the admin on the student's account — there is no password
+ * box and no self-serve upgrade. This badge simply reflects the account flag
+ * (plus the legacy `cw:pro` key, so anyone already unlocked on this device
+ * keeps access) and opens the request panel.
  *
- * Passing a `ref` exposes `{ open() }` so pages can open the modal from
+ * Passing a `ref` exposes `{ open() }` so pages can open the panel from
  * elsewhere (e.g. a locked lesson button).
  */
 const PRO_KEY = "cw:pro";
@@ -24,10 +23,8 @@ export type ProAccessHandle = { open: () => void };
 
 export default function ProAccessButton({
   ref,
-  onUnlock,
 }: {
   ref?: React.Ref<ProAccessHandle>;
-  onUnlock?: () => void;
 }) {
   const { language } = useLanguage();
   const t = useCallback(
@@ -35,21 +32,19 @@ export default function ProAccessButton({
     [language],
   );
 
-  const [ready, setReady] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [localPro, setLocalPro] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const { student: account } = useAccount();
-  // Server truth (admin-granted) counts alongside the local flag.
-  const showPro = isPro || !!account?.isPro;
+  // Server truth (admin-granted) counts alongside the legacy local flag.
+  const showPro = localPro || !!account?.isPro;
 
   useEffect(() => {
     queueMicrotask(() => {
       try {
-        setIsPro(localStorage.getItem(PRO_KEY) === "1");
+        setLocalPro(localStorage.getItem(PRO_KEY) === "1");
       } catch {
         /* storage unavailable */
       }
-      setReady(true);
     });
   }, []);
 
@@ -57,36 +52,13 @@ export default function ProAccessButton({
     open: () => setModalOpen(true),
   }));
 
-  const unlock = () => {
-    try {
-      localStorage.setItem(PRO_KEY, "1");
-    } catch {
-      /* storage unavailable */
-    }
-    setIsPro(true);
-    setModalOpen(false);
-    onUnlock?.();
-  };
-
-  const logout = () => {
-    try {
-      localStorage.removeItem(PRO_KEY);
-    } catch {
-      /* ignore */
-    }
-    setIsPro(false);
-    setModalOpen(false);
-  };
-
-  if (!ready) return null;
-
   return (
     <>
       {showPro ? (
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          title={t("Pro সদস্য — ম্যানেজ করুন", "Pro member — manage")}
+          title={t("Pro সদস্য", "Pro member")}
           className="fixed bottom-6 left-6 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold shadow-lg bg-ok text-background border border-ok hover:opacity-90 transition"
         >
           ✓ {t("Pro সদস্য", "Pro member")}
@@ -97,7 +69,7 @@ export default function ProAccessButton({
           onClick={() => setModalOpen(true)}
           className="fixed bottom-6 left-6 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold shadow-lg bg-secondary text-white border border-secondary hover:opacity-90 transition"
         >
-          ✦ {t("Pro আনলক করুন", "Unlock Pro")}
+          ✦ {t("Pro চান", "Ask for Pro")}
         </button>
       )}
 
@@ -117,27 +89,20 @@ export default function ProAccessButton({
             </button>
 
             {showPro && (
-              <div className="mb-4 p-4 rounded-2xl bg-ok-surface border border-ok/30 space-y-2">
+              <div className="mb-4 p-4 rounded-2xl bg-ok-surface border border-ok/30 space-y-1">
                 <p className="text-sm font-semibold text-ok">
                   ✓ {t("আপনি Pro সদস্য — সব কনটেন্ট আনলক করা আছে।", "You're a Pro member — all content is unlocked.")}
                 </p>
                 <p className="text-[11px] text-text/55">
                   {t(
-                    "নতুন ডিভাইসে বা ভুলে গেলে নিচে আবার পাসওয়ার্ড দিন।",
-                    "On a new device (or if forgotten) enter the password again below.",
+                    "Pro আপনার অ্যাকাউন্টে চালু আছে, তাই নতুন ডিভাইসেও কাজ করবে।",
+                    "Pro is switched on for your account, so it works on a new device too.",
                   )}
                 </p>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="px-3.5 py-1.5 rounded-xl border border-danger/40 bg-danger/10 text-danger text-xs font-semibold hover:bg-danger/20 transition"
-                >
-                  {t("Pro থেকে লগ আউট", "Log out of Pro")}
-                </button>
               </div>
             )}
 
-            <ProSubscriptionForm onUnlock={unlock} />
+            <ProSubscriptionForm />
           </div>
         </div>
       )}

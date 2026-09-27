@@ -5,6 +5,7 @@ import { Hero } from '@/features/marketing/components/home/Hero';
 import RoadmapBooks from '@/features/marketing/components/home/RoadmapBooks';
 // import StudentResults from '@/features/marketing/components/home/StudentResults';
 import Voice from '@/features/marketing/components/home/Voice';
+import TrafficDashboard from '@/features/analytics/TrafficDashboard';
 
 export default function Home() {
     return (
@@ -16,6 +17,8 @@ export default function Home() {
             <RoadmapBooks />
             <ClassRoutineSection />
             <FAQ />
+            {/* Public daily traffic, last section on the page. */}
+            <TrafficDashboard />
         </>
     );
 }

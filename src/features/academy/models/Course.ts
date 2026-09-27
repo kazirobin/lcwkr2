@@ -4,14 +4,36 @@ export interface ICourseDoc {
   courseId: string;
   courseName: string;
   targetLevel: string;
-  status: "Running" | "Coming Soon" | "Completed";
+  // Kept for the courses that already exist in the database. New courses are
+  // driven by `launched` below; the admin no longer edits this by hand.
+  status?: "Running" | "Coming Soon" | "Completed";
   startDate?: string;
   nextBatchRegistrationDate?: string;
+  // ── how the course is sold ──
+  /** One-line promise shown on the academy course card. */
+  tagline: string;
+  /** How long the course runs, e.g. "3 months" — free text so it reads well. */
+  duration: string;
+  /** Seat price in BDT. 0 means the course is free to join. */
+  fee: number;
+  /** How many trial classes a new student gets before paying. */
+  freeClassCount: number;
+  /** Bullets describing what the course covers, shown in the detail view. */
+  covers: string[];
+  /** Seats available. 0 means unlimited. */
+  seats: number;
+  /** Once true the course is open for paid enrollment. */
+  launched: boolean;
+  launchedAt?: Date;
+  /** Date the paid enrollment window closes, YYYY-MM-DD. Empty = no deadline. */
+  enrollmentDeadline?: string;
   // ── new professional LMS fields ──
   lessons: Array<{ lessonNumber: number; title: string; description?: string }>;
   nextClassTopic?: string;
   topics?: string[];
-  registrationOpen: boolean;
+  // Legacy gate kept only so existing records keep working. The admin UI no
+  // longer toggles it; `launched` decides whether enrollment is open.
+  registrationOpen?: boolean;
   registrationLastDate?: string;
   totalLessons: number;
   totalClassesPlanned: number;
@@ -60,6 +82,16 @@ const CourseSchema = new Schema<ICourseDoc>(
     },
     startDate: { type: String },
     nextBatchRegistrationDate: { type: String },
+    // ── how the course is sold ──
+    tagline: { type: String, default: "" },
+    duration: { type: String, default: "" },
+    fee: { type: Number, default: 0, min: 0 },
+    freeClassCount: { type: Number, default: 0, min: 0 },
+    covers: { type: [String], default: [] },
+    seats: { type: Number, default: 0, min: 0 },
+    launched: { type: Boolean, default: false, index: true },
+    launchedAt: { type: Date, default: null },
+    enrollmentDeadline: { type: String, default: "" },
     // ── new professional LMS fields ──
     lessons: [
       {

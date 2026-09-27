@@ -892,7 +892,7 @@ export default function HanziProPage() {
       )}
 
       {/* ═══════════ PRO ACCESS BADGE ═══════════ */}
-      <ProAccessButton ref={proRef} onUnlock={refreshPro} />
+      <ProAccessButton ref={proRef} />
     </div>
   );
 }

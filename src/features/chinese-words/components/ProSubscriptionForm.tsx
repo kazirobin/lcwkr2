@@ -3,53 +3,27 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck, Sparkles, Eye, EyeOff, KeyRound, Send } from "lucide-react";
+import { Sparkles, Eye, EyeOff, Send } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
-import { isValidProPassword } from "../data/pro-passwords";
 
 const WHATSAPP_NUMBER = "8801787881334";
 
 /**
  * Pro access panel.
- * - Pro registration is admin-only: logged-in students request Pro over
- *   WhatsApp, admin marks isPro, and every device on that account unlocks.
- * - The password box works ONLY when logged in (approved student).
- * - Logged-out visitors get a login CTA — no password, no self-serve form.
+ *
+ * Pro is entirely admin-granted: the owner turns it on or off per student from
+ * /admin/students, and there is no password box, redeem code or self-serve
+ * upgrade here any more. A student who wants Pro sends a request over WhatsApp
+ * and waits; once the admin marks them, every device on that account unlocks.
  */
-export default function ProSubscriptionForm({ onUnlock }: { onUnlock?: () => void }) {
+export default function ProSubscriptionForm() {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
   const { student: account } = useAccount();
 
   // ডেমো ওপেন/ক্লোজ স্টেট
   const [showDemo, setShowDemo] = useState(false);
-
-  // পাসওয়ার্ড চেক ও শো/হাইড স্টেট
-  const [accessPassword, setAccessPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordStatus, setPasswordStatus] = useState<"idle" | "success" | "error">("idle");
-  const [error, setError] = useState("");
-
-  // পাসওয়ার্ড ভেরিফিকেশন — শুধু লগইন করা শিক্ষার্থীর জন্য
-  const handleVerifyPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!account) return;
-    if (!accessPassword.trim()) return;
-
-    if (isValidProPassword(accessPassword)) {
-      setPasswordStatus("success");
-      setError("");
-      onUnlock?.();
-    } else {
-      setPasswordStatus("error");
-      setError(
-        language === "bn"
-          ? "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ডের জন্য WhatsApp-এ যোগাযোগ করুন।"
-          : "Invalid password! Please contact via WhatsApp for the correct password."
-      );
-    }
-  };
 
   const requestPro = () => {
     if (!account) return;
@@ -79,12 +53,12 @@ export default function ProSubscriptionForm({ onUnlock }: { onUnlock?: () => voi
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
           {t("চাইনিজ কোর ওয়ার্ড বিল্ডার আনলক করুন", "Unlock Chinese Core Word Builder")}
         </h2>
-        <p className="text-xs sm:text-sm text-muted">
-          {t(
-            "Pro সদস্য হতে হবে শিক্ষার্থী — রেজিস্ট্রেশন শুধু admin দেয়। নিচে WhatsApp-এ রিকোয়েস্ট পাঠান।",
-            "Pro members must be students — only admin grants Pro. Request below over WhatsApp."
-          )}
-        </p>
+          <p className="text-xs sm:text-sm text-muted">
+            {t(
+              "Pro শুধু admin চালু বা বন্ধ করে — নিজে কিনতে হয় না। নিচে WhatsApp-এ রিকোয়েস্ট পাঠান।",
+              "Only the admin turns Pro on or off — there is nothing to buy yourself. Send a request over WhatsApp below.",
+            )}
+          </p>
 
         {/* ডেমো টগল বাটন */}
         <div className="pt-2 flex items-center justify-center gap-2">
@@ -146,63 +120,6 @@ export default function ProSubscriptionForm({ onUnlock }: { onUnlock?: () => voi
               <Send className="w-4 h-4" />
               <span>{t("WhatsApp-এ Pro চান", "Request Pro on WhatsApp")}</span>
             </button>
-          </div>
-
-          {/* ── password box (logged-in students only) ── */}
-          <div className="mb-6 p-4 rounded-2xl bg-background border border-border space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-primary">
-              <KeyRound className="w-4 h-4" />
-              <span>{t("পাসওয়ার্ড থাকলে এখানে দিন", "Have a password? Enter it here")}</span>
-            </div>
-
-            <form onSubmit={handleVerifyPassword} className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder={t("আপনার Pro পাসওয়ার্ড দিন", "Enter your Pro password")}
-                  value={accessPassword}
-                  onChange={(e) => {
-                    setAccessPassword(e.target.value);
-                    setPasswordStatus("idle");
-                  }}
-                  className="w-full pl-3.5 pr-10 py-2 rounded-xl border border-border bg-card text-xs text-text focus:outline-none focus:border-primary transition font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-xl text-xs hover:opacity-95 transition cursor-pointer"
-              >
-                {t("চেক করুন", "Verify")}
-              </button>
-            </form>
-
-            {passwordStatus === "success" && (
-              <div className="space-y-2">
-                <p className="text-xs text-ok flex items-center gap-1 font-medium">
-                  <ShieldCheck className="w-4 h-4" />
-                  {t("সফল! আপনার পাসওয়ার্ডটি সঠিক আছে।", "Success! Your password is valid.")}
-                </p>
-                {onUnlock && (
-                  <button
-                    type="button"
-                    onClick={onUnlock}
-                    className="w-full py-3 bg-ok text-background font-bold rounded-xl text-sm hover:opacity-90 transition shadow-md"
-                  >
-                    🎉 {t("আনলক করে চালিয়ে যান", "Unlock & Continue")}
-                  </button>
-                )}
-              </div>
-            )}
-            {passwordStatus === "error" && error && (
-              <p className="text-xs text-danger font-medium">{error}</p>
-            )}
           </div>
         </>
       )}

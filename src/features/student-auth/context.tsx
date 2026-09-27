@@ -111,11 +111,24 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    const phone = loadSessionPhone();
     setStudent(null);
     try {
       window.localStorage.removeItem(SESSION_KEY);
     } catch {
       /* ignore */
+    }
+    // Tell the server so the admin's session list gets a real sign-out time.
+    // Fire and forget: signing out must never wait on the network.
+    if (phone) {
+      try {
+        navigator.sendBeacon?.(
+          "/api/auth/logout",
+          new Blob([JSON.stringify({ phone })], { type: "application/json" }),
+        );
+      } catch {
+        /* ignore */
+      }
     }
   }, []);
 

@@ -28,6 +28,7 @@ import {
 import { useLanguage } from "@/i18n";
 import { FacebookIcon } from "@/components/icons/FacebookIcon";
 import { ICourse, IStudent } from "@/features/academy";
+import CourseCatalogue from "@/features/academy/components/CourseCatalogue";
 import {
   Breadcrumb,
   Button,
@@ -1257,6 +1258,10 @@ export default function AcademyHubPage() {
         </span>
         <ArrowRight className="h-5 w-5 shrink-0 text-text/40 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
       </Link>
+
+      {/* Launched courses with their fee, duration and syllabus, plus the
+          paid enrollment form. */}
+      <CourseCatalogue />
     </div>
   );
 }

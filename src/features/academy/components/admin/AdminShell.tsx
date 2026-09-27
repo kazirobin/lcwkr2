@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  BarChart3,
   BookOpen,
   HandCoins,
   Languages,
@@ -34,9 +35,11 @@ const UNLOCK_KEY = "academy_admin_unlocked";
 
 /** Every admin module — rendered as the persistent quick-access bar. */
 const ADMIN_MODULES = [
+  { href: "/admin/registrations", bn: "৳৫০০ আবেদন", en: "Registrations", icon: UserPlus },
   { href: "/admin/admissions", bn: "ভর্তি", en: "Admissions", icon: UserPlus },
   { href: "/admin/students", bn: "শিক্ষার্থী", en: "Students", icon: Users },
   { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen },
+  { href: "/admin/analytics", bn: "ট্রাফিক", en: "Traffic", icon: BarChart3 },
   { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
   { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
   { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },

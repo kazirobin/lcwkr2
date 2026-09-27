@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { ArrowRightLeft, Activity, Check, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
@@ -297,14 +298,20 @@ export default function AdminStudentsPage() {
               <Th>{t("হোয়াটসঅ্যাপ", "WhatsApp")}</Th>
               <Th>{t("গ্রুপ", "Group")}</Th>
               <Th>{t("প্রো", "Pro")}</Th>
-              <Th className="text-right">{t("কাজ", "Actions")}</Th>
-            </>
+              <Th className="text-right">{t("কাজ", "Actions")}</Th>            </>
           }
         >
           {filtered.map((s) => (
             <tr key={s.rollNumber}>
               <Td className="tabular-nums text-text/60">#{s.rollNumber}</Td>
-              <Td className="font-semibold text-text">{s.nameEnglish}</Td>
+              <Td className="font-semibold text-text">
+                <Link
+                  href={`/admin/students/${s.rollNumber}`}
+                  className="underline-offset-2 hover:underline"
+                >
+                  {s.nameEnglish}
+                </Link>
+              </Td>
               <Td className="tabular-nums">{trackOf(s)}</Td>
               <Td className="tabular-nums">
                 <a

@@ -8,25 +8,15 @@ import {
 } from "react";
 import { Lock } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
 
+/**
+ * The old self-serve unlock key. Pro is now granted on the student's account by
+ * the admin, but anyone who was already unlocked on this device keeps access,
+ * so the flag is still read (never written).
+ */
 const PRO_KEY = "cw:pro";
-
-const proListeners = new Set<() => void>();
-
-function emitPro() {
-  for (const listener of proListeners) listener();
-}
-
-function subscribePro(listener: () => void) {
-  proListeners.add(listener);
-  // Keeps other tabs in sync when the flag is cleared or set elsewhere.
-  window.addEventListener("storage", listener);
-  return () => {
-    proListeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
-}
 
 function getProSnapshot() {
   try {
@@ -49,12 +39,16 @@ const getTrue = () => true;
 const getFalse = () => false;
 
 /**
- * Server-friendly Pro gate for a whole level track. HSK 1 is free; any
- * higher level requires a Pro subscription (same `cw:pro` flag as the
- * Core Words builder / Hanzi Pro).
+ * Server-friendly Pro gate for a whole level track. HSK 1 is free; any higher
+ * level needs Pro.
  *
- * Guests see a lock screen with an unlock CTA; the corner Pro badge is
- * rendered too so subscribers can manage their status.
+ * Pro is now granted by the admin on the student's account, so the account flag
+ * is the source of truth. The old `cw:pro` localStorage key is still honoured
+ * for anyone already unlocked on this device, but it is no longer something a
+ * student can set for themselves.
+ *
+ * Guests and non-Pro students see a lock screen with a way to ask for Pro;
+ * the corner Pro badge lets subscribers manage their status.
  */
 export default function ProLevelGate({
   level,
@@ -71,19 +65,20 @@ export default function ProLevelGate({
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
   );
+  const { student: account } = useAccount();
 
-  const isPro = useSyncExternalStore(
-    subscribePro,
+  const localPro = useSyncExternalStore(
+    () => () => {},
     getProSnapshot,
     getProServerSnapshot,
   );
+  // The admin decides this on the server, so it is what actually matters.
+  const isPro = localPro || Boolean(account?.isPro);
   // False on the server and on the very first client render, true right after
   // hydration — lets subscribers render their children before the gate
   // resolves instead of flashing the lock screen.
   const hydrated = useSyncExternalStore(noopSubscribe, getTrue, getFalse);
   const proRef = useRef<ProAccessHandle>(null);
-
-  const refreshPro = emitPro;
 
   if (level <= 1) return <>{children}</>;
   if (!hydrated) return <>{children}</>; // avoid flashing the lock for pro users
@@ -92,7 +87,7 @@ export default function ProLevelGate({
     return (
       <>
         {children}
-        <ProAccessButton ref={proRef} onUnlock={refreshPro} />
+        <ProAccessButton ref={proRef} />
       </>
     );
   }
@@ -109,8 +104,8 @@ export default function ProLevelGate({
         </h1>
         <p className="max-w-md text-sm leading-6 text-text/60">
           {t(
-            `HSK 1 সম্পূর্ণ ফ্রি। HSK ${level} এর সব শব্দ, পাঠ ও অনুশীলন দেখতে প্রো সাবস্ক্রিপশন প্রয়োজন। একবার সাবস্ক্রাইব করলেই সব প্রো টুল খোলা থাকে।`,
-            `HSK 1 is completely free. A Pro subscription is required to open HSK ${level}'s words, texts and practice. One subscription unlocks every Pro tool.`,
+            `HSK 1 সম্পূর্ণ ফ্রি। HSK ${level} এর সব শব্দ, পাঠ ও অনুশীলন দেখতে প্রো লাগে — প্রো teacher-ই চালু করে দেন।`,
+            `HSK 1 is completely free. HSK ${level}'s words, texts and practice need Pro, which your teacher switches on for you.`,
           )}
         </p>
         <button
@@ -118,10 +113,10 @@ export default function ProLevelGate({
           onClick={() => proRef.current?.open()}
           className="inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 text-sm font-bold text-white shadow-lg transition-opacity hover:opacity-90"
         >
-          ✦ {t("প্রো আনলক করুন", "Unlock Pro")}
+          ✦ {t("প্রো চান", "Ask for Pro")}
         </button>
       </div>
-      <ProAccessButton ref={proRef} onUnlock={refreshPro} />
+      <ProAccessButton ref={proRef} />
     </>
   );
 }
