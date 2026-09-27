@@ -40,8 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# npm is the package manager here, so the lock file is what Vercel installs from.
+# Without it npm resolves the caret ranges afresh on every deploy, which lets
+# pdfjs-dist move out from under the committed worker in public/pdfjs/ and
+# break the lesson PDF viewer at runtime rather than at build time.
+# yarn.lock is still ignored so a stray yarn install cannot conflict with it.
 yarn.lock
-package-lock.json
 # dev logs
 dev.*
 devserver.*
