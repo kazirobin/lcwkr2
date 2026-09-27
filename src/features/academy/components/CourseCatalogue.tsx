@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, Check, CheckCircle2, ChevronDown, Gift, Ticket, Users } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { Button, Card, Dialog, Field, LoadingBlock, useToast } from "@/components/ui";
+import AcademyFeatureBanner from "@/features/academy/components/AcademyFeatureBanner";
 
 /**
  * The course catalogue on the academy page.
@@ -182,6 +183,11 @@ export default function CourseCatalogue() {
           "Each course lists its fee, length and what it covers. Pay the fee and you join the course directly.",
         )}
       </p>
+      {/* The newest launch sits above the list as a banner, so a student does
+          not have to scroll to find out a course opened. */}
+      <div className="mt-6">
+        <AcademyFeatureBanner />
+      </div>
       {completedCourses > 0 && (
         <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-ok/35 bg-ok-surface px-3.5 py-1.5 text-xs font-semibold text-ok">
           <CheckCircle2 className="size-3.5" aria-hidden="true" />

@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Link2,
   Share2,
+  Star,
   GraduationCap,
   Tags,
 } from "lucide-react";
@@ -67,6 +68,7 @@ type Course = {
   seats?: number;
   launched?: boolean;
   completed?: boolean;
+  featured?: boolean;
   launchedAt?: string;
   enrollmentDeadline?: string;
   lessons: { lessonNumber: number; title: string; description?: string }[];
@@ -307,6 +309,7 @@ export default function AdminCoursesPage() {
   const [offerBusy, setOfferBusy] = useState(false);
   const [launchBusy, setLaunchBusy] = useState<string | null>(null);
   const [completeBusy, setCompleteBusy] = useState<string | null>(null);
+  const [featureBusy, setFeatureBusy] = useState<string | null>(null);
   const [offerForm, setOfferForm] = useState({
     tagline: "",
     duration: "",
@@ -667,6 +670,19 @@ export default function AdminCoursesPage() {
         : t("কোর্স আবার চালু করা হয়েছে।", "Course reopened."),
     );
     setCompleteBusy(null);
+  };
+
+  /** Pin a course to the academy page banner, or unpin it. */
+  const setFeatured = async (course: Course, featured: boolean) => {
+    setFeatureBusy(course.courseId);
+    await saveSettings(
+      course.courseId,
+      { featured },
+      featured
+        ? t("একাডেমি পেজের ব্যানারে দেখানো হচ্ছে।", "Showing in the academy page banner.")
+        : t("ব্যানার থেকে সরানো হয়েছে।", "Removed from the banner."),
+    );
+    setFeatureBusy(null);
   };
 
   /** Load the ready-to-paste WhatsApp message for a course. */
@@ -1201,6 +1217,20 @@ export default function AdminCoursesPage() {
                   >
                     {t("WhatsApp মেসেজ", "WhatsApp message")}
                   </Button>
+                  {/* Pin to the academy banner, or take it down again. */}
+                  {c.launched && !c.completed && (
+                    <Button
+                      size="sm"
+                      variant={c.featured ? "secondary" : "ghost"}
+                      iconLeft={<Star className="h-4 w-4" />}
+                      disabled={featureBusy === c.courseId}
+                      onClick={() => setFeatured(c, !c.featured)}
+                    >
+                      {c.featured
+                        ? t("ব্যানারে আছে", "In the banner")
+                        : t("ব্যানারে দেখান", "Feature it")}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="ghost"

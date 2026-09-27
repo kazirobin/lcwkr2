@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { messageOf } from "@/lib/api-error";
 import {
   setCourseCompleted,
+  setCourseFeatured,
   setCourseLaunched,
   updateCourse,
   updateCourseOffer,
@@ -24,6 +25,15 @@ export async function PUT(req: NextRequest, props: Props) {
 
     if (typeof fields.completed === "boolean") {
       const updated = await setCourseCompleted(id, fields.completed);
+      if (!updated) {
+        return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, course: updated });
+    }
+
+    // Featuring a course puts it in the academy page banner.
+    if (typeof fields.featured === "boolean") {
+      const updated = await setCourseFeatured(id, fields.featured);
       if (!updated) {
         return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
       }

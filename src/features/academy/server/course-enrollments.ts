@@ -23,6 +23,8 @@ export type CourseSummary = {
   seats: number;
   launched: boolean;
   completed: boolean;
+  featured: boolean;
+  launchedAt?: string;
   enrollmentDeadline: string;
   /** Seats already taken by approved or pending enrollments. */
   enrolled: number;
@@ -97,6 +99,8 @@ export async function listCourseSummaries(includeUnlaunched = false): Promise<Co
       seats: c.seats ?? 0,
       launched: Boolean(c.launched),
       completed: Boolean(c.completed),
+      featured: Boolean(c.featured),
+      launchedAt: c.launchedAt ? new Date(c.launchedAt).toISOString() : undefined,
       enrollmentDeadline: c.enrollmentDeadline ?? "",
       enrolled,
       remaining: c.seats ? Math.max(0, c.seats - enrolled) : null,

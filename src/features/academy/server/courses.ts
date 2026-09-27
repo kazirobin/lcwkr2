@@ -91,6 +91,16 @@ export async function setCourseCompleted(courseId: string, completed: boolean) {
   return Course.findOneAndUpdate({ courseId }, { $set: update }, { new: true });
 }
 
+/** The course to feature on the academy page, or null to feature nothing. */
+export async function setCourseFeatured(courseId: string, featured: boolean) {
+  await connectDB();
+  if (featured) {
+    // Only one course can be the featured one, so clear the rest.
+    await Course.updateMany({ courseId: { $ne: courseId } }, { $set: { featured: false } });
+  }
+  return Course.findOneAndUpdate({ courseId }, { $set: { featured: Boolean(featured) } }, { new: true });
+}
+
 /**
  * Open or close paid enrollment. The first launch stamps `launchedAt`, so the
  * admin can see when a course actually went on sale. A completed course has to

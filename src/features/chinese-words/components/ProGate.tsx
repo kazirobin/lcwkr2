@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n";
-import { useAccount } from "@/features/student-auth";
-import ProSubscriptionForm from "./ProSubscriptionForm";
+import ProPanel from "./ProPanel";
 import { formatRemaining, useProAccess } from "./pro-access";
 
 /**
@@ -15,7 +14,6 @@ import { formatRemaining, useProAccess } from "./pro-access";
  */
 export default function ProGate({ children }: { children: React.ReactNode }) {
   const { status, remainingMs, isPro, resetTrial } = useProAccess();
-  const { student: account } = useAccount();
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
   const [modalOpen, setModalOpen] = useState(false);
@@ -29,29 +27,14 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
 
   if (status === "expired") {
     return (
-      <div className="min-h-[70vh] py-12 px-4 flex flex-col items-center justify-center gap-6">
-        <div className="text-center space-y-2">
-          <div className="text-5xl">🔒</div>
-          <h2 className="text-2xl font-bold text-text">
-            {t("আপনার ফ্রি প্রিভিউ শেষ", "Your free preview has ended")}
-          </h2>
-          <p className="text-sm text-muted max-w-md mx-auto">
-            {t(
-              "১০ মিনিটের গেস্ট প্রিভিউ শেষ হয়ে গেছে। চালিয়ে যেতে সাবস্ক্রিপশন নিন অথবা পাওয়া পাসওয়ার্ড দিন।",
-              "Your 10-minute guest preview is over. Subscribe below or enter the password you received to continue."
-            )}
-          </p>
-        </div>
-
-        <ProSubscriptionForm />
-
-        <button
-          type="button"
-          onClick={resetTrial}
-          className="text-[11px] text-text/40 hover:text-text/70 underline transition"
-        >
-          {t("ট্রায়াল রিসেট করুন (টেস্ট)", "Reset trial (testing)")}
-        </button>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4 py-12">
+        {/* The panel carries the status line and the form, so nothing is
+            repeated here. */}
+        <ProPanel
+          status={status}
+          remainingMs={remainingMs}
+          onResetTrial={resetTrial}
+        />
       </div>
     );
   }
@@ -95,42 +78,20 @@ export default function ProGate({ children }: { children: React.ReactNode }) {
         </button>
       )}
 
-      {/* Access modal */}
+      {/* Access modal � the same panel the corner badge opens, so only one
+          copy of the form is ever on screen. */}
       {modalOpen && (
         <div
           className="fixed inset-0 z-[60] overflow-y-auto bg-black/60 p-4"
           onClick={() => setModalOpen(false)}
         >
-          <div
-            className="relative max-w-xl mx-auto my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              title={t("বন্ধ করুন", "Close")}
-              className="absolute -top-3 -right-3 z-10 w-9 h-9 rounded-full bg-card border border-border text-text shadow-lg flex items-center justify-center hover:bg-text/5 transition"
-            >
-              ✕
-            </button>
-
-            {isPro && (
-              <div className="mb-4 p-4 rounded-2xl bg-ok-surface border border-ok/30 space-y-2">
-                <p className="text-sm font-semibold text-ok">
-                  ✓ {t("আপনি Pro সদস্য — সব কনটেন্ট আনলক করা আছে।", "You're a Pro member — all content is unlocked.")}
-                </p>
-                {account ? (
-                  <p className="text-[11px] text-muted">
-                    {t(
-                      `Admin থেকে দেওয়া Pro (${account.nameEnglish}) — অ্যাকাউন্টে সব ডিভাইসে চলবে।`,
-                      `Admin-granted Pro (${account.nameEnglish}) — works on all devices with this account.`
-                    )}
-                  </p>
-                ) : null}
-              </div>
-            )}
-
-            <ProSubscriptionForm />
+          <div className="mx-auto my-6 max-w-xl" onClick={(e) => e.stopPropagation()}>
+            <ProPanel
+              status={status}
+              remainingMs={remainingMs}
+              onClose={() => setModalOpen(false)}
+              onResetTrial={resetTrial}
+            />
           </div>
         </div>
       )}

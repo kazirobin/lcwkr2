@@ -77,7 +77,7 @@ export default function ProSubscriptionForm() {
         </h2>
         <p className="mx-auto max-w-sm text-xs text-muted sm:text-sm">
           {t(
-            `একবার ৳${PRO_PRICE} দিলে HSK ২–৬, কোর ওয়ার্ড, হানজি প্রো ও সব হোমওয়ার্ক — মেয়াদ শেষ নেই।`,
+            `একবার ৳${PRO_PRICE} দিলে HSK ২–৬, কোর ওয়ার্ড, হানজি প্রো ও সব হোমওয়ার্ক — আজীবন মেয়াদ।`,
             `Pay ৳${PRO_PRICE} once and HSK 2–6, Core Words, Hanzi Pro and every homework tool are yours — no expiry.`,
           )}
         </p>
@@ -150,8 +150,8 @@ export default function ProSubscriptionForm() {
             </div>
             <p className="text-[11px] leading-relaxed text-muted">
               {t(
-                "পাঠিয়ে TrxID দিন। যাচাই হলে Pro চালু — মেয়াদ শেষ নেই।",
-                "Send it, then enter the TrxID. Once verified Pro is on, with no end date.",
+                "পাঠিয়ে TrxID দিন। যাচাই হলে Pro চালু — আজীবন মেয়াদ, কোনো মাসিক চার্জ নেই।",
+                "Send it, then enter the TrxID. Once verified Pro is on — for life, with no monthly charge.",
               )}
             </p>
           </div>
@@ -186,13 +186,18 @@ export default function ProSubscriptionForm() {
           t("কোর ওয়ার্ড বিল্ডার — ফ্ল্যাশকার্ড ও স্ট্রোক", "Core Word Builder — flashcards and stroke order"),
           t("হানজি প্রো — লেখার অনুশীলন ও ট্র্যাকার", "Hanzi Pro — writing practice and progress"),
           t("সব হোমওয়ার্ক, ডায়ালগ ও পরীক্ষা", "All homework, dialogue and exam work"),
-          t("সারাজীবন — কোনো মাসিক চার্জ নেই", "For life — no monthly charge"),
         ].map((line) => (
           <li key={line} className="flex items-start gap-2 text-[13px] leading-snug text-text/80">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok" aria-hidden="true" />
             <span>{line}</span>
           </li>
         ))}
+        <li className="flex items-start gap-2 text-[13px] leading-snug font-semibold text-text">
+          <InfinityIcon className="mt-0.5 size-4 shrink-0 text-secondary" aria-hidden="true" />
+          <span>
+            {t("আজীবন মেয়াদ — কোনো মাসিক চার্জ নেই", "For life — no monthly charge")}
+          </span>
+        </li>
       </ul>
 
       <div className="pt-2 text-center">

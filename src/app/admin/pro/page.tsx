@@ -220,7 +220,7 @@ export default function AdminProPage() {
                 </StatusMark>
                 {r.status === "Active" && (
                   <span className="mt-1 block text-[10px] text-text/45">
-                    {t("মেয়াদ শেষ নেই", "no expiry")}
+                    {t("আজীবন মেয়াদ", "lifetime")}
                   </span>
                 )}
               </Td>

@@ -3,29 +3,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import { useLanguage } from "@/i18n";
-import { useAccount } from "@/features/student-auth";
 import ThemeButton from "./ThemeButton";
 import AccountButton from "./AccountButton";
 import PinyinToggle from "@/components/ui/PinyinToggle";
-import ProSubscriptionForm from "@/features/chinese-words/components/ProSubscriptionForm";
+import ProPanel from "@/features/chinese-words/components/ProPanel";
+import { useProAccess } from "@/features/chinese-words/components/pro-access";
 import { FacebookIcon } from "@/components/icons/FacebookIcon";
 
 // ============================================
 // CONFIGURATION
 // ============================================
-
-const VALID_ACCESS_PASSWORDS = [
-  "CHINESE8131",
-  "ROBIN2026",
-  "PREMIUM2026",
-  "LCWKR99",
-];
-
-const STORAGE_KEY = "chinese_words_unlocked";
 
 // Primary call-to-action — the live-class WhatsApp group (mirrors the Hero CTA).
 const WHATSAPP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
@@ -100,9 +91,9 @@ const PANEL_GLASS =
 
 export default function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
   const { language, setLanguage } = useLanguage();
-  const { student: navAccount } = useAccount();
+  // The nav's Pro panel shows the same status the Pro pages do.
+  const { status: proStatus, remainingMs: proRemaining } = useProAccess();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<DropdownId | null>(null);
@@ -111,8 +102,6 @@ export default function Nav() {
 
   // Protected feature modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [enteredPassword, setEnteredPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
 
   const navRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -250,33 +239,10 @@ export default function Nav() {
     e.preventDefault();
     closeAll();
 
-    const isUnlocked = localStorage.getItem(STORAGE_KEY) === "true";
-    if (isUnlocked) {
-      router.push(href);
-    } else {
-      setPasswordError("");
-      setEnteredPassword("");
-      setShowPasswordModal(true);
-    }
-  };
-
-  // Password submission handler
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanPass = enteredPassword.trim();
-
-    if (VALID_ACCESS_PASSWORDS.includes(cleanPass)) {
-      localStorage.setItem(STORAGE_KEY, "true");
-      setShowPasswordModal(false);
-      setEnteredPassword("");
-      router.push("/chinese-words");
-    } else {
-      setPasswordError(
-        language === "bn"
-          ? "ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন অথবা সাবস্ক্রিপশন নিন।"
-          : "Invalid password! Please provide a valid subscription password."
-      );
-    }
+    // Pro is opened through the one shared panel; there is no password box
+    // here any more, because Pro is granted on the student's account.
+    setShowPasswordModal(true);
+    void href;
   };
 
   // Render a single link.
@@ -681,104 +647,23 @@ export default function Nav() {
         </div>
       </nav>
 
-      {/* ============================================
-          PAID ACCESS & PASSWORD MODAL + FORM
-      ============================================ */}
+      {/* The Pro panel. This is the one place the form lives in the nav �
+          the Pro pages open the very same component, so a visitor never sees
+          two copies of it at once. */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-text/15 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6 text-text custom-scrollbar">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowPasswordModal(false)}
-              className="sticky top-0 float-right z-10 p-2 rounded-full bg-background/80 hover:bg-text/10 text-text/60 hover:text-text backdrop-blur-sm transition-colors cursor-pointer border border-text/10"
-              aria-label="Close modal"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Header Badge */}
-            <div className="space-y-2 text-center pt-2">
-              <span className="inline-block px-3 py-1 bg-secondary/10 text-secondary border border-secondary/20 rounded-full text-xs font-mono font-bold tracking-wider uppercase">
-                {t("Premium Feature", "প্রিমিয়াম ফিচার")}
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold">
-                {t("Chinese Core Word Builder", "চাইনিজ কোর ওয়ার্ড বিল্ডার")}
-              </h2>
-              <p className="text-xs sm:text-sm text-text/70 leading-relaxed max-w-lg mx-auto">
-                {t(
-                  "Pro সদস্য হতে হবে শিক্ষার্থী — পাসওয়ার্ড শুধু লগইন করা শিক্ষার্থীর জন্য। নতুন Pro রেজিস্ট্রেশন শুধু admin দেয়।",
-                  "Pro members must be students — password works only when logged in. Only admin grants new Pro."
-                )}
-              </p>
-            </div>
-
-            {navAccount ? (
-            <>
-            {/* 1. Quick Password Unlock Section (logged-in students only) */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-text/5 border border-text/10 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text/80">
-                {t("পাসওয়ার্ড দিয়ে দ্রুত আনলক করুন", "Quick Unlock With Password")}
-              </h3>
-              <form onSubmit={handlePasswordSubmit} className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="password"
-                  placeholder={t("পাসওয়ার্ড দিন", "Enter password")}
-                  value={enteredPassword}
-                  onChange={(e) => {
-                    setEnteredPassword(e.target.value);
-                    if (passwordError) setPasswordError("");
-                  }}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-text/20 bg-background text-text text-sm focus:outline-none focus:border-secondary transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="py-2.5 px-6 bg-secondary text-background hover:opacity-90 font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer shrink-0"
-                >
-                  {t("আনলক", "Unlock")}
-                </button>
-              </form>
-
-              {passwordError && (
-                <p className="text-xs text-secondary font-medium pt-1">
-                  {passwordError}
-                </p>
-              )}
-            </div>
-            </>
-            ) : (
-            <div className="p-5 rounded-2xl bg-text/5 border border-text/10 text-center space-y-3">
-              <p className="text-3xl">🔑</p>
-              <p className="text-sm font-semibold text-text">
-                {t(
-                  "Pro আনলক করতে আগে student অ্যাকাউন্টে লগইন করুন।",
-                  "Login with your student account first to unlock Pro."
-                )}
-              </p>
-              <Link
-                href="/login"
-                onClick={closeAll}
-                className="inline-block px-6 py-2.5 bg-secondary text-background font-bold rounded-xl text-sm hover:opacity-90 transition"
-              >
-                {t("লগইন", "Login")}
-              </Link>
-            </div>
-            )}
-
-            {/* Separator */}
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-text/10"></div>
-              <span className="shrink mx-3 text-xs text-text/40 font-mono">
-                {t("নিচে প্রো অ্যাক্সেস নিন", "GET PRO ACCESS BELOW")}
-              </span>
-              <div className="flex-grow border-t border-text/10"></div>
-            </div>
-
-            {/* 2. Embedded bKash Subscription Form */}
-            <div className="pt-1">
-              <ProSubscriptionForm />
-            </div>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setShowPasswordModal(false)}
+        >
+          <div
+            className="relative my-4 w-full max-w-xl text-text"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ProPanel
+              status={proStatus}
+              remainingMs={proRemaining}
+              onClose={() => setShowPasswordModal(false)}
+            />
           </div>
         </div>
       )}

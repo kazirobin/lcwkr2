@@ -303,6 +303,77 @@ function AdminQuickBar() {
     el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.6), behavior: "smooth" });
   };
 
+  /**
+   * Press-and-drag to scroll, on a mouse as well as a finger.
+   *
+   * Native touch scrolling already works, so touch is left alone except that a
+   * horizontal drag must not fire the link underneath it. A mouse has no such
+   * behaviour, so holding the button and dragging would otherwise select text
+   * and leave the bar stuck.
+   */
+  const drag = useRef<{
+    id: number;
+    startX: number;
+    startScroll: number;
+    moved: boolean;
+    pointerType: string;
+  } | null>(null);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLUListElement>) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const el = listRef.current;
+    if (!el) return;
+    drag.current = {
+      id: e.pointerId,
+      startX: e.clientX,
+      startScroll: el.scrollLeft,
+      moved: false,
+      pointerType: e.pointerType,
+    };
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLUListElement>) => {
+    const d = drag.current;
+    const el = listRef.current;
+    if (!d || !el || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.startX;
+    if (!d.moved && Math.abs(dx) > 6) {
+      d.moved = true;
+      // Only a mouse needs capturing and cursor feedback; a finger is already
+      // scrolling natively and must keep its own behaviour.
+      if (d.pointerType === "mouse") {
+        el.setPointerCapture(e.pointerId);
+        document.body.style.userSelect = "none";
+        document.body.style.cursor = "grabbing";
+      }
+    }
+    if (d.moved) {
+      // A drag that started on a link must not also follow it.
+      e.preventDefault();
+      el.scrollLeft = d.startScroll - dx;
+    }
+  };
+
+  const endDrag = (e: React.PointerEvent<HTMLUListElement>) => {
+    const d = drag.current;
+    const el = listRef.current;
+    drag.current = null;
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+    if (!d || !el || d.id !== e.pointerId) return;
+    if (el.hasPointerCapture?.(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    measure();
+  };
+
+  /** Swallow the click a drag would otherwise turn into a navigation. */
+  const onClickCapture = (e: React.MouseEvent<HTMLUListElement>) => {
+    const d = drag.current;
+    if (d?.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
     <nav
       aria-label={t("অ্যাডমিন মডিউল", "Admin modules")}
@@ -325,7 +396,12 @@ function AdminQuickBar() {
         <ul
           ref={listRef}
           onScroll={measure}
-          className="flex flex-1 items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] sm:px-10 lg:px-12 [&::-webkit-scrollbar]:hidden"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClickCapture={onClickCapture}
+          className="flex flex-1 cursor-grab touch-pan-x items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] active:cursor-grabbing sm:px-10 lg:px-12 [&::-webkit-scrollbar]:hidden"
         >
           {ADMIN_MODULES.map((m) => {
             const Icon = m.icon;
@@ -335,6 +411,7 @@ function AdminQuickBar() {
               <li key={m.href} className="shrink-0">
                 <Link
                   href={m.href}
+                  draggable={false}
                   aria-current={active ? "page" : undefined}
                   className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
                     active

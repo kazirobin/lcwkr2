@@ -32,6 +32,8 @@ export interface ICourseDoc {
    */
   completed: boolean;
   completedAt?: Date;
+  /** True for the one course the academy page features in its banner. */
+  featured: boolean;
   /** Date the paid enrollment window closes, YYYY-MM-DD. Empty = no deadline. */
   enrollmentDeadline?: string;
   // ── new professional LMS fields ──
@@ -100,6 +102,7 @@ const CourseSchema = new Schema<ICourseDoc>(
     launchedAt: { type: Date, default: null },
     completed: { type: Boolean, default: false, index: true },
     completedAt: { type: Date, default: null },
+    featured: { type: Boolean, default: false, index: true },
     enrollmentDeadline: { type: String, default: "" },
     // ── new professional LMS fields ──
     lessons: [

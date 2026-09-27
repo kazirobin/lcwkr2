@@ -143,10 +143,10 @@ function SyllableCard({
       aria-label={`${mark} ${syllable.hanzi} — ${syllable.meaning}`}
       className={`group relative flex min-w-[7.5rem] flex-1 flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
         practice && !revealed
-          ? "border-text/15 bg-background/80 hover:border-primary/50"
+          ? "border-text/20 bg-card hover:border-primary/50"
           : practice
             ? "border-primary/45 bg-primary/10"
-            : "border-text/12 bg-background/80 hover:border-secondary/50 hover:bg-secondary/7"
+            : "border-text/12 bg-card hover:border-secondary/50 hover:bg-secondary/7"
       }`}
     >
       <span className="flex items-center gap-1.5">
@@ -159,7 +159,7 @@ function SyllableCard({
       </span>
 
       {practice && !revealed ? (
-        <span className="flex size-8 items-center justify-center rounded-full bg-text/5 text-text/40">
+        <span className="flex size-8 items-center justify-center rounded-full bg-text/5 text-text/55">
           <Ear className="size-4" aria-hidden="true" />
         </span>
       ) : (
@@ -168,7 +168,7 @@ function SyllableCard({
             {syllable.hanzi}
           </span>
           <span className="text-[11px] leading-snug text-text/60">{syllable.meaning}</span>
-          <span className="font-bn text-[11px] leading-snug text-text/45">
+          <span className="font-bn text-[11px] leading-snug text-text/60">
             {syllable.meaningBn}
           </span>
         </>
@@ -203,7 +203,7 @@ function LetterGroup({
         <span className="inline-flex size-8 items-center justify-center rounded-lg bg-secondary/15 font-mono text-lg font-bold text-secondary">
           {label}
         </span>
-        <span className="text-[11px] text-text/45">
+        <span className="text-[11px] text-text/60">
           {items.length} {countLabel}
         </span>
       </div>
@@ -299,7 +299,10 @@ export default function PinyinPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f7f2e8] text-text dark:bg-[#17130f]">
+    // `bg-paper` and `bg-card` are theme tokens, so the page follows the site's
+    // own light and dark palettes instead of a fixed cream that only ever
+    // looked right in one of them.
+    <div className="min-h-screen bg-paper text-text">
       <div className="mx-auto max-w-5xl px-5 pt-28 pb-16 sm:px-6 md:pt-32">
         {/* header */}
         <div className="flex items-center gap-2.5">
@@ -310,7 +313,7 @@ export default function PinyinPage() {
           >
             拼
           </span>
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text/55">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text/65">
             {c.eyebrow}
           </span>
         </div>
@@ -322,35 +325,35 @@ export default function PinyinPage() {
 
         {/* audio status */}
         {voiceState === "none" && (
-          <p className="mt-5 flex items-start gap-2.5 rounded-xl border border-text/12 bg-text/5 px-4 py-3 text-sm text-text/70">
+          <p className="mt-5 flex items-start gap-2.5 rounded-xl border border-warn/35 bg-warn-surface px-4 py-3 text-sm text-text/80">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {c.voiceNone}
           </p>
         )}
         {voiceState === "missing" && (
-          <p className="mt-5 flex items-start gap-2.5 rounded-xl border border-text/12 bg-text/5 px-4 py-3 text-sm text-text/70">
+          <p className="mt-5 flex items-start gap-2.5 rounded-xl border border-warn/35 bg-warn-surface px-4 py-3 text-sm text-text/80">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             {c.voiceMissing}
           </p>
         )}
 
         {/* search */}
-        <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-text/15 bg-background/80 px-3.5 py-2.5 focus-within:border-secondary/50">
-          <Search className="size-4 shrink-0 text-text/40" aria-hidden="true" />
+        <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-text/15 bg-card px-3.5 py-2.5 shadow-sm transition-colors focus-within:border-secondary/60">
+          <Search className="size-4 shrink-0 text-text/55" aria-hidden="true" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={c.search}
             aria-label={c.search}
-            className="w-full bg-transparent text-sm text-text outline-none placeholder:text-text/40"
+            className="w-full bg-transparent text-sm text-text outline-none placeholder:text-text/55"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label={c.clear}
-              className="shrink-0 text-xs font-semibold text-text/45 hover:text-text"
+              className="shrink-0 text-xs font-semibold text-text/60 hover:text-text"
             >
               {c.clear}
             </button>
@@ -373,7 +376,7 @@ export default function PinyinPage() {
               className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors sm:flex-none ${
                 tab === value
                   ? "bg-secondary text-white"
-                  : "border border-text/12 bg-text/5 text-text/60 hover:border-secondary/40 hover:text-text"
+                  : "border border-text/12 bg-card text-text/65 hover:border-secondary/50 hover:text-text"
               }`}
             >
               <Icon className="size-4" aria-hidden="true" />
@@ -394,14 +397,14 @@ export default function PinyinPage() {
             className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
               practice
                 ? "border-primary/40 bg-primary/15 text-primary"
-                : "border-text/15 bg-text/5 text-text/60 hover:border-primary/40"
+                : "border-text/15 bg-card text-text/65 hover:border-primary/50"
             }`}
             aria-pressed={practice}
           >
             <Sparkles className="size-4" aria-hidden="true" />
             {practice ? c.practice : c.reading}
           </button>
-          <span className="inline-flex items-center gap-1.5 text-xs text-text/45">
+          <span className="inline-flex items-center gap-1.5 text-xs text-text/60">
             {heard > 0 && <Check className="size-3.5" aria-hidden="true" />}
             {heard} {c.played}
           </span>
@@ -413,14 +416,14 @@ export default function PinyinPage() {
                 stopSpeaking();
                 setSpeakingKey(null);
               }}
-              className="inline-flex items-center gap-1.5 text-xs text-text/45 underline decoration-text/20 underline-offset-4 hover:text-text"
+              className="inline-flex items-center gap-1.5 text-xs text-text/60 underline decoration-text/20 underline-offset-4 hover:text-text"
             >
               <RotateCcw className="size-3" aria-hidden="true" />
               {c.reset}
             </button>
           )}
           {voiceState === "ready" && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-text/45">
+            <span className="inline-flex items-center gap-1.5 text-xs text-text/60">
               <Volume2 className="size-3.5" aria-hidden="true" />
               {c.voiceOk}
             </span>
@@ -428,8 +431,8 @@ export default function PinyinPage() {
         </div>
 
         {/* tone legend */}
-        <div className="mt-6 rounded-xl border border-text/10 bg-background/60 p-3.5">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-text/55">
+        <div className="mt-6 rounded-xl border border-text/12 bg-card p-3.5">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-text/65">
             <Info className="size-3.5" aria-hidden="true" />
             {c.tones}
           </p>
@@ -437,17 +440,17 @@ export default function PinyinPage() {
             {TONE_LEGEND.map(({ tone, mark, label }) => (
               <span key={tone} className="flex items-baseline gap-1.5 text-xs text-text/65">
                 <span className="font-mono text-base font-bold text-text">{mark}</span>
-                <span className="font-mono text-[10px] text-text/40">{tone}</span>
+                <span className="font-mono text-[10px] text-text/55">{tone}</span>
                 <span>{c[label]}</span>
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-text/45">{c.toneHint}</p>
+          <p className="mt-2 text-[11px] text-text/60">{c.toneHint}</p>
         </div>
 
         {/* groups */}
         {total === 0 ? (
-          <p className="mt-10 rounded-xl border border-dashed border-text/20 px-4 py-10 text-center text-sm text-text/55">
+          <p className="mt-10 rounded-xl border border-dashed border-text/20 px-4 py-10 text-center text-sm text-text/65">
             {c.noResults}
           </p>
         ) : (
@@ -456,7 +459,7 @@ export default function PinyinPage() {
               <h2 className="mb-1 font-serif text-xl font-semibold tracking-tight">
                 {tab === "initials" ? c.initials : c.finals}
               </h2>
-              <p className="mb-4 text-xs text-text/45">
+              <p className="mb-4 text-xs text-text/60">
                 {tab === "initials" ? c.initialsHint : c.finalsHint}
               </p>
               <div className="space-y-3">
@@ -473,7 +476,7 @@ export default function PinyinPage() {
                 ))}
               </div>
             </section>
-            <p className="mt-6 text-center text-xs text-text/40">
+            <p className="mt-6 text-center text-xs text-text/55">
               {total} {c.syllables}
             </p>
           </>
