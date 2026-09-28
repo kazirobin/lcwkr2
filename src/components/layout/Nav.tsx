@@ -236,6 +236,15 @@ export default function Nav() {
 
   // Protected Link Click Handler
   const handleProtectedNavigation = (e: React.MouseEvent, href: string) => {
+    // A member clicking "Chinese Core Words" or "Hanzi Pro" in the nav was
+    // stopped here and shown the paywall instead of the page, because this
+    // handler blocked every click without ever asking whether they had paid.
+    // Now only a visitor without Pro is intercepted.
+    if (proStatus === "pro") {
+      closeAll();
+      return;
+    }
+
     e.preventDefault();
     closeAll();
 
