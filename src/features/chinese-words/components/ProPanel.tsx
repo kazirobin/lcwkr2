@@ -1,10 +1,15 @@
 "use client";
 
-import { CheckCircle2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, MessageCircle, Sparkles, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import ProSubscriptionForm from "./ProSubscriptionForm";
-import { formatRemaining, type ProAccessStatus } from "./pro-access";
+import {
+  formatRemaining,
+  ASK_FOR_MORE_TIME_URL,
+  ADMIN_WHATSAPP_DISPLAY,
+  type ProAccessStatus,
+} from "./pro-access";
 
 /**
  * The one Pro panel.
@@ -16,6 +21,12 @@ import { formatRemaining, type ProAccessStatus } from "./pro-access";
  *
  * Shape: a status line at the top that says where the visitor stands, and the
  * payment form below it only when there is something to pay for.
+ *
+ * `onResetTrial` is a flag, not a callback any more. The preview is ten minutes
+ * once, kept on the server, and only the admin extends it — a button that gave
+ * everybody unlimited extra ten minutes made the promise meaningless. The
+ * affordance is now a WhatsApp message, which is how a renewal actually gets
+ * asked for and granted.
  */
 
 export default function ProPanel({
@@ -27,6 +38,7 @@ export default function ProPanel({
   status: ProAccessStatus;
   remainingMs: number;
   onClose?: () => void;
+  /** Shows the "ask for more time" line when the preview is not running. */
   onResetTrial?: () => void;
 }) {
   const { language } = useLanguage();
@@ -103,14 +115,67 @@ export default function ProPanel({
 
       <ProSubscriptionForm />
 
-      {onResetTrial && !isPro && (
-        <button
-          type="button"
-          onClick={onResetTrial}
-          className="mx-auto mt-4 block text-[11px] text-text/40 underline-offset-2 transition hover:text-text/70 hover:underline"
+      {!isPro && <OutOfTimeChoices onAsk={onResetTrial} />}
+    </div>
+  );
+}
+
+/**
+ * What a visitor is offered once the ten minutes are gone: pay the ৳500, or ask
+ * the teacher for more time.
+ *
+ * Both were previously a single small link under the payment form, which read as
+ * an afterthought — and the one a real person often wants is not the one to pay.
+ * The number is spelled out on the button because most people who want to
+ * message will not go looking for it, and the admin matches the request against
+ * the visitor in /admin/pro-trials once the number arrives.
+ */
+function OutOfTimeChoices({ onAsk }: { onAsk?: () => void }) {
+  const { language } = useLanguage();
+  const t = (bn: string, en: string) => (language === "bn" ? bn : en);
+
+  return (
+    <div className="mt-4 rounded-2xl border border-text/12 bg-background p-4">
+      <p className="text-[12px] font-semibold text-text">
+        {t("দুইটি পথ আছে", "There are two ways forward")}
+      </p>
+
+      <ul className="mt-2.5 space-y-2 text-[12px] leading-relaxed text-text/70">
+        <li className="flex gap-2">
+          <span aria-hidden="true" className="text-secondary">
+            1.
+          </span>
+          <span>
+            {t(
+              "Pro নিন — ৳৫০০ একবার, সব ডিভাইসে আজীবন চালু। উপরের ফর্মে TrxID দিন।",
+              "Take Pro — ৳500 once, yours for life on every device. Put the TrxID in the form above.",
+            )}
+          </span>
+        </li>
+        <li className="flex gap-2">
+          <span aria-hidden="true" className="text-secondary">
+            2.
+          </span>
+          <span>
+            {t(
+              "না চাইলে আরও ১০ মিনিট চাইতে পারেন — সরাসরি মেসেজ করুন।",
+              "Or ask for another ten minutes instead — just message.",
+            )}
+          </span>
+        </li>
+      </ul>
+
+      {onAsk && (
+        <a
+          href={ASK_FOR_MORE_TIME_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-2 rounded-xl border border-ok/40 bg-ok-surface px-4 py-2.5 text-[13px] font-semibold text-ok transition-colors hover:bg-ok/10"
         >
-          {t("আবার ১০ মিনিট দেখুন", "See another 10 minutes")}
-        </button>
+          <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
+          {t("মেসেজ করে সময় বাড়ান", "Message for more time")}
+          <span className="font-mono font-normal opacity-80">{ADMIN_WHATSAPP_DISPLAY}</span>
+        </a>
       )}
     </div>
   );

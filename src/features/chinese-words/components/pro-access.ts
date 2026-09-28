@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@/features/student-auth";
+import { visitorId } from "@/features/analytics/visitor-id";
 
 /**
  * Who is allowed to see Pro content, and for how long.
@@ -34,6 +35,82 @@ function noopSubscribe() {
   return () => {};
 }
 
+type TrialReply = { expiresAt: string; remainingMs: number } | null;
+
+/**
+ * How far through the preview we have already reported to the server.
+ *
+ * Three components watch the gate at once — the nav, the page's own level gate
+ * and the corner badge — and each one kept its own idea of when it last
+ * reported, so a page open for forty seconds booked a hundred and forty. This
+ * is shared by every watcher on the page so "used" means one length of time.
+ */
+let reportedUpTo = Date.now();
+
+/**
+ * Tell the server how much of the preview has just been consumed.
+ *
+ * The admin list shows this, so somebody can tell a visitor who read three
+ * lessons from one who closed the tab straight away. Callers pass nothing; the
+ * module decides whether enough time has passed to be worth a request, which
+ * is what stops three watchers reporting the same stretch three times.
+ */
+function reportBeatUsed(flush = false) {
+  const now = Date.now();
+  const delta = now - reportedUpTo;
+  // On the way out a second is worth flushing; during use, half a minute is the
+  // cadence, and anything less is noise.
+  if (delta < (flush ? 1_000 : 25_000)) return;
+  reportedUpTo = now;
+
+  const id = visitorId();
+  if (!id) return;
+  const payload = JSON.stringify({ action: "USE", visitorId: id, usedMs: delta });
+  if (flush && navigator.sendBeacon) {
+    navigator.sendBeacon("/api/pro/trial", new Blob([payload], { type: "application/json" }));
+    return;
+  }
+  void fetch("/api/pro/trial", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {
+    /* analytics only */
+  });
+}
+
+/**
+ * Ask the server what this browser's window is, creating it on first sight.
+ *
+ * Returns null for the two cases that are not worth failing over: a browser
+ * that cannot give us a visitor id (private mode), and a network or database
+ * problem. Both leave the caller on its own local clock, because a free
+ * preview should never be taken away by infrastructure.
+ */
+async function askServer(who: {
+  phone?: string;
+  name?: string;
+  rollNumber?: number | null;
+}): Promise<TrialReply> {
+  const id = visitorId();
+  if (!id) return null;
+  try {
+    const res = await fetch("/api/pro/trial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId: id, ...who }),
+    });
+    const data = (await res.json()) as {
+      trial?: { expiresAt?: string; remainingMs?: number } | null;
+    };
+    if (!data.trial || typeof data.trial.remainingMs !== "number") return null;
+    return { expiresAt: data.trial.expiresAt ?? "", remainingMs: data.trial.remainingMs };
+  } catch {
+    return null;
+  }
+}
+
 export function useProAccess() {
   const { student: account, checking: accountChecking } = useAccount();
   const [localPro, setLocalPro] = useState(false);
@@ -57,20 +134,64 @@ export function useProAccess() {
     };
   }, []);
 
-  // The ten-minute preview clock, started on the first Pro page a visitor opens.
+  // The ten-minute preview clock.
+  //
+  // The server holds the authoritative window so the admin can see who used the
+  // preview and push it out again when somebody asks. This hook asks for that
+  // window and then counts it down locally once a second, and keeps the old
+  // localStorage stamp as the offline fallback — if the request fails, or the
+  // browser refuses to give us a visitor id, the visitor keeps the ten minutes
+  // they were already owed rather than being shut out by a network problem.
   useEffect(() => {
-    const compute = () => {
+    let alive = true;
+    let expiresAt = 0;
+    let serverAnswered = false;
+
+    const onHide = () => {
+      if (document.visibilityState === "hidden" && serverAnswered) reportBeatUsed(true);
+    };
+    document.addEventListener("visibilitychange", onHide);
+
+    const fromServer = () => {
+      if (expiresAt) return Math.max(0, expiresAt - Date.now());
+      // No server answer yet: fall back to the browser's own clock, starting it
+      // now if this is the first Pro page they have opened.
       try {
         let start = Number(localStorage.getItem(GUEST_KEY));
         if (!start || Number.isNaN(start)) {
           start = Date.now();
           localStorage.setItem(GUEST_KEY, String(start));
         }
-        setGuestState({ remainingMs: Math.max(0, start + TRIAL_MS - Date.now()) });
+        return Math.max(0, start + TRIAL_MS - Date.now());
       } catch {
-        // localStorage unavailable: never lock a learner out of their own trial.
-        setGuestState({ remainingMs: TRIAL_MS });
+        return TRIAL_MS;
       }
+    };
+
+    const compute = () => {
+      if (!alive) return;
+      setGuestState({ remainingMs: fromServer() });
+    };
+
+    const sync = async () => {
+      const reply = await askServer({
+        phone: account?.whatsapp,
+        name: account?.nameEnglish,
+        rollNumber: account?.rollNumber ?? null,
+      });
+      const at = reply?.expiresAt ? Date.parse(reply.expiresAt) : 0;
+      if (reply && at > 0) {
+        expiresAt = at;
+        serverAnswered = true;
+        // Mirror it locally so a reload or a flaky connection still counts the
+        // same clock rather than restarting the ten minutes.
+        try {
+          localStorage.setItem(GUEST_KEY, String(at - TRIAL_MS));
+        } catch {
+          /* ignore */
+        }
+      }
+      compute();
     };
 
     // Both branches go through a microtask: writing the start stamp on the
@@ -80,10 +201,43 @@ export function useProAccess() {
       queueMicrotask(() => setGuestState(null));
       return;
     }
-    queueMicrotask(compute);
+
+    queueMicrotask(() => {
+      compute();
+      // Wait until we know who this is. Syncing earlier would open a trial for
+      // somebody who turns out to be a Pro member a moment later, leaving a
+      // row in the admin's list for someone who never needed one — and it would
+      // open theirs with no name, because the account has not loaded yet. The
+      // effect re-runs when the check finishes, so nothing is lost by waiting.
+      if (!accountChecking) void sync();
+    });
     const timer = setInterval(compute, 1000);
-    return () => clearInterval(timer);
-  }, [localPro, accountPro]);
+
+    // Re-check every half minute so a renewal granted while the tab is open
+    // takes effect without a reload. This is the whole point of putting the
+    // clock on the server. The same beat records what that half minute was
+    // spent on.
+    const poll = setInterval(() => {
+      if (!serverAnswered) return;
+      reportBeatUsed();
+      void sync();
+    }, 30_000);
+
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      clearInterval(poll);
+      if (serverAnswered) reportBeatUsed(true);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [
+    localPro,
+    accountPro,
+    accountChecking,
+    account?.whatsapp,
+    account?.nameEnglish,
+    account?.rollNumber,
+  ]);
 
   const isPro = localPro || accountPro;
 
@@ -108,19 +262,48 @@ export function useProAccess() {
 
   const remainingMs = guestState?.remainingMs ?? TRIAL_MS;
 
-  /** Start the preview over — used by the "try again" link after a reset. */
+  /**
+   * Ask the server for the current window again, without touching the clock.
+   *
+   * The preview used to be restartable by the visitor, an unlimited number of
+   * times, which made "ten minutes once" untrue and made the admin's renew
+   * button pointless. The window now only moves when somebody renews it from
+   * /admin/pro-trials, so this is what runs when a visitor follows the "ask for
+   * more time" link and comes back: they pick up whatever they were granted.
+   */
   const resetTrial = useCallback(() => {
-    try {
-      localStorage.removeItem(GUEST_KEY);
-      localStorage.setItem(GUEST_KEY, String(Date.now()));
-    } catch {
-      /* ignore */
-    }
-    setGuestState({ remainingMs: TRIAL_MS });
-  }, []);
+    void (async () => {
+      const reply = await askServer({
+        phone: account?.whatsapp,
+        name: account?.nameEnglish,
+        rollNumber: account?.rollNumber ?? null,
+      });
+      if (reply) setGuestState({ remainingMs: reply.remainingMs });
+    })();
+  }, [account?.whatsapp, account?.nameEnglish, account?.rollNumber]);
 
   return { status, remainingMs, isPro, resolving, resetTrial };
 }
+
+/**
+ * The teacher's WhatsApp, as a visitor would write it and as a dialler needs it.
+ *
+ * Both live here beside the message so the two cannot disagree: a visitor who
+ * is told one number and reaches a link for another is worse off than one who
+ * was never offered the shortcut.
+ */
+export const ADMIN_WHATSAPP_DISPLAY = "01787881334";
+const ADMIN_WHATSAPP_INTL = "8801787881334";
+
+/**
+ * Where a visitor goes when their ten minutes are up. The message is written out
+ * for them because the request is easier to grant when it arrives with a number
+ * on it, and the admin can match the trial in /admin/pro-trials to the browser
+ * asking.
+ */
+export const ASK_FOR_MORE_TIME_URL = `https://wa.me/${ADMIN_WHATSAPP_INTL}?text=${encodeURIComponent(
+  "আসসালামু আলাইকুম। আমি ওয়েবসাইটে Pro-র ফ্রি ১০ মিনিট প্রিভিউ ব্যবহার করেছি। আরও ১০ মিনিট সময় দিতে পারবেন? আমার নম্বর: ",
+)}`;
 
 /** "9:41" style countdown for the trial badge. */
 export function formatRemaining(ms: number): string {

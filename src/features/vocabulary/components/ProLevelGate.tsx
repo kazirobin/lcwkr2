@@ -4,11 +4,16 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { Clock, Lock } from "lucide-react";
+import { Clock, Lock, MessageCircle } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
-import { formatRemaining, useProAccess } from "@/features/chinese-words/components/pro-access";
+import {
+  formatRemaining,
+  useProAccess,
+  ASK_FOR_MORE_TIME_URL,
+  ADMIN_WHATSAPP_DISPLAY,
+} from "@/features/chinese-words/components/pro-access";
 
 /**
  * Pro gate for a whole level track.
@@ -35,7 +40,7 @@ export default function ProLevelGate({
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
   const { student: account } = useAccount();
-  const { status, remainingMs, isPro, resetTrial } = useProAccess();
+  const { status, remainingMs, isPro } = useProAccess();
   const proRef = useRef<ProAccessHandle>(null);
 
   if (level <= 1) return <>{children}</>;
@@ -97,8 +102,8 @@ export default function ProLevelGate({
         </h1>
         <p className="max-w-md text-sm leading-6 text-text/60">
           {t(
-            `HSK 1 সম্পূর্ণ ফ্রি। HSK ${level}-এর শব্দ, পাঠ ও অনুশীলন দেখতে Pro লাগে — ৳৫০০ সাবস্ক্রিপশনে সব Pro টুল সারাজীবন চালু।`,
-            `HSK 1 is completely free. HSK ${level}'s words, texts and practice need Pro — ৳500 once and every Pro tool is yours for life.`,
+            `HSK 1 সম্পূর্ণ ফ্রি। HSK ${level}-এর শব্দ, পাঠ ও অনুশীলন দেখতে Pro লাগে।`,
+            `HSK 1 is completely free. HSK ${level}'s words, texts and practice need Pro.`,
           )}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -107,7 +112,7 @@ export default function ProLevelGate({
             onClick={() => proRef.current?.open()}
             className="inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 text-sm font-bold text-white shadow-lg transition-opacity hover:opacity-90"
           >
-            ✦ {t("Pro নিন — ৳৫০০", "Get Pro — ৳500")}
+            ✦ {t("Pro নিন — ৳৫০০, আজীবন", "Get Pro — ৳500, for life")}
           </button>
           {!account && (
             <a
@@ -118,13 +123,28 @@ export default function ProLevelGate({
             </a>
           )}
         </div>
-        <button
-          type="button"
-          onClick={resetTrial}
-          className="mt-2 text-[11px] text-text/40 underline-offset-2 hover:underline"
-        >
-          {t("আবার ১০ মিনিট দেখুন", "See another 10 minutes")}
-        </button>
+
+        {/* The other way forward, stated as plainly as the first. Most of the
+            people who land here do not want to pay yet, and a buried link was
+            not offering them anything. */}
+        <div className="mt-1 max-w-md rounded-2xl border border-text/12 bg-background p-4 text-left">
+          <p className="text-[12px] leading-relaxed text-text/70">
+            {t(
+              "১০ মিনিট শেষ হয়ে গেছে। Pro নিতে না চাইলে আরও ১০ মিনিট চাইতে পারেন —",
+              "Your ten minutes are up. If you would rather not take Pro yet, you can ask for another ten —",
+            )}
+          </p>
+          <a
+            href={ASK_FOR_MORE_TIME_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2.5 inline-flex items-center gap-2 rounded-xl border border-ok/40 bg-ok-surface px-4 py-2.5 text-[13px] font-semibold text-ok transition-colors hover:bg-ok/10"
+          >
+            <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
+            {t("মেসেজ করে সময় বাড়ান", "Message for more time")}
+            <span className="font-mono font-normal opacity-80">{ADMIN_WHATSAPP_DISPLAY}</span>
+          </a>
+        </div>
       </div>
       <ProAccessButton ref={proRef} />
     </>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAccount } from "@/features/student-auth";
+import { visitorId } from "./visitor-id";
 
 /**
  * Site-wide traffic recorder.
@@ -19,27 +20,13 @@ import { useAccount } from "@/features/student-auth";
  *     what we read anyway.
  *
  * The visitor id is a random string, not a fingerprint: it exists only to tell
- * "one person" from "two people" in a single day's unique count.
+ * "one person" from "two people" in a single day's unique count. The Pro
+ * preview uses the same id so a trial can be recognised and renewed by the
+ * admin; see ./visitor-id.
  */
 
-const VISITOR_KEY = "lcwkr_visitor_id";
 const CLICK_LIMIT = 40; // distinct labels per page view
 const CLICK_MIN_LENGTH = 2;
-
-function visitorId(): string {
-  try {
-    const existing = window.localStorage.getItem(VISITOR_KEY);
-    if (existing) return existing;
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    window.localStorage.setItem(VISITOR_KEY, id);
-    return id;
-  } catch {
-    return "";
-  }
-}
 
 function send(payload: Record<string, unknown>): void {
   try {
