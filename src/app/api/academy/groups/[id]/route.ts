@@ -3,7 +3,7 @@ import {
   updateStudyGroup,
   deleteStudyGroup,
   getStudyGroup,
-  findEnrolledStudent,
+  findEnrolledStudentByPhone,
   memberOfCourseGroup,
   joinStudyGroup,
   leaveStudyGroup,
@@ -11,31 +11,39 @@ import {
 
 type Props = { params: Promise<{ id: string }> };
 
-// POST /api/academy/groups/[id] — public self-service. body: { action: "join"|"leave", rollNumber }
+// POST /api/academy/groups/[id] — public self-service.
+// body: { action: "join"|"leave", phone }
+//
+// The phone is the account the visitor is signed in as. The roll is looked up
+// from it on the server, so a signed-out visitor cannot join as somebody else
+// by putting a roll number in the body — which is what this used to accept.
 export async function POST(req: NextRequest, props: Props) {
   try {
     const { id } = await props.params;
-    const { action, rollNumber } = await req.json();
+    const { action, phone } = await req.json();
 
     if (action !== "join" && action !== "leave") {
       return NextResponse.json({ error: "action must be \"join\" or \"leave\"." }, { status: 400 });
     }
 
-    const roll = Number(rollNumber);
-    if (!Number.isFinite(roll) || roll <= 0) {
-      return NextResponse.json({ error: "Your roll number is required." }, { status: 400 });
+    const group = await getStudyGroup(id);
+    if (!group) {
+      return NextResponse.json({ error: "Group not found." }, { status: 404 });
     }
 
-    const group = await getStudyGroup(id);
+    const student = await findEnrolledStudentByPhone(String(phone ?? ""), group.courseId);
+    if (!student) {
+      return NextResponse.json(
+        {
+          error:
+            "Sign in with your student account, enrolled in this course, to join or leave a group.",
+        },
+        { status: 403 },
+      );
+    }
+    const roll = student.rollNumber;
 
     if (action === "join") {
-      const student = await findEnrolledStudent(roll, group.courseId);
-      if (!student) {
-        return NextResponse.json(
-          { error: "Roll not found. Check that your roll is approved and enrolled in this course." },
-          { status: 403 },
-        );
-      }
       const already = await memberOfCourseGroup(roll, group.courseId);
       if (already && String((already as any)._id ?? "") !== id) {
         return NextResponse.json(

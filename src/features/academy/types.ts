@@ -2,6 +2,9 @@ export interface ILesson {
   lessonNumber: number;
   title: string;
   description?: string;
+  /** Ticked off by the admin once the lesson has been taught. */
+  done?: boolean;
+  doneAt?: string | Date | null;
 }
 
 export interface IAssignmentSubmission {

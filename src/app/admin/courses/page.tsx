@@ -71,7 +71,7 @@ type Course = {
   featured?: boolean;
   launchedAt?: string;
   enrollmentDeadline?: string;
-  lessons: { lessonNumber: number; title: string; description?: string }[];
+  lessons: { lessonNumber: number; title: string; description?: string; done?: boolean; doneAt?: string | null }[];
   nextClassTopic?: string;
   topics: string[];
   totalLessons: number;
@@ -290,7 +290,10 @@ export default function AdminCoursesPage() {
   const [topicsForm, setTopicsForm] = useState<string[]>([]);
 
   const [lessonsOpen, setLessonsOpen] = useState<Course | null>(null);
-  const [lessonsForm, setLessonsForm] = useState<{ lessonNumber: number; title: string; description: string }[]>([]);
+  const [lessonsForm, setLessonsForm] = useState<
+    { lessonNumber: number; title: string; description: string; done: boolean }[]
+  >([]);
+  const ticks = lessonsForm.filter((l) => l.done).length;
 
   const [groupsOpen, setGroupsOpen] = useState<Course | null>(null);
   const [groups, setGroups] = useState<{ _id: string; courseId: string; label: string; memberRolls: number[] }[]>([]);
@@ -605,7 +608,12 @@ export default function AdminCoursesPage() {
     if (!lessonsOpen) return;
     const clean = lessonsForm
       .filter((l) => l.title.trim())
-      .map((l) => ({ lessonNumber: Number(l.lessonNumber) || 0, title: l.title.trim(), description: l.description.trim() }))
+      .map((l) => ({
+        lessonNumber: Number(l.lessonNumber) || 0,
+        title: l.title.trim(),
+        description: l.description.trim(),
+        done: l.done,
+      }))
       .sort((a, b) => a.lessonNumber - b.lessonNumber);
     const ok = await saveSettings(
       lessonsOpen.courseId,
@@ -613,6 +621,22 @@ export default function AdminCoursesPage() {
       t("পাঠসমূহ সংরক্ষিত হয়েছে।", "Lessons saved."),
     );
     if (ok) setLessonsOpen(null);
+  };
+
+  /**
+   * Tick one lesson off without reopening the whole editor.
+   *
+   * This is the edit made most often — once a week, per batch — and it is saved
+   * on its own so it cannot be lost by a later rename, reorder or a closed
+   * dialog that was never submitted.
+   */
+  const toggleLessonDone = async (course: Course, lessonNumber: number, done: boolean) => {
+    const ok = await saveSettings(
+      course.courseId,
+      { lessonNumber, lessonDone: done },
+      done ? t("পাঠটি সম্পন্ন হিসেবে চিহ্নিত।", "Lesson marked done.") : t("পাঠটি আবার চালু।", "Lesson reopened."),
+    );
+    if (ok) await fetchAll();
   };
 
   /**
@@ -1241,6 +1265,7 @@ export default function AdminCoursesPage() {
                           lessonNumber: l.lessonNumber,
                           title: l.title,
                           description: l.description ?? "",
+                          done: Boolean(l.done),
                         })),
                       );
                       setLessonsOpen(c);
@@ -1268,6 +1293,51 @@ export default function AdminCoursesPage() {
                     {t("স্টাডি গ্রুপ", "Study groups")}
                   </Button>
                 </div>
+
+                {/* Progress and a one-click tick, so the commonest edit — "we
+                    finished lesson 7 today" — never needs the syllabus dialog. */}
+                {c.lessons?.length ? (
+                  <div className="mt-3 rounded-xl border border-text/10 bg-background p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold text-text/60">
+                        {(() => {
+                          const done = c.lessons.filter((l) => l.done).length;
+                          return `${done} / ${c.lessons.length} ${t("পাঠ শেষ", "lessons done")}`;
+                        })()}
+                      </span>
+                      <span className="h-1.5 w-28 overflow-hidden rounded-full bg-text/10">
+                        <span
+                          className="block h-full rounded-full bg-ok transition-all"
+                          style={{
+                            width: `${Math.round(
+                              (c.lessons.filter((l) => l.done).length / c.lessons.length) * 100,
+                            )}%`,
+                          }}
+                        />
+                      </span>
+                    </div>
+
+                    <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                      {c.lessons.map((l) => (
+                        <li key={l.lessonNumber}>
+                          <button
+                            type="button"
+                            onClick={() => toggleLessonDone(c, l.lessonNumber, !l.done)}
+                            title={l.title}
+                            aria-pressed={Boolean(l.done)}
+                            className={`min-w-9 rounded-lg border px-2 py-1 text-[11px] font-bold tabular-nums transition-colors ${
+                              l.done
+                                ? "border-ok bg-ok text-background"
+                                : "border-text/15 bg-card text-text/55 hover:border-text/30"
+                            }`}
+                          >
+                            {l.done ? <Check className="inline size-3" strokeWidth={3} /> : l.lessonNumber}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 {(() => {
                   const latest = c.nextClassTopic || (c.topics && c.topics.length ? c.topics[c.topics.length - 1] : "");
                   return latest ? (
@@ -2099,7 +2169,13 @@ export default function AdminCoursesPage() {
         open={lessonsOpen !== null}
         onClose={() => setLessonsOpen(null)}
         title={t("পাঠসমূহ (সিলেবাস)", "Lessons (syllabus)")}
-        description={lessonsOpen ? `${lessonsOpen.courseName} (${lessonsOpen.courseId})` : undefined}
+        description={
+          lessonsOpen
+            ? `${lessonsOpen.courseName} (${lessonsOpen.courseId}) — ${ticks} ${
+                (lessonsOpen.lessons ?? []).length
+              } টির মধ্যে ${ticks} শেষ`
+            : undefined
+        }
         size="lg"
         footer={
           <>
@@ -2115,8 +2191,26 @@ export default function AdminCoursesPage() {
         {lessonsOpen && (
           <form onSubmit={saveLessons} className="space-y-3">
             {lessonsForm.map((l, i) => (
-              <div key={i} className="rounded-xl border border-text/10 bg-card p-3">
+              <div
+                key={i}
+                className={`rounded-xl border p-3 ${l.done ? "border-ok/35 bg-ok-surface" : "border-text/10 bg-card"}`}
+              >
                 <div className="flex items-center gap-2">
+                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold text-text/70 transition-colors hover:bg-text/5">
+                    <input
+                      type="checkbox"
+                      checked={l.done}
+                      onChange={(e) =>
+                        setLessonsForm((prev) =>
+                          prev.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)),
+                        )
+                      }
+                      className="size-4 accent-[ok]"
+                    />
+                    <span className="hidden sm:inline">
+                      {l.done ? t("হয়ে গেছে", "Done") : t("বাকি", "Left")}
+                    </span>
+                  </label>
                   <Field
                     type="number"
                     min={1}
@@ -2163,7 +2257,12 @@ export default function AdminCoursesPage() {
               onClick={() =>
                 setLessonsForm((prev) => [
                   ...prev,
-                  { lessonNumber: (prev[prev.length - 1]?.lessonNumber ?? 0) + 1, title: "", description: "" },
+                  {
+                    lessonNumber: (prev[prev.length - 1]?.lessonNumber ?? 0) + 1,
+                    title: "",
+                    description: "",
+                    done: false,
+                  },
                 ])
               }
             >

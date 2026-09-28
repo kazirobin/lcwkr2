@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Hash, Plus, RefreshCw, Users } from "lucide-react";
+import { ArrowRight, Hash, LogIn, Plus, RefreshCw, Users } from "lucide-react";
 import { ICourse, IStudent, IStudyGroup } from "@/features/academy";
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth";
 import {
   Breadcrumb,
   Button,
@@ -21,8 +22,17 @@ import {
   useToast,
 } from "@/components/ui";
 
-const ROLL_KEY = "lcwkr_my_roll";
-
+/**
+ * Study groups, self-service.
+ *
+ * Joining used to mean typing a roll number into a dialog. That was the wrong
+ * question: a roll is printed on the roster page, so anybody could put in
+ * somebody else's and join a group as them, and nothing stopped a visitor who
+ * was not a student at all from taking part. The account is the identity now —
+ * sign in and your roll is already known — so the dialog is gone and the server
+ * resolves the roll from the signed-in phone. Not signed in means not joining;
+ * there is no way to enter a roll instead.
+ */
 export default function AcademyGroupsPage() {
   const { language } = useLanguage();
   const toast = useToast();
@@ -30,41 +40,24 @@ export default function AcademyGroupsPage() {
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
   );
+  const { student: account, checking: accountChecking } = useAccount();
 
   const [groups, setGroups] = useState<IStudyGroup[]>([]);
   const [courses, setCourses] = useState<ICourse[]>([]);
   const [students, setStudents] = useState<IStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [myRoll, setMyRoll] = useState<string>("");
-  const [myRollDraft, setMyRollDraft] = useState("");
-  const [rollDialog, setRollDialog] = useState(false);
-
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createCourse, setCreateCourse] = useState("");
   const [createLabel, setCreateLabel] = useState("");
-  const [createRoll, setCreateRoll] = useState("");
 
   const [actionId, setActionId] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(ROLL_KEY);
-      if (saved) setMyRoll(saved.trim());
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const saveRoll = (roll: string) => {
-    setMyRoll(roll);
-    try {
-      window.localStorage.setItem(ROLL_KEY, roll);
-    } catch {
-      /* ignore */
-    }
-  };
+  // The account's roll, or null when nobody is signed in. Nothing else is asked
+  // of the visitor, and nothing they could type would change this.
+  const myRoll = account?.rollNumber ?? null;
+  const signedIn = myRoll != null;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -84,7 +77,18 @@ export default function AcademyGroupsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Deferred through a microtask: fetchData sets state, and doing that
+  // synchronously in the effect body is a cascading render. This is the pattern
+  // the rest of the app uses.
+  useEffect(() => {
+    let alive = true;
+    queueMicrotask(() => {
+      if (alive) void fetchData();
+    });
+    return () => {
+      alive = false;
+    };
+  }, [fetchData]);
 
   const nameByRoll = useMemo(() => {
     const m = new Map<string, string>();
@@ -113,27 +117,13 @@ export default function AcademyGroupsPage() {
   );
 
   const openCreate = () => {
-    setCreateCourse("");
-    setCreateLabel("");
-    setCreateRoll(myRoll);
-    setCreateOpen(true);
-  };
-
-  const ensureMyRoll = () => {
-    if (myRoll) return true;
-    setMyRollDraft("");
-    setRollDialog(true);
-    return false;
-  };
-
-  const submitRoll = () => {
-    const roll = myRollDraft.trim();
-    if (!roll) {
-      toast(t("রোল নম্বর দিন", "Enter your roll number"), "error");
+    if (!signedIn) {
+      toast(t("গ্রুপ তৈরি করতে লগইন করুন।", "Sign in to create a group."), "error");
       return;
     }
-    saveRoll(roll);
-    setRollDialog(false);
+    setCreateCourse("");
+    setCreateLabel("");
+    setCreateOpen(true);
   };
 
   const createGroup = async () => {
@@ -141,9 +131,8 @@ export default function AcademyGroupsPage() {
       toast(t("একটি কোর্স বেছে নিন", "Choose a course"), "error");
       return;
     }
-    const roll = createRoll.trim();
-    if (!roll) {
-      toast(t("আপনার রোল নম্বর দিন", "Enter your roll number"), "error");
+    if (!account?.whatsapp) {
+      toast(t("লগইন করে আবার চেষ্টা করুন।", "Sign in and try again."), "error");
       return;
     }
     setCreating(true);
@@ -154,7 +143,7 @@ export default function AcademyGroupsPage() {
         body: JSON.stringify({
           courseId: createCourse,
           label: createLabel.trim(),
-          rollNumber: roll,
+          phone: account.whatsapp,
         }),
       });
       const data = await res.json();
@@ -162,7 +151,6 @@ export default function AcademyGroupsPage() {
         toast(data.error ?? t("গ্রুপ তৈরি হয়নি", "Could not create group"), "error");
         return;
       }
-      saveRoll(roll);
       setCreateOpen(false);
       toast(t("গ্রুপ তৈরি হয়েছে", "Group created"), "success");
       fetchData();
@@ -174,13 +162,16 @@ export default function AcademyGroupsPage() {
   };
 
   const joinLeave = async (g: IStudyGroup, action: "join" | "leave") => {
-    if (!ensureMyRoll()) return;
+    if (!account?.whatsapp) {
+      toast(t("এর জন্য লগইন করুন।", "Sign in to do that."), "error");
+      return;
+    }
     setActionId(g._id ?? null);
     try {
       const res = await fetch(`/api/academy/groups/${g._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, rollNumber: myRoll }),
+        body: JSON.stringify({ action, phone: account.whatsapp }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -188,7 +179,7 @@ export default function AcademyGroupsPage() {
         return;
       }
       toast(
-        action === "join" ? t("গ্রুপে যোগ হয়েছে", "Joined group") : t("গ্রুপ ত্যাগ করা হয়েছে", "Left group"),
+        action === "join" ? t("গ���পে যোগ হয়েছে", "Joined group") : t("গ্রুপ ত্যাগ করা হয়েছে", "Left group"),
         "success",
       );
       fetchData();
@@ -268,21 +259,35 @@ export default function AcademyGroupsPage() {
         </div>
       </dl>
 
+      {/* Who you are, and what to do about it if you are nobody yet. */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-text/10 bg-card/60 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm text-text/70">
-          <Hash className="h-4 w-4 text-text/40" />
-          {myRoll ? (
-            <>
-              <span className="font-semibold text-text">{t("আপনার রোল", "Your roll")}</span>
-              <span className="font-mono tabular-nums">#{myRoll}</span>
-            </>
-          ) : (
-            <span>{t("গ্রুপে যোগ দিতে আপনার রোল নম্বর দরকার।", "Your roll number is needed to join or create groups.")}</span>
-          )}
-        </div>
-        <Button size="sm" variant="ghost" onClick={() => { setMyRollDraft(myRoll); setRollDialog(true); }}>
-          {myRoll ? t("রোল পরিবর্তন করুন", "Change roll") : t("রোল দিন", "Set your roll")}
-        </Button>
+        {accountChecking ? (
+          <div className="flex items-center gap-2 text-sm text-text/50">
+            <Hash className="h-4 w-4 text-text/40" />
+            {t("আপনার তথ্য দেখা হচ্ছে…", "Checking your account…")}
+          </div>
+        ) : signedIn ? (
+          <div className="flex items-center gap-2 text-sm text-text/70">
+            <Hash className="h-4 w-4 text-text/40" />
+            <span className="font-semibold text-text">{account?.nameEnglish}</span>
+            <span className="font-mono tabular-nums">#{myRoll}</span>
+            <span className="hidden sm:inline">{t("— লগইন করা আছে", "— signed in")}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-text/70">
+            <LogIn className="h-4 w-4 text-text/40" />
+            {t(
+              "গ্রুপে যোগ দিতে বা তৈরি করতে আপনার student account-এ লগইন করুন।",
+              "Sign in to your student account to join or create a group.",
+            )}
+          </div>
+        )}
+
+        {!signedIn && !accountChecking && (
+          <Button size="sm" onClick={() => (window.location.href = "/login")} iconLeft={<LogIn className="h-3.5 w-3.5" />}>
+            {t("লগইন করুন", "Sign in")}
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -326,7 +331,7 @@ export default function AcademyGroupsPage() {
 
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {list.map((g) => {
-                    const isMine = myRoll ? g.memberRolls.includes(Number(myRoll)) : false;
+                    const isMine = myRoll != null && g.memberRolls.includes(myRoll);
                     return (
                       <Card key={g._id || g.label} className="p-4">
                         <div className="flex items-center justify-between gap-2">
@@ -349,7 +354,7 @@ export default function AcademyGroupsPage() {
                                 <span className={name ? "font-semibold text-text" : "italic text-text/45"}>
                                   {name ?? t("অজানা", "Unknown")}
                                 </span>
-                                {myRoll && Number(myRoll) === r && (
+                                {myRoll != null && myRoll === Number(r) && (
                                   <span className="ml-auto rounded bg-text/10 px-1.5 py-0.5 text-[10px] font-bold text-text/70">
                                     {t("আপনি", "You")}
                                   </span>
@@ -359,22 +364,32 @@ export default function AcademyGroupsPage() {
                           })}
                         </ul>
                         <div className="mt-3 border-t border-text/10 pt-3">
-                          {isMine ? (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              loading={actionId === g._id}
-                              onClick={() => joinLeave(g, "leave")}
-                            >
-                              {t("গ্রুপ ত্যাগ করুন", "Leave group")}
-                            </Button>
+                          {signedIn ? (
+                            isMine ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                loading={actionId === g._id}
+                                onClick={() => joinLeave(g, "leave")}
+                              >
+                                {t("গ্রুপ ত্যাগ করুন", "Leave group")}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                loading={actionId === g._id}
+                                onClick={() => joinLeave(g, "join")}
+                              >
+                                {t("গ্রুপে যোগ দিন", "Join group")}
+                              </Button>
+                            )
                           ) : (
                             <Button
                               size="sm"
-                              loading={actionId === g._id}
-                              onClick={() => joinLeave(g, "join")}
+                              variant="ghost"
+                              onClick={() => (window.location.href = "/login")}
                             >
-                              {t("গ্রুপে যোগ দিন", "Join group")}
+                              {t("যোগ দিতে লগইন করুন", "Sign in to join")}
                             </Button>
                           )}
                         </div>
@@ -387,39 +402,6 @@ export default function AcademyGroupsPage() {
           })}
         </div>
       )}
-
-      {/* ══ my roll dialog ══ */}
-      <Dialog
-        open={rollDialog}
-        onClose={() => setRollDialog(false)}
-        title={t("আপনার রোল নম্বর", "Your roll number")}
-        description={t(
-          "'স্টুডেন্ট কনিষ্ঠ' থেকে চেক করে যোগ দিতে পারেন।",
-          "Matching an approved student entry lets you join or create groups.",
-        )}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRollDialog(false)}>
-              {t("বাতিল", "Cancel")}
-            </Button>
-            <Button onClick={submitRoll}>{t("সংরক্ষণ করুন", "Save")}</Button>
-          </>
-        }
-      >
-        <Field label={t("রোল নম্বর", "Roll number")} required hint={t("যেমন 21", "e.g. 21")}>
-          <input
-            className="w-full rounded-lg border border-text/15 bg-card px-3 py-2 text-sm text-text outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
-            inputMode="numeric"
-            autoFocus
-            value={myRollDraft}
-            onChange={(e) => setMyRollDraft(e.target.value.replace(/[^0-9]/g, ""))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") submitRoll();
-            }}
-            placeholder="21"
-          />
-        </Field>
-      </Dialog>
 
       {/* ══ create group dialog ══ */}
       <Dialog
@@ -465,15 +447,12 @@ export default function AcademyGroupsPage() {
             />
           </Field>
 
-          <Field label={t("আপনার রোল নম্বর", "Your roll number")} required>
-            <input
-              className="w-full rounded-lg border border-text/15 bg-card px-3 py-2 text-sm text-text outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
-              inputMode="numeric"
-              value={createRoll}
-              onChange={(e) => setCreateRoll(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="21"
-            />
-          </Field>
+          {signedIn && myRoll != null && (
+            <p className="text-xs text-text/55">
+              {t("গ্রুপটি আপনার নামে তৈরি হবে", "The group will be created under your name")} —{" "}
+              <span className="font-mono">#{myRoll}</span>
+            </p>
+          )}
         </div>
       </Dialog>
     </div>

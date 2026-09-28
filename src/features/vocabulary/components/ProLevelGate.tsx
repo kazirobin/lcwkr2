@@ -4,12 +4,11 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { Clock, Lock, MessageCircle } from "lucide-react";
+import { Lock, MessageCircle } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
 import {
-  formatRemaining,
   useProAccess,
   ASK_FOR_MORE_TIME_URL,
   ADMIN_WHATSAPP_DISPLAY,
@@ -40,7 +39,7 @@ export default function ProLevelGate({
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
   const { student: account } = useAccount();
-  const { status, remainingMs, isPro } = useProAccess();
+  const { status, isPro } = useProAccess();
   const proRef = useRef<ProAccessHandle>(null);
 
   if (level <= 1) return <>{children}</>;
@@ -65,25 +64,12 @@ export default function ProLevelGate({
     );
   }
 
-  // Inside the ten-minute preview.
+  // Inside the ten-minute preview. The corner control already carries the clock
+  // next to the Pro button, so this page adds nothing of its own.
   if (status === "guest") {
-    const ending = remainingMs < 2 * 60 * 1000;
     return (
       <>
         {children}
-        <div
-          className={`fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold shadow-lg ${
-            ending
-              ? "border-danger/45 bg-danger text-white"
-              : "border-secondary/40 bg-secondary text-white"
-          }`}
-        >
-          <Clock className="size-3.5" aria-hidden="true" />
-          <span className="font-mono tabular-nums">{formatRemaining(remainingMs)}</span>
-          <span className="font-normal">
-            {t("ফ্রি Pro প্রিভিউ বাকি", "left of your free Pro preview")}
-          </span>
-        </div>
         <ProAccessButton ref={proRef} />
       </>
     );

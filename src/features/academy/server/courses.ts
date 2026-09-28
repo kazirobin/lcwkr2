@@ -101,6 +101,87 @@ export async function setCourseFeatured(courseId: string, featured: boolean) {
   return Course.findOneAndUpdate({ courseId }, { $set: { featured: Boolean(featured) } }, { new: true });
 }
 
+/** One row of a course's lesson list, as it comes back from the database. */
+type CourseLesson = { lessonNumber: number; title: string; description?: string; done?: boolean; doneAt?: Date | null };
+
+/**
+ * How much of a course has been taught, counted from the lesson list.
+ *
+ * The list is the answer rather than `totalLessons`, which is what the course
+ * was sold as and never changes. Counting what is actually ticked off is what
+ * a student asking "how far are you?" wants to hear.
+ */
+export function lessonProgress(course: {
+  lessons?: Array<{ done?: boolean }>;
+  totalLessons?: number;
+}) {
+  const list = course.lessons ?? [];
+  const done = list.filter((l) => l.done).length;
+  // With no lesson list at all there is nothing to count, so the total is left
+  // at zero rather than showing "0 of 15 done" for a course nobody has listed.
+  const total = list.length;
+  return { done, total, remaining: Math.max(0, total - done), planned: course.totalLessons ?? 0 };
+}
+
+/**
+ * Replace a course's lesson list.
+ *
+ * Existing lessons are matched by lesson number so ticking one off and then
+ * reordering the list does not lose the ticks; a number that is new gets
+ * `done: false` and one that is gone is dropped.
+ */
+export async function setCourseLessons(
+  courseId: string,
+  lessons: Array<{ lessonNumber: number; title: string; description?: string; done?: boolean }>,
+) {
+  await connectDB();
+  // lean for the same reason as setLessonDone: a Mongoose subdocument cannot be
+  // spread without losing its fields, and this reads a lesson's doneAt.
+  const course = await Course.findOne({ courseId }).lean();
+  if (!course) return null;
+
+  const previous = new Map<number, CourseLesson>(
+    (course.lessons ?? []).map((l: CourseLesson) => [Number(l.lessonNumber), l]),
+  );
+  const cleaned = lessons
+    .map((l) => ({
+      lessonNumber: Number(l.lessonNumber),
+      title: String(l.title ?? "").trim(),
+      description: String(l.description ?? "").trim(),
+      done: Boolean(l.done),
+      doneAt: l.done ? (previous.get(Number(l.lessonNumber))?.doneAt ?? new Date()) : null,
+    }))
+    .filter((l) => Number.isFinite(l.lessonNumber) && l.lessonNumber > 0 && l.title)
+    .sort((a, b) => a.lessonNumber - b.lessonNumber);
+
+  return Course.findOneAndUpdate(
+    { courseId },
+    { $set: { lessons: cleaned, totalLessons: cleaned.length || course.totalLessons } },
+    { new: true },
+  );
+}
+
+/** Tick one lesson off, or back on. The single most common edit. */
+export async function setLessonDone(courseId: string, lessonNumber: number, done: boolean) {
+  await connectDB();
+  // lean, so the lessons come back as plain objects. Spreading a Mongoose
+  // subdocument copies its internals rather than its fields, which quietly
+  // dropped `lessonNumber` from the lesson being ticked and left the write a
+  // no-op — the admin pressed the button and nothing changed.
+  const course = await Course.findOne({ courseId }).lean();
+  if (!course) return null;
+  const target = Number(lessonNumber);
+  const existing: CourseLesson[] = course.lessons ?? [];
+  if (!existing.some((l) => Number(l.lessonNumber) === target)) return null;
+
+  const next = existing.map((l) =>
+    Number(l.lessonNumber) === target
+      ? { ...l, done: Boolean(done), doneAt: done ? new Date() : null }
+      : l,
+  );
+  return Course.findOneAndUpdate({ courseId }, { $set: { lessons: next } }, { returnDocument: "after" });
+}
+
 /**
  * Open or close paid enrollment. The first launch stamps `launchedAt`, so the
  * admin can see when a course actually went on sale. A completed course has to

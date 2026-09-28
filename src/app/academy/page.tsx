@@ -14,16 +14,11 @@ import {
   GraduationCap,
   Layers,
   Lock,
-  MapPin,
-  Phone,
   PlayCircle,
   RefreshCw,
-  Rocket,
-  Sparkles,
   Trophy,
   Users,
   Video,
-  Wallet,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { FacebookIcon } from "@/components/icons/FacebookIcon";
@@ -34,7 +29,6 @@ import {
   Button,
   ButtonLink,
   Card,
-  Dialog,
   Eyebrow,
   Field,
   IconButton,
@@ -148,107 +142,6 @@ export default function AcademyHubPage() {
   useEffect(() => {
     queueMicrotask(() => fetchLive());
   }, [fetchLive]);
-
-  // ── upcoming HSK-1 batch enrollment ───────────────────────────────────
-  const BATCH_COURSE_ID = "HSK-101";
-  const BATCH_CAPACITY = 20;
-  const BATCH_FEE = "১,০০০";
-  const enrollmentAdminWhatsApp = process.env.NEXT_PUBLIC_ADMIN_WHATSAPP?.replace(/[^0-9]/g, "") || "8801787881334";
-
-  const [enrollCount, setEnrollCount] = useState<{ enrolled: number; remaining: number }>({
-    enrolled: 0,
-    remaining: BATCH_CAPACITY,
-  });
-  const [enrollForm, setEnrollForm] = useState({ name: "", whatsapp: "", trxId: "", location: "" });
-  const [enrollErrors, setEnrollErrors] = useState<Record<string, string>>({});
-  const [enrollBusy, setEnrollBusy] = useState(false);
-  const [enrollMsg, setEnrollMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [enrollSubmitted, setEnrollSubmitted] = useState(false);
-  // HSK-1 registration popup — "same as other course registration"
-  const [enrollOpen, setEnrollOpen] = useState(false);
-
-  const fetchEnrollCount = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/enrollments?courseId=${encodeURIComponent(BATCH_COURSE_ID)}`, { cache: "no-store" });
-      const data = await res.json();
-      if (data.success) {
-        setEnrollCount({ enrolled: Number(data.enrolled) || 0, remaining: Number(data.remaining) ?? BATCH_CAPACITY });
-      }
-    } catch {
-      /* keep defaults */
-    }
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => fetchEnrollCount());
-  }, [fetchEnrollCount]);
-
-  const setEnroll = (key: keyof typeof enrollForm, value: string) => {
-    setEnrollForm((f) => ({ ...f, [key]: value }));
-    setEnrollErrors((e) => {
-      if (!e[key]) return e;
-      const next = { ...e };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const submitEnrollment = async () => {
-    const errs: Record<string, string> = {};
-    if (enrollForm.name.trim().length < 2)
-      errs.name = t("অন্তত ২ অক্ষরের নাম দিন।", "Enter your name (min 2 chars).");
-    if (!/^[0-9+\- ]{9,}$/.test(enrollForm.whatsapp.trim()))
-      errs.whatsapp = t("সঠিক WhatsApp নম্বর দিন।", "Enter a valid WhatsApp number.");
-    if (enrollForm.trxId.trim().length < 4)
-      errs.trxId = t("bKash TrxID দিন।", "Enter the bKash TrxID.");
-    if (enrollForm.location.trim().length < 2)
-      errs.location = t("আপনার এলাকা লিখুন।", "Enter your location.");
-    setEnrollErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-
-    setEnrollBusy(true);
-    setEnrollMsg(null);
-    try {
-      const res = await fetch("/api/enrollments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId: BATCH_COURSE_ID,
-          name: enrollForm.name.trim(),
-          whatsapp: enrollForm.whatsapp.trim(),
-          trxId: enrollForm.trxId.trim(),
-          location: enrollForm.location.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        setEnrollMsg({ ok: false, text: data.message || data.error || t("রেজিস্ট্রেশন ব্যর্থ হয়েছে।", "Registration failed.") });
-        return;
-      }
-      setEnrollCount({
-        enrolled: Number(data.enrolled) || 0,
-        remaining: Number(data.remaining) ?? BATCH_CAPACITY - (Number(data.enrolled) || 0),
-      });
-      setEnrollSubmitted(true);
-      setEnrollOpen(false);
-      // forward the details to the academy WhatsApp
-      const waText = [
-        "🎉 *HSK-1 Batch — New Enrollment!*",
-        "",
-        `👤 *Name:* ${enrollForm.name.trim()}`,
-        `📱 *WhatsApp:* ${enrollForm.whatsapp.trim()}`,
-        `📍 *Location:* ${enrollForm.location.trim()}`,
-        `🧾 *TrxID:* ${enrollForm.trxId.trim()}`,
-        `💰 *Fee:* ${BATCH_FEE} টাকা`,
-        `🪑 *Seats left:* ${Number(data.remaining) ?? 0}`,
-      ].join("\n");
-      window.open(`https://wa.me/${enrollmentAdminWhatsApp}?text=${encodeURIComponent(waText)}`, "_blank", "noopener");
-    } catch {
-      setEnrollMsg({ ok: false, text: t("সার্ভারে সমস্যা হয়েছে, আবার চেষ্টা করুন।", "Something went wrong. Please try again.") });
-    } finally {
-      setEnrollBusy(false);
-    }
-  };
 
   // open sessions WITH a meet link — only those are joinable
   const openSessions = useMemo(
@@ -448,164 +341,6 @@ export default function AcademyHubPage() {
           </>
         }
       />
-
-      {/* ═══════════ UPCOMING HSK-1 BATCH ═══════════ */}
-      <section className="mt-8">
-        <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent" aria-hidden="true" />
-          <div className="pointer-events-none absolute -right-10 -top-16 text-[180px] font-extrabold leading-none text-primary/[0.06]" aria-hidden="true">
-            汉
-          </div>
-
-          <div className="relative p-6 sm:p-9">
-            {/* heading row */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Eyebrow seal="启" label={t("আসন্ন ব্যাচ", "Upcoming batch")} />
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-                <Rocket className="h-4 w-4" />
-                {t("শীঘ্রই শুরু", "Starting soon")}
-              </span>
-            </div>
-
-            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold leading-tight tracking-tight text-text sm:text-4xl">
-              {t("মাত্র ১ মাসে HSK 1 পরীক্ষার সম্পূর্ণ প্রস্তুতি!", "Complete HSK 1 exam prep in just 1 month!")}
-            </h2>
-
-            {/* motivation strip */}
-            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3.5 sm:px-5">
-              <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" />
-              <p className="text-sm font-semibold leading-relaxed text-text/85 sm:text-base">
-                {t(
-                  "এই কোর্সটি শেষ করতে পারলে ডিসেম্বরের HSK 1 পরীক্ষা — আপনার প্রথম HSK — সহজেই দেওয়া সম্ভব হবে। প্রতিদিন একটু একটু করে প্রস্তুতি নিন, আমরা বাকিটা গাইড করি।",
-                  "Finish this course and the December HSK 1 exam — your very first HSK — becomes easy to crack. Prepare a little every day; we guide the rest.",
-                )}
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:gap-8">
-              {/* left — benefits */}
-              <div className="flex flex-col gap-5">
-                <ul className="space-y-3">
-                  {[
-                    { bn: "সপ্তাহে ৩টি লাইভ ক্লাস — নতুন শিক্ষার্থীদের জন্য একদম সহজ ধাপ", en: "3 live classes a week — beginner-friendly, step by step" },
-                    { bn: "মোট ১৫টি ক্লাসে পুরো সিলেবাস শেষ", en: "Full syllabus covered in 15 classes" },
-                    { bn: "স্পেশাল মক টেস্ট ও প্র্যাকটিস ম্যাটেরিয়াল", en: "Special mock tests & practice material" },
-                    { bn: "২০ জনের ছোট ব্যাচ — প্রতিটা শিক্ষার্থীর দিকে খেয়াল", en: "Small 20-seat batch — personal attention for everyone" },
-                  ].map((it) => (
-                    <li key={it.en} className="flex items-start gap-3 text-[15px] leading-relaxed text-text/80 sm:text-base">
-                      <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-ok/15 text-ok">
-                        <Check className="size-3.5" strokeWidth={3} />
-                      </span>
-                      {t(it.bn, it.en)}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-auto grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-text/10 bg-background/50 p-4">
-                    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-text/50">
-                      <Users className="size-4" />
-                      {t("ব্যাচ সাইজ", "Batch size")}
-                    </p>
-                    <p className="mt-1.5 text-lg font-extrabold text-text">
-                      {t("মাত্র ২০ জন", "Only 20")}
-                    </p>
-                    <p className="text-xs text-text/50">
-                      {t("ব্যক্তিগত পরিচর্যার জন্য", "For personal attention")}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
-                      <Wallet className="size-4" />
-                      {t("কোর্স ফি", "Course fee")}
-                    </p>
-                    <p className="mt-1.5 text-lg font-extrabold text-primary">{BATCH_FEE} {t("টাকা", "BDT")}</p>
-                    <p className="text-xs text-text/50">
-                      {t("আজকের সেরা অফার", "This year's best offer")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* right — seats + registration */}
-              <div className="flex flex-col gap-4 rounded-2xl border border-text/10 bg-background/40 p-5 sm:p-6">
-                {/* seat meter */}
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-text/55">
-                      {t("আসন সংরক্ষণ", "Seats")}
-                    </span>
-                    <span className="font-mono text-sm font-bold tabular-nums text-text/70">
-                      {enrollCount.enrolled}/{BATCH_CAPACITY} {t("বুকড", "booked")}
-                    </span>
-                  </div>
-                  <ProgressBar
-                    value={enrollCount.enrolled}
-                    max={BATCH_CAPACITY}
-                    label={t("বুকড আসন", "Seats booked")}
-                  />
-                  <p className="mt-2.5 text-sm text-text/60">
-                    {enrollCount.remaining > 0 ? (
-                      <>
-                        {t("বাকি", "Only")}{" "}
-                        <span className="font-bold text-text">{enrollCount.remaining} {t("টি আসন", "seats left")}</span>{" "}
-                        — {t("২০ জন পূর্ণ হলে ব্যাচ শুরু হবে।", "the batch starts once 20 students enroll.")}
-                      </>
-                    ) : (
-                      <span className="font-bold text-danger">
-                        {t("সব আসন পূর্ণ — ব্যাচ শীঘ্রই শুরু হবে।", "Batch is full — starting soon.")}
-                      </span>
-                    )}
-                  </p>
-                </div>
-
-                {/* registration */}
-                {enrollSubmitted ? (
-                  <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-ok/30 bg-ok/[0.06] px-5 py-8 text-center">
-                    <span className="inline-flex size-11 items-center justify-center rounded-full bg-ok/15 text-ok">
-                      <Check className="size-6" strokeWidth={3} />
-                    </span>
-                    <p className="mt-3 text-base font-bold text-text">
-                      {t("আপনার সিট নিশ্চিত হয়েছে!", "Your seat is reserved!")}
-                    </p>
-                    <p className="mt-1 text-sm text-text/60">
-                      {t(
-                        "আপনার তথ্য একাডেমিতে পাঠানো হয়েছে। WhatsApp নিশ্চিতকরণ চাইলে অপেক্ষা করুন।",
-                        "Your details were sent to the academy. Watch your WhatsApp for confirmation.",
-                      )}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-1 flex-col justify-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 sm:p-6">
-                    <p className="flex items-start gap-1.5 rounded-lg border border-text/10 bg-background/50 px-3 py-2 text-xs text-text/55">
-                      <Phone className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                      {t(
-                        "১,০০০ টাকা bKash করুন 01787881334-এ → TrxID দিয়ে নিবন্ধন সম্পূর্ণ করুন।",
-                        "Send 1,000 BDT to bKash 01787881334 → complete registration with your TrxID.",
-                      )}
-                    </p>
-                    <Button
-                      type="button"
-                      size="md"
-                      disabled={enrollCount.remaining <= 0}
-                      className="mt-1 w-full"
-                      onClick={() => {
-                        setEnrollMsg(null);
-                        setEnrollOpen(true);
-                      }}
-                      iconRight={<ArrowRight className="size-4" />}
-                    >
-                      {enrollCount.remaining <= 0
-                        ? t("সিট পূর্ণ", "Batch full")
-                        : t("রেজিস্ট্রেশন করুন", "Register now")}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ═══════════ LIVE CLASS PANEL ═══════════ */}
        {openSessions.length > 0 && selected && (
@@ -1160,88 +895,6 @@ export default function AcademyHubPage() {
           </ul>
         </section>
       )}
-
-      {/* HSK-1 registration popup */}
-      <Dialog
-        open={enrollOpen}
-        onClose={() => setEnrollOpen(false)}
-        title={t("HSK 1 ব্যাচে রেজিস্ট্রেশন", "HSK 1 batch registration")}
-        description={t(
-          `ফি ${BATCH_FEE} টাকা bKash করুন 01787881334-এ, তারপর TrxID দিয়ে ফর্মটি পূরণ করুন।`,
-          `Send the ${BATCH_FEE} BDT fee to bKash 01787881334, then fill the form below with your TrxID.`,
-        )}
-      >
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void submitEnrollment();
-          }}
-        >
-          <Field
-            label={t("নাম", "Name")}
-            placeholder={t("আপনার পুরো নাম", "Your full name")}
-            value={enrollForm.name}
-            error={enrollErrors.name}
-            onChange={(e) => setEnroll("name", e.target.value)}
-          />
-          <Field
-            label={t("WhatsApp নম্বর", "WhatsApp number")}
-            type="tel"
-            placeholder="017XXXXXXXX"
-            value={enrollForm.whatsapp}
-            error={enrollErrors.whatsapp}
-            onChange={(e) => setEnroll("whatsapp", e.target.value)}
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field
-              label={t("bKash TrxID", "bKash TrxID")}
-              placeholder="ABC123456789"
-              value={enrollForm.trxId}
-              error={enrollErrors.trxId}
-              onChange={(e) => setEnroll("trxId", e.target.value)}
-            />
-            <Field
-              label={t("এলাকা", "Location")}
-              placeholder={t("যে শহরে থাকেন", "Your city / area")}
-              value={enrollForm.location}
-              error={enrollErrors.location}
-              onChange={(e) => setEnroll("location", e.target.value)}
-            />
-          </div>
-
-          <p className="flex items-start gap-1.5 rounded-lg border border-text/10 bg-background/50 px-3 py-2 text-xs text-text/55">
-            <Phone className="mt-0.5 size-3.5 shrink-0 text-primary" />
-            {t(
-              "আপনার তথ্য একাডেমির WhatsApp-এ (01787881334) পাঠানো হবে।",
-              "Your details are forwarded to the academy on WhatsApp (01787881334).",
-            )}
-          </p>
-
-          {enrollMsg && !enrollMsg.ok && (
-            <p
-              role="alert"
-              className="rounded-lg border border-danger/30 bg-danger/[0.06] px-3 py-2 text-xs font-semibold text-danger"
-            >
-              {enrollMsg.text}
-            </p>
-          )}
-
-          <Button
-            type="submit"
-            size="md"
-            loading={enrollBusy}
-            className="mt-1 w-full"
-            iconRight={<ArrowRight className="size-4" />}
-          >
-            {t("আজই সিট নিশ্চিত করুন", "Secure your seat now")}
-          </Button>
-
-          <p className="text-center text-xs text-text/45">
-            {t("২০ জন না হওয়া পর্যন্ত ব্যাচ শুরু হবে না।", "The batch won't start until 20 students enroll.")}
-          </p>
-        </form>
-      </Dialog>
 
       {/* New here → intro */}
       <Link

@@ -377,14 +377,16 @@ export default function AdminStudentsPage() {
                 {daysAgo(sessions[s.whatsapp]?.lastLoginAt ?? null)}
               </Td>
               <Td className="tabular-nums">
-                <a
-                  href={`https://wa.me/${String(s.whatsapp).replace(/[^0-9]/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline decoration-text/25 underline-offset-4 transition-colors hover:text-primary hover:decoration-primary/50"
+                {/* Plain text on purpose. It was a wa.me link, so clicking a row
+                    to read it threw open WhatsApp on the admin's own machine,
+                    which is not what anybody reading a roster wants. The number
+                    is still selectable and copyable. */}
+                <span
+                  className="select-all"
+                  title={t("কপি করতে নম্বরটি সিলেক্ট করুন", "Select to copy the number")}
                 >
                   {s.whatsapp}
-                </a>
+                </span>
               </Td>
               <Td>
                 <button

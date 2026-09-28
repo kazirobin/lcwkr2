@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Check, MessageSquareQuote, RefreshCw, Send, Star } from "lucide-react";
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth";
 import {
   Breadcrumb,
   Button,
@@ -30,6 +31,7 @@ type Review = {
 
 export default function ReviewsPage() {
   const { language } = useLanguage();
+  const { student: account } = useAccount();
   const t = useCallback(
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
@@ -46,6 +48,19 @@ export default function ReviewsPage() {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
+  // A signed-in student has already told us who they are, so the three identity
+  // boxes are filled in and locked rather than asked for again — asking somebody
+  // to retype their own name and number is how a review ends up under the wrong
+  // one. A visitor with no account fills them in as before.
+  useEffect(() => {
+    if (!account) return;
+    queueMicrotask(() => {
+      setName((v) => v || account.nameEnglish || "");
+      setMobile((v) => v || account.whatsapp || "");
+      setLocation((v) => v || account.location || "");
+    });
+  }, [account]);
+
   const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,7 +73,18 @@ export default function ReviewsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+  // Deferred through a microtask: fetchReviews sets state, and doing that
+  // synchronously in the effect body is a cascading render. This is the pattern
+  // the rest of the app uses.
+  useEffect(() => {
+    let alive = true;
+    queueMicrotask(() => {
+      if (alive) void fetchReviews();
+    });
+    return () => {
+      alive = false;
+    };
+  }, [fetchReviews]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +102,13 @@ export default function ReviewsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setName(""); setMobile(""); setLocation(""); setMessage(""); setRating(5);
+        // The review is cleared so the next one starts from a blank page, but a
+        // signed-in student's own details stay: they were never typed, so
+        // wiping them would only make the next submit fail on a missing name.
+        setMessage(""); setRating(5);
+        if (!account) {
+          setName(""); setMobile(""); setLocation("");
+        }
         setDone(true);
         fetchReviews();
       } else {
@@ -136,11 +168,38 @@ export default function ReviewsPage() {
           </p>
         )}
         <form onSubmit={submit} className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label={t("নাম", "Name")} required value={name} onChange={(e) => setName(e.target.value)} />
-            <Field label={t("মোবাইল", "Mobile")} value={mobile} onChange={(e) => setMobile(e.target.value)} />
-            <Field label={t("অবস্থান", "Location")} value={location} onChange={(e) => setLocation(e.target.value)} />
-          </div>
+          {account ? (
+            /* Signed in: the identity is already known, so it is shown rather
+               than asked for, and cannot be edited into somebody else's. */
+            <div className="rounded-xl border border-ok/30 bg-ok-surface px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ok/80">
+                {t("আপনার অ্যাকাউন্ট থেকে", "From your account")}
+              </p>
+              <p className="mt-1 text-sm text-text/75">
+                <span className="font-semibold text-text">{account.nameEnglish}</span>
+                <span className="mx-2 text-text/30">·</span>
+                <span className="font-mono tabular-nums">{account.whatsapp}</span>
+                {account.location && (
+                  <>
+                    <span className="mx-2 text-text/30">·</span>
+                    <span>{account.location}</span>
+                  </>
+                )}
+              </p>
+              <p className="mt-1.5 text-[11px] text-text/50">
+                {t(
+                  "শুধু রিভিউ লিখে পাঠান — নাম ও নম্বর আমরা নিজে থেকেই বসিয়ে দেব।",
+                  "Just write the review — we fill in the name and number for you.",
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Field label={t("নাম", "Name")} required value={name} onChange={(e) => setName(e.target.value)} />
+              <Field label={t("মোবাইল", "Mobile")} value={mobile} onChange={(e) => setMobile(e.target.value)} />
+              <Field label={t("অবস্থান", "Location")} value={location} onChange={(e) => setLocation(e.target.value)} />
+            </div>
+          )}
           <div>
             <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-text/55">
               {t("রেটিং", "Rating")}

@@ -17,7 +17,7 @@ const LS = {
 
 const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 
-type View = "welcome" | "unlock" | "progress" | "done" | null;
+type View = "welcome" | "unlock" | "progress" | "done" | "members" | null;
 
 /* Non-standard PWA install event (Chrome/Edge/Android). */
 interface BeforeInstallPromptEvent extends Event {
@@ -241,12 +241,20 @@ export default function OfflineManager() {
     }
   }, [supported]);
 
+  /**
+   * Somebody without Pro gets one sentence and nothing else.
+   *
+   * This used to drop a visitor who only wanted to read a lesson into a welcome
+   * screen, a Pro code box and a server round trip — for a feature they cannot
+   * use. Asking them for a code they do not have was the wrong first question;
+   * the only thing worth saying is that it is for members.
+   */
   const openDialog = () => {
     setOpen(true);
     if (pro && downloaded) {
       setView("done");
-    } else if (pro && !downloaded) {
-      setView("welcome");
+    } else if (!pro) {
+      setView("members");
     } else {
       setView("welcome");
     }
@@ -358,7 +366,7 @@ export default function OfflineManager() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-20 left-4 z-40 flex max-w-[calc(100vw-2rem)] items-start gap-3 rounded-2xl border border-text/10 bg-card p-4 pr-3 shadow-2xl shadow-black/10 sm:max-w-sm"
+          className="fixed bottom-[5.5rem] left-4 z-40 flex max-w-[calc(100vw-2rem)] items-start gap-3 rounded-2xl border border-text/10 bg-card p-4 pr-3 shadow-2xl shadow-black/10 sm:max-w-sm"
         >
           <CloudDownload className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div className="min-w-0 flex-1">
@@ -383,9 +391,13 @@ export default function OfflineManager() {
         </div>
       )}
 
-      {/* floating status pill, bottom-left (donation badge sits bottom-right) */}
+      {/* floating status pill, bottom-left (donation badge sits bottom-right).
+          It sits above the Pro corner control rather than on the same spot:
+          both used to be at bottom-left, and whichever was painted last hid the
+          other one. The Pro control is the one a Pro page cannot do without, so
+          it keeps the bottom-left corner and this one stacks above it. */}
       {!pillHidden && (
-        <div className="fixed bottom-4 left-4 z-40 flex items-center gap-1 rounded-2xl border border-text/10 bg-card/95 py-1 pl-3 pr-1 text-xs font-semibold text-text shadow-xl shadow-black/10 backdrop-blur">
+        <div className="fixed bottom-[4.5rem] left-4 z-40 flex items-center gap-1 rounded-2xl border border-text/10 bg-card/95 py-1 pl-3 pr-1 text-xs font-semibold text-text shadow-xl shadow-black/10 backdrop-blur">
           {pro && downloaded ? (
             <>
               <button
@@ -462,6 +474,34 @@ export default function OfflineManager() {
           )}
         </div>
       )}
+
+      {/* ── not a member: one line, no code box ── */}
+      <Dialog
+        open={open && view === "members"}
+        onClose={closeDialog}
+        title={t("শুধু Pro সদস্যদের জন্য", "For Pro members only")}
+        description={t(
+          "অফলাইন সেটআপ শুধু Pro সদস্যরা ব্যবহার করতে পারবেন।",
+          "Offline setup is for Pro members only.",
+        )}
+        footer={
+          <>
+            <Button variant="ghost" onClick={closeDialog}>
+              {t("বন্ধ করুন", "Close")}
+            </Button>
+            <Button onClick={() => (window.location.href = "/hsk/2")}>
+              {t("Pro নিন — ৳৫০০", "Get Pro — ৳500")}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm leading-relaxed text-text/70">
+          {t(
+            "HSK 1 আর পিনয়িন সবসময় ফ্রি থাকবে — ইন্টারনেট ছাড়াও।",
+            "HSK 1 and Pinyin stay free, even without internet.",
+          )}
+        </p>
+      </Dialog>
 
       {/* ── welcome / first-open confirmation ── */}
       <Dialog

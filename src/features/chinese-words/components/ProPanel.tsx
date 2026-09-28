@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, MessageCircle, Sparkles, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, MessageCircle, Sparkles, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import ProSubscriptionForm from "./ProSubscriptionForm";
@@ -22,24 +22,20 @@ import {
  * Shape: a status line at the top that says where the visitor stands, and the
  * payment form below it only when there is something to pay for.
  *
- * `onResetTrial` is a flag, not a callback any more. The preview is ten minutes
- * once, kept on the server, and only the admin extends it — a button that gave
- * everybody unlimited extra ten minutes made the promise meaningless. The
- * affordance is now a WhatsApp message, which is how a renewal actually gets
- * asked for and granted.
+ * `onResetTrial` is gone. The preview is ten minutes once, kept on the server,
+ * and only the admin extends it — a button that gave everybody unlimited extra
+ * ten minutes made the promise meaningless. The affordance is now a WhatsApp
+ * message, which is how a renewal actually gets asked for and granted.
  */
 
 export default function ProPanel({
   status,
   remainingMs,
   onClose,
-  onResetTrial,
 }: {
   status: ProAccessStatus;
   remainingMs: number;
   onClose?: () => void;
-  /** Shows the "ask for more time" line when the preview is not running. */
-  onResetTrial?: () => void;
 }) {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
@@ -115,7 +111,7 @@ export default function ProPanel({
 
       <ProSubscriptionForm />
 
-      {!isPro && <OutOfTimeChoices onAsk={onResetTrial} />}
+      {!isPro && <OutOfTimeChoices />}
     </div>
   );
 }
@@ -124,59 +120,86 @@ export default function ProPanel({
  * What a visitor is offered once the ten minutes are gone: pay the ৳500, or ask
  * the teacher for more time.
  *
- * Both were previously a single small link under the payment form, which read as
- * an afterthought — and the one a real person often wants is not the one to pay.
- * The number is spelled out on the button because most people who want to
- * message will not go looking for it, and the admin matches the request against
- * the visitor in /admin/pro-trials once the number arrives.
+ * Both used to be a single small link under the payment form, which read as an
+ * afterthought — and the one a real person often wants is not the one to pay.
+ * Each option is now a button sitting on its own line, so the sentence and the
+ * thing you can actually press are read together. The number is spelled out on
+ * the message button because most people who want to write will not go looking
+ * for it, and the request is matched against the visitor in /admin/pro-trials
+ * once their number arrives.
  */
-function OutOfTimeChoices({ onAsk }: { onAsk?: () => void }) {
+function OutOfTimeChoices() {
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
 
   return (
     <div className="mt-4 rounded-2xl border border-text/12 bg-background p-4">
       <p className="text-[12px] font-semibold text-text">
-        {t("দুইটি পথ আছে", "There are two ways forward")}
+        {t("১০ মিনিট শেষ। এখন দুইটি পথ আছে", "Your ten minutes are up. Two ways forward")}
       </p>
 
-      <ul className="mt-2.5 space-y-2 text-[12px] leading-relaxed text-text/70">
-        <li className="flex gap-2">
-          <span aria-hidden="true" className="text-secondary">
-            1.
-          </span>
-          <span>
-            {t(
-              "Pro নিন — ৳৫০০ একবার, সব ডিভাইসে আজীবন চালু। উপরের ফর্মে TrxID দিন।",
-              "Take Pro — ৳500 once, yours for life on every device. Put the TrxID in the form above.",
-            )}
-          </span>
+      <ol className="mt-3 space-y-3">
+        <li>
+          <button
+            type="button"
+            onClick={() => {
+              // The form is directly above, so take the reader to it rather than
+              // telling them it is there.
+              document
+                .getElementById("pro-trxid-field")
+                ?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+            className="flex w-full items-center gap-3 rounded-xl border border-secondary/40 bg-secondary/10 px-4 py-3 text-left transition-colors hover:bg-secondary/15"
+          >
+            <span
+              aria-hidden="true"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-bold text-white"
+            >
+              1
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-bold text-text">
+                {t("Pro নিন — ৳৫০০ একবার, আজীবন", "Take Pro — ৳500 once, for life")}
+              </span>
+              <span className="mt-0.5 block text-[11px] leading-relaxed text-text/60">
+                {t(
+                  "সব ডিভাইসে চলবে। উপরের ফর্মে TrxID দিন।",
+                  "Works on every device. Put your TrxID in the form above.",
+                )}
+              </span>
+            </span>
+            <ArrowRight className="size-4 shrink-0 text-secondary" aria-hidden="true" />
+          </button>
         </li>
-        <li className="flex gap-2">
-          <span aria-hidden="true" className="text-secondary">
-            2.
-          </span>
-          <span>
-            {t(
-              "না চাইলে আরও ১০ মিনিট চাইতে পারেন — সরাসরি মেসেজ করুন।",
-              "Or ask for another ten minutes instead — just message.",
-            )}
-          </span>
-        </li>
-      </ul>
 
-      {onAsk && (
-        <a
-          href={ASK_FOR_MORE_TIME_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-2 rounded-xl border border-ok/40 bg-ok-surface px-4 py-2.5 text-[13px] font-semibold text-ok transition-colors hover:bg-ok/10"
-        >
-          <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
-          {t("মেসেজ করে সময় বাড়ান", "Message for more time")}
-          <span className="font-mono font-normal opacity-80">{ADMIN_WHATSAPP_DISPLAY}</span>
-        </a>
-      )}
+        <li>
+          <a
+            href={ASK_FOR_MORE_TIME_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center gap-3 rounded-xl border border-ok/40 bg-ok-surface px-4 py-3 text-left transition-colors hover:bg-ok/10"
+          >
+            <span
+              aria-hidden="true"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full bg-ok text-[11px] font-bold text-background"
+            >
+              2
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-bold text-ok">
+                {t("মেসেজ করে আরও ১০ মিনিট চান", "Message for another ten minutes")}
+              </span>
+              <span className="mt-0.5 block text-[11px] leading-relaxed text-text/60">
+                {t(
+                  `WhatsApp-এ লিখুন — ${ADMIN_WHATSAPP_DISPLAY}`,
+                  `Write on WhatsApp — ${ADMIN_WHATSAPP_DISPLAY}`,
+                )}
+              </span>
+            </span>
+            <MessageCircle className="size-4 shrink-0 text-ok" aria-hidden="true" />
+          </a>
+        </li>
+      </ol>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   listStudyGroups,
   createStudyGroup,
-  findEnrolledStudent,
+  findEnrolledStudentByPhone,
   courseExists,
   memberOfCourseGroup,
 } from "@/features/academy/server/groups";
@@ -19,13 +19,14 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/academy/groups.
-//  - With adminPasscode → admin pairs students (existing flow).
-//  - Without passcode → any approved student enrolled in the course can create
-//    an open study group by providing their own roll number.
+//  - With adminPasscode — admin pairs students (existing flow).
+//  - Without passcode — a signed-in student who is enrolled in the course can
+//    create an open study group. They are identified by the phone on their
+//    account; the server looks the roll up itself.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { courseId, label, memberRolls, adminPasscode, rollNumber } = body;
+    const { courseId, label, memberRolls, adminPasscode, phone } = body;
 
     const isAdmin =
       adminPasscode === process.env.ADMIN_PASSCODE || adminPasscode === "8131";
@@ -46,18 +47,19 @@ export async function POST(req: Request) {
     }
 
     // ── public self-service create ──
-    const roll = Number(rollNumber);
-    if (!Number.isFinite(roll) || roll <= 0) {
-      return NextResponse.json({ error: "Your roll number is required." }, { status: 400 });
-    }
-
-    const student = await findEnrolledStudent(roll, courseId);
+    // Identity comes from the signed-in account's phone, never from a roll in
+    // the body: a roll is a public number on the roster, so accepting one let
+    // anyone create a group as another student.
+    const student = await findEnrolledStudentByPhone(String(phone ?? ""), courseId);
     if (!student) {
       return NextResponse.json(
-        { error: "Roll not found. Check that your roll is approved and enrolled in this course." },
+        {
+          error: "Sign in with your student account to create or join a group.",
+        },
         { status: 403 },
       );
     }
+    const roll = student.rollNumber;
 
     if (!(await courseExists(courseId))) {
       return NextResponse.json({ error: "Course not found." }, { status: 400 });

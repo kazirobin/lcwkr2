@@ -343,8 +343,20 @@ export default function CoursesListPage() {
   const done = selected?.classes?.length ?? selected?.completedClassesCount ?? 0;
   const planned = selected?.totalClassesPlanned || 24;
 
+  /**
+   * Which lessons to show as finished.
+   *
+   * A lesson counts as done if the admin ticked it, or if a class log says it
+   * was covered. The tick is what the admin means and is set deliberately; the
+   * log is the evidence, so either one is enough. Before the tick existed this
+   * only looked at the logs, which meant the count on the course page could sit
+   * still while the teacher had plainly moved on.
+   */
   const coveredLessons = useMemo(() => {
     const s = new Set<number>();
+    (selected?.lessons ?? []).forEach((l) => {
+      if (l.done) s.add(Number(l.lessonNumber));
+    });
     (selected?.classes ?? []).forEach((c) => {
       const from = c.contentCovered?.fromLesson;
       if (from == null || Number.isNaN(from)) return;
@@ -566,7 +578,10 @@ export default function CoursesListPage() {
                 {t("পাঠ তালিকা", "Lesson list")}
               </p>
               <span className="text-[11px] font-semibold tabular-nums text-text/45">
-                {coveredLessons.size} / {lessonTotal}
+                {/* Counted against the lessons actually listed, not the number the
+                    course was sold as, so the two ends cannot disagree. */}
+                {lessonList.filter((l) => coveredLessons.has(Number(l.lessonNumber))).length} /{" "}
+                {lessonList.length}
               </span>
             </div>
             <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-5">

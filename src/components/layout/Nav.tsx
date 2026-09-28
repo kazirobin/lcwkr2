@@ -236,11 +236,16 @@ export default function Nav() {
 
   // Protected Link Click Handler
   const handleProtectedNavigation = (e: React.MouseEvent, href: string) => {
-    // A member clicking "Chinese Core Words" or "Hanzi Pro" in the nav was
-    // stopped here and shown the paywall instead of the page, because this
-    // handler blocked every click without ever asking whether they had paid.
-    // Now only a visitor without Pro is intercepted.
-    if (proStatus === "pro") {
+    // Only somebody whose ten minutes are actually over gets the paywall here.
+    //
+    // A Pro member used to be stopped at this point and shown the panel instead
+    // of the page they had paid for. Then the same guard went one step too far
+    // the other way and stopped a visitor who was still inside their free
+    // preview, which meant the preview was reachable by typing an address but
+    // not by clicking the link that advertises it. Both of those are a member
+    // and a previewing visitor being told no; both should just go through, and
+    // the page's own gate is what decides.
+    if (proStatus === "pro" || proStatus === "guest") {
       closeAll();
       return;
     }

@@ -37,7 +37,14 @@ export interface ICourseDoc {
   /** Date the paid enrollment window closes, YYYY-MM-DD. Empty = no deadline. */
   enrollmentDeadline?: string;
   // ── new professional LMS fields ──
-  lessons: Array<{ lessonNumber: number; title: string; description?: string }>;
+  lessons: Array<{
+    lessonNumber: number;
+    title: string;
+    description?: string;
+    /** Taught already. Ticked off by the admin. */
+    done?: boolean;
+    doneAt?: Date | null;
+  }>;
   nextClassTopic?: string;
   topics?: string[];
   // Legacy gate kept only so existing records keep working. The admin UI no
@@ -110,6 +117,16 @@ const CourseSchema = new Schema<ICourseDoc>(
         lessonNumber: { type: Number, required: true },
         title: { type: String, required: true },
         description: { type: String },
+        /**
+         * Whether this lesson has been taught.
+         *
+         * Without it the syllabus is just a list of names and the only way to
+         * answer "how far along is the batch" is to count the class log by hand.
+         * The admin ticks these off, the course page counts them, and a student
+         * can see where the class actually is.
+         */
+        done: { type: Boolean, default: false },
+        doneAt: { type: Date, default: null },
       },
     ],
     nextClassTopic: { type: String, default: "" },

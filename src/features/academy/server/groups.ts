@@ -2,6 +2,7 @@
 // and enrolled students can create/join their own open study groups.
 import { connectDB } from "@/lib/db";
 import { StudyGroup, Student, Course } from "@/features/academy/models";
+import { findStudentDocByPhone } from "./student-auth";
 
 export async function listStudyGroups(courseId?: string) {
   await connectDB();
@@ -57,6 +58,24 @@ export async function findEnrolledStudent(roll: unknown, courseId: string) {
   const enrolled = String(student.enrolledCourseId ?? "").trim();
   if (!enrolled || enrolled.toLowerCase() !== courseId.toLowerCase()) return null;
   return { rollNumber: student.rollNumber, nameEnglish: student.nameEnglish };
+}
+
+/**
+ * Same check, but starting from a phone number instead of a roll.
+ *
+ * This is what a signed-in student uses, so the browser never has to send — or
+ * be believed about — a roll number. That matters: the roll was previously
+ * taken straight from the request body and only checked for existing, so anybody
+ * could read a roll off the roster and join a group, or create one, as that
+ * student. The account is the identity now, and the roll is looked up from it
+ * here, where the number has already been matched to a real approved student.
+ */
+export async function findEnrolledStudentByPhone(phone: string, courseId: string) {
+  const doc = await findStudentDocByPhone(phone);
+  if (!doc || doc.registrationStatus !== "Approved") return null;
+  const enrolled = String(doc.enrolledCourseId ?? "").trim();
+  if (!enrolled || enrolled.toLowerCase() !== courseId.toLowerCase()) return null;
+  return { rollNumber: doc.rollNumber, nameEnglish: doc.nameEnglish };
 }
 
 /** Does `courseId` actually exist? */

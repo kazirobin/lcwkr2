@@ -4,6 +4,9 @@ import {
   setCourseCompleted,
   setCourseFeatured,
   setCourseLaunched,
+  setCourseLessons,
+  setLessonDone,
+  lessonProgress,
   updateCourse,
   updateCourseOffer,
 } from "@/features/academy/server/courses";
@@ -67,11 +70,39 @@ export async function PUT(req: NextRequest, props: Props) {
       return NextResponse.json({ success: true, course: updated });
     }
 
+    // Ticking a single lesson off. Kept separate from the list edit because it
+    // is the edit the admin makes most often, and it must not need the whole
+    // list resent to avoid losing the other ticks.
+    if (typeof fields.lessonDone === "boolean" && Number.isFinite(Number(fields.lessonNumber))) {
+      const updated = await setLessonDone(id, Number(fields.lessonNumber), fields.lessonDone);
+      if (!updated) {
+        return NextResponse.json(
+          { success: false, message: "Course or lesson not found" },
+          { status: 404 },
+        );
+      }
+      return NextResponse.json({
+        success: true,
+        course: updated,
+        progress: lessonProgress(updated),
+      });
+    }
+
     const allowed: Record<string, unknown> = {};
-    if (Array.isArray(fields.lessons)) allowed.lessons = fields.lessons;
     if (Array.isArray(fields.topics)) allowed.topics = fields.topics.map(String);
     if (typeof fields.nextClassTopic === "string")
       allowed.nextClassTopic = fields.nextClassTopic;
+
+    // The lesson list goes through setCourseLessons rather than the generic
+    // update so the done flags on unchanged lessons survive a rename or a
+    // reorder — resending the list is how a tick would otherwise be lost.
+    if (Array.isArray(fields.lessons)) {
+      const updated = await setCourseLessons(id, fields.lessons);
+      if (!updated) {
+        return NextResponse.json({ success: false, message: "Course not found" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, course: updated, progress: lessonProgress(updated) });
+    }
 
     const updated = await updateCourse(id, allowed);
     if (!updated) {
