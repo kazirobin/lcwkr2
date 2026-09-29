@@ -11,6 +11,27 @@ const nextConfig: NextConfig = {
       { source: "/hsk/pinyin", destination: "/pinyin", permanent: true },
     ];
   },
+
+  /**
+   * The service worker must never be served from a cache, or a fixed version of
+   * the offline site sticks to every device and the download never picks up
+   * new content. These are the headers the Next.js PWA guide asks for; the
+   * scope header is what lets `/sw.js` control the whole site.
+   */
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate, no-store",
+          },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -1,10 +1,12 @@
-﻿/* Learn Chinese with Kazi Robin — offline-first PWA service worker (v3)
+﻿/* Learn Chinese with Kazi Robin — offline-first PWA service worker
  *
  * Modes:
  *  - DEFAULT (no Pro): browsed pages remain available offline (SWR caching).
  *  - PRO: user unlocks with a code and downloads the whole site once; after
- *    that, navigations serve instantly from cache and silently refresh in
- *    the background whenever the user is online.
+ *    that, navigations serve instantly from cache and silently refresh in the
+ *    background whenever the user is online. The 105 MB of printed lesson books
+ *    are included in that download, so the reading part of the site works with
+ *    no signal at all.
  *
  * Dev mode (localhost): worker clears stale caches on install but stays active
  * so messages/progress work during development. Fetch uses network-first so
@@ -12,13 +14,17 @@
  * broken at the source.  Detected by hostname because `process.env` is
  * unavailable inside a service-worker scope.
  */
-const VERSION = "lcwkr-v4";
+const VERSION = "lcwkr-v5";
 
 const PRECACHE = [
   "/offline.html",
   "/pwa-192x192.png",
   "/pwa-512x512.png",
   "/apple-touch-icon.png",
+  // The lesson-book reader cannot start without it: pdf.js fetches this worker
+  // on demand, and a Pro user who downloads the site but never opens a book
+  // online would otherwise find every book unreadable offline.
+  "/pdfjs/pdf.worker.min.mjs",
 ];
 
 const CACHES = {
@@ -84,7 +90,8 @@ self.addEventListener("message", (event) => {
 
   if (data.type === "DOWNLOAD") {
     const routes = Array.isArray(data.routes) ? data.routes : [];
-    event.waitUntil(runDownload(routes, reply));
+    const documents = Array.isArray(data.documents) ? data.documents : [];
+    event.waitUntil(runDownload(routes, documents, reply));
   }
 
   if (data.type === "REFRESH") {
@@ -101,13 +108,15 @@ self.addEventListener("message", (event) => {
   }
 });
 
-async function runDownload(routes, reply) {
+async function runDownload(routes, documents, reply) {
   const pagesCache = await caches.open(CACHES.pages);
   const assetsCache = await caches.open(CACHES.assets);
+  const docs = Array.isArray(documents) ? documents : [];
   const done = new Set();
 
+  // Books are counted in the same total, so one bar covers the whole download.
   let completed = 0;
-  const total = routes.length;
+  const total = routes.length + docs.length;
 
   const report = () => reply({ type: "PROGRESS", done: completed, total, url: "" });
 
@@ -145,7 +154,49 @@ async function runDownload(routes, reply) {
     await Promise.all(batch.map(fetchRoute));
   }
 
+  // The books last, so the site itself is already usable offline if the user
+  // runs out of patience, signal or space part way through.
+  for (let i = 0; i < docs.length; i += 2) {
+    const batch = docs.slice(i, i + 2);
+    await Promise.all(batch.map((url) => fetchDocument(url, assetsCache, done, onStep)));
+  }
+
   reply({ type: "DOWNLOAD_DONE", total });
+
+  function onStep() {
+    completed += 1;
+    report();
+  }
+}
+
+/**
+ * One lesson book. Never read as text — these are megabytes of binary, and the
+ * copy would be stored twice. An unchanged book costs a 304 and no body, so
+ * "check for updates" stays cheap even at 105 MB.
+ */
+async function fetchDocument(url, assetsCache, done, onStep) {
+  if (done.has(url)) return;
+  done.add(url);
+  onStep();
+  try {
+    const cached = await assetsCache.match(url);
+    const headers = new Headers();
+    const etag = cached && cached.headers.get("ETag");
+    const lastModified = cached && cached.headers.get("Last-Modified");
+    if (etag) headers.set("If-None-Match", etag);
+    if (lastModified) headers.set("If-Modified-Since", lastModified);
+
+    /* No `cache` option on purpose. Chrome drops If-None-Match and
+       If-Modified-Since when the mode is "no-store" or "reload" — it answers
+       200 with the whole file, which is exactly the 105 MB re-download this is
+       here to avoid. The default mode revalidates and answers 304. */
+    const res = await fetch(url, { headers });
+    if (!res) return;
+    if (res.status === 304) return;
+    if (res.ok) await assetsCache.put(url, res);
+  } catch {
+    /* book unavailable right now — a later update pass retries it */
+  }
 }
 
 /* Re-fetch every cached page in the background (silent auto-update). */
@@ -265,6 +316,10 @@ self.addEventListener("fetch", (event) => {
   const isStatic =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/assets/") ||
+    /* pdf.js and the worker it spawns. Without these the reader is the one
+       thing that cannot work offline, which is the opposite of the point. */
+    url.pathname.startsWith("/pdfjs/") ||
+    url.pathname.endsWith(".mjs") ||
     url.pathname.endsWith(".png") ||
     url.pathname.endsWith(".jpg") ||
     url.pathname.endsWith(".jpeg") ||

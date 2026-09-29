@@ -5,6 +5,7 @@ import { CloudDownload, CheckCircle2, WifiOff, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { Button, Dialog, Field } from "@/components/ui";
 import { isValidProPassword } from "@/features/chinese-words/data/pro-passwords";
+import { warmLessonReader } from "@/features/vocabulary/reader-offline";
 
 const LS = {
   seen: "lcwkr_offline_seen_v2",
@@ -320,15 +321,19 @@ export default function OfflineManager() {
       const res = await fetch("/api/offline/routes", { cache: "no-store" });
       const data = await res.json();
       const routes: string[] = [...(data.pages ?? []), ...(data.api ?? [])];
-      if (routes.length === 0) {
+      const documents: string[] = data.documents ?? [];
+      if (routes.length === 0 && documents.length === 0) {
         setFeedback(t("ডাউনলোড করার মতো কিছু নেই", "Nothing to download"));
         downloadRef.current.active = false;
         setDownloading(false);
         setView("welcome");
         return;
       }
-      setProgress({ done: 0, total: routes.length });
-      await sendToSW({ type: "DOWNLOAD", routes });
+      setProgress({ done: 0, total: routes.length + documents.length });
+      // The book's engine lives in a build-hashed chunk the manifest cannot
+      // name, so pull it in before the worker starts counting.
+      await warmLessonReader();
+      await sendToSW({ type: "DOWNLOAD", routes, documents });
     } catch {
       setFeedback(t("ডাউনলোড শুরু করা যায়নি", "Could not start download"));
       downloadRef.current.active = false;
@@ -488,6 +493,14 @@ export default function OfflineManager() {
           <>
             <Button variant="ghost" onClick={closeDialog}>
               {t("বন্ধ করুন", "Close")}
+            </Button>
+            {/* Without this the code box is unreachable: a member who has not
+                set up offline yet has no local flag, so they land here, and the
+                welcome view that leads to the code only opens for members the
+                device already knows about. Tapping the pill is a deliberate act,
+                so ask for the code rather than dead-ending them at the price. */}
+            <Button variant="secondary" onClick={() => setView("unlock")}>
+              {t("আমার Pro কোড আছে", "I have a Pro code")}
             </Button>
             <Button onClick={() => (window.location.href = "/hsk/2")}>
               {t("Pro নিন — ৳৫০০", "Get Pro — ৳500")}

@@ -1,17 +1,23 @@
 // src/features/vocabulary/components/LessonPdfViewer.tsx
 //
 // The lesson book, read in place. A button opens the lesson PDF in a
-// full-screen reader: zoom, page turns, fit-width / fit-page, rotate and
-// full screen, with the usual keyboard shortcuts. Built on pdf.js, which is
+// full-screen reader: zoom, page turns, fit-width / fit-page, rotate and full
+// screen, with the usual keyboard shortcuts. Built on pdf.js, which is
 // imported dynamically so the ~0.5 MB engine only downloads when a book is
 // actually opened. If it cannot start, the raw file is still one click away
 // in a new tab.
+//
+// Built for a phone first, because that is where books get read: swipe left or
+// right to turn the page, pinch or double-tap to zoom, and a back arrow that
+// puts you exactly where you were. Every gesture is anchored, so the thing you
+// are looking at is the thing that stays still.
 
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -37,6 +43,17 @@ const MAX_SCALE = 6;
 const ZOOM_STEP = 1.25;
 /** Breathing room between the page and the edges of the scroll box. */
 const PAGE_PADDING = 28;
+/** How far a drag travels before it counts as a page turn. */
+const SWIPE_DISTANCE = 56;
+/** ...and it has to be that much more sideways than up-and-down. */
+const SWIPE_SLOP = 1.4;
+/** What a double tap zooms *to* — a page that fills the screen is not readable. */
+const READ_SCALE = 2.2;
+const DOUBLE_TAP_MS = 320;
+const DOUBLE_TAP_DISTANCE = 32;
+const HINT_SHOW_MS = 1400;
+const HINT_HIDE_MS = 6200;
+const HINT_KEY = "lcwkr_pdf_reader_hint";
 
 type ViewMode = "width" | "page" | "custom";
 type Status = "loading" | "ready" | "error";
@@ -120,14 +137,27 @@ export function LessonPdfViewer({
   const [scale, setScale] = useState(1);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [isFull, setIsFull] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** The page, wrapped so a swipe can slide it without a re-render. */
+  const sheetRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PDFDocumentProxy | null>(null);
   const loadingRef = useRef<PDFDocumentLoadingTask | null>(null);
   const taskRef = useRef<RenderTask | null>(null);
   const taskIdRef = useRef(0);
+
+  /* Live mirrors of what is on screen. Gestures run outside React's render,
+     so they need the drawn size without waiting for the next state. */
+  const scaleRef = useRef(1);
+  const fitWidthRef = useRef(1);
+  const fitsRef = useRef(true);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
+  const dragRef = useRef<{ x: number; y: number; panning: boolean } | null>(null);
+  const lastTapRef = useRef({ at: 0, x: 0, y: 0 });
 
   /* open the book — the modal mounts fresh each time, so state starts clean */
   useEffect(() => {
@@ -178,13 +208,58 @@ export function LessonPdfViewer({
     [numPages],
   );
 
-  const zoomBy = useCallback((factor: number) => {
+  /**
+   * Zoom to an exact size, holding `anchor` (a client point) still.
+   *
+   * The scroll offsets are corrected in the same breath as the new scale, so
+   * the word under your finger is the word under your finger afterwards. Doing
+   * it in a state updater instead would be a side effect in render, and the
+   * correction would land a frame late — which is exactly the wobble that
+   * makes pinch-zoom feel cheap.
+   */
+  const zoomTo = useCallback((next: number, anchor?: { x: number; y: number }) => {
+    const node = scrollRef.current;
+    const canvas = canvasRef.current;
+    const from = scaleRef.current;
+    const to = clamp(next, MIN_SCALE, MAX_SCALE);
+    if (Math.abs(to - from) < 0.0005) return;
+
     setMode("custom");
-    setCustom((value) => clamp(value * factor, MIN_SCALE, MAX_SCALE));
+    setCustom(to);
+
+    if (!node || !canvas || !anchor) return;
+    const rect = node.getBoundingClientRect();
+    const ax = anchor.x - rect.left;
+    const ay = anchor.y - rect.top;
+    const k = to / from;
+    const px = node.scrollLeft + ax;
+    const py = node.scrollTop + ay;
+    node.scrollLeft = canvas.offsetLeft + (px - canvas.offsetLeft) * k - ax;
+    node.scrollTop = canvas.offsetTop + (py - canvas.offsetTop) * k - ay;
   }, []);
+
+  const zoomBy = useCallback(
+    (factor: number) => {
+      zoomTo(scaleRef.current * factor);
+    },
+    [zoomTo],
+  );
 
   const zoomToWidth = useCallback(() => setMode("width"), []);
   const zoomToPage = useCallback(() => setMode("page"), []);
+
+  /* A double tap flips between "the whole page" and "readable size". */
+  const toggleReadZoom = useCallback(
+    (anchor: { x: number; y: number }) => {
+      const from = scaleRef.current;
+      if (Math.abs(from - fitWidthRef.current) < 0.05) {
+        zoomTo(READ_SCALE, anchor);
+      } else {
+        zoomTo(fitWidthRef.current, anchor);
+      }
+    },
+    [zoomTo],
+  );
 
   const rotate = useCallback(() => {
     setUserRotation((value) => (value + 90) % 360);
@@ -247,6 +322,11 @@ export function LessonPdfViewer({
           MAX_SCALE,
         );
 
+        /* Gesture maths reads these straight away, so set them before the
+           render rather than in the setState below. */
+        scaleRef.current = wanted;
+        fitWidthRef.current = fitWidth;
+
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
         const viewport = pdfPage.getViewport({ scale: wanted * ratio, rotation });
 
@@ -255,6 +335,9 @@ export function LessonPdfViewer({
         canvas.height = Math.floor(viewport.height);
         canvas.style.width = `${viewport.width / ratio}px`;
         canvas.style.height = `${viewport.height / ratio}px`;
+
+        const node = scrollRef.current;
+        fitsRef.current = !node || canvas.offsetWidth <= node.clientWidth + 1;
 
         const task = pdfPage.render({ canvas, viewport });
         taskRef.current = task;
@@ -271,7 +354,137 @@ export function LessonPdfViewer({
     };
   }, [status, page, userRotation, mode, custom, box.w, box.h]);
 
-  /* keyboard: page turns, zoom, fit, full screen, close */
+  /* ── wheel and trackpad pinch zoom ──
+   * React's onWheel is passive, so preventDefault there is a no-op and the
+   * page zooms as well as the book. A native listener is the only way to take
+   * the gesture. A plain wheel is left alone: it still scrolls. */
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const onWheel = (event: WheelEvent) => {
+      /* Trackpad pinch and ctrl+wheel both arrive as ctrlKey. */
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const delta = clamp(event.deltaY, -100, 100);
+      zoomTo(scaleRef.current * Math.exp(-delta * 0.01), {
+        x: event.clientX,
+        y: event.clientY,
+      });
+    };
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [zoomTo]);
+
+  /* ── touch: pinch to zoom, swipe to turn, double tap to read ── */
+  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const node = scrollRef.current;
+    const canvas = canvasRef.current;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (pointersRef.current.size >= 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      pinchRef.current = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+        scale: scaleRef.current,
+      };
+      dragRef.current = null;
+      setShowHint(false);
+      return;
+    }
+
+    /* A page that fits has nothing to pan, so a sideways drag is a page turn.
+       A zoomed page is panned instead — otherwise the drag would fight the
+       scroll position. */
+    const fits = !node || !canvas || canvas.offsetWidth <= node.clientWidth + 1;
+    dragRef.current = { x: event.clientX, y: event.clientY, panning: !fits };
+  }, []);
+
+  const onPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersRef.current.has(event.pointerId)) return;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    const pinch = pinchRef.current;
+    if (pinch && pointersRef.current.size >= 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      zoomTo(pinch.scale * (dist / pinch.dist), {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2,
+      });
+      return;
+    }
+
+    const drag = dragRef.current;
+    const node = scrollRef.current;
+    if (!drag || !node) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+
+    if (drag.panning) {
+      /* Sideways scrolling is ours: touch-action is pan-y so the browser only
+         ever takes the vertical axis. */
+      node.scrollLeft -= dx;
+      return;
+    }
+
+    /* Follow the finger. Applied to the wrapper rather than to state, so a drag
+       costs no renders and stays glued to the touch. */
+    const sheet = sheetRef.current;
+    if (sheet) {
+      const travelling = Math.abs(dx) > Math.abs(dy) * SWIPE_SLOP;
+      sheet.style.transition = "none";
+      sheet.style.transform = travelling ? `translate3d(${dx * 0.55}px, 0, 0)` : "none";
+    }
+  }, [zoomTo]);
+
+  const endPointer = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>, cancelled: boolean) => {
+      pointersRef.current.delete(event.pointerId);
+      if (pointersRef.current.size < 2) pinchRef.current = null;
+
+      const drag = dragRef.current;
+      if (!drag || pointersRef.current.size > 0) return;
+      dragRef.current = null;
+
+      const sheet = sheetRef.current;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+
+      /* A tap, not a drag: either a double tap to zoom, or nothing at all. */
+      if (!cancelled && Math.abs(dx) < 10 && Math.abs(dy) < 10 && !drag.panning) {
+        const now = performance.now();
+        const last = lastTapRef.current;
+        const isDouble =
+          now - last.at < DOUBLE_TAP_MS &&
+          Math.hypot(event.clientX - last.x, event.clientY - last.y) < DOUBLE_TAP_DISTANCE;
+        if (isDouble) {
+          lastTapRef.current = { at: 0, x: 0, y: 0 };
+          setShowHint(false);
+          toggleReadZoom({ x: event.clientX, y: event.clientY });
+          return;
+        }
+        lastTapRef.current = { at: now, x: event.clientX, y: event.clientY };
+        return;
+      }
+
+      if (sheet) sheet.style.transition = "transform 160ms ease-out";
+      if (cancelled) {
+        if (sheet) sheet.style.transform = "none";
+        return;
+      }
+
+      const sideways = Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * SWIPE_SLOP;
+      if (sideways) {
+        /* Swipe left → forward, swipe right → back, the way every reader does. */
+        goTo(page + (dx < 0 ? 1 : -1));
+      }
+      if (sheet) sheet.style.transform = "none";
+    },
+    [goTo, page, toggleReadZoom],
+  );
+
+  /* keyboard: page turns, zoom, fit, full screen, back */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -316,21 +529,47 @@ export function LessonPdfViewer({
     return () => window.removeEventListener("keydown", onKey);
   }, [page, goTo, zoomBy, zoomToWidth, toggleFullscreen, onClose]);
 
-  /* the book is the whole screen while it is open */
+  /* The book is the whole screen while it is open. The scrollbar's width is
+     given back as padding, or the page underneath visibly jumps sideways the
+     moment the reader opens and again when it closes. */
   useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousPadding = body.style.paddingRight;
+    const gap = window.innerWidth - document.documentElement.clientWidth;
+    body.style.overflow = "hidden";
+    if (gap > 0) body.style.paddingRight = `${gap}px`;
     return () => {
-      document.body.style.overflow = previous;
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPadding;
+    };
+  }, []);
+
+  /* One short nudge, once per browser, then never again. */
+  useEffect(() => {
+    let seen: string | null = null;
+    try {
+      seen = localStorage.getItem(HINT_KEY);
+    } catch {
+      /* private mode: show it every time rather than crash */
+    }
+    if (seen) return;
+    const show = window.setTimeout(() => setShowHint(true), HINT_SHOW_MS);
+    const hide = window.setTimeout(() => setShowHint(false), HINT_HIDE_MS);
+    try {
+      localStorage.setItem(HINT_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    return () => {
+      window.clearTimeout(show);
+      window.clearTimeout(hide);
     };
   }, []);
 
   if (typeof document === "undefined") return null;
 
-  const pageLabel = c.pdfPageOf(
-    String(page),
-    String(numPages || 1),
-  );
+  const pageLabel = c.pdfPageOf(String(page), String(numPages || 1));
 
   return createPortal(
     <div
@@ -341,8 +580,11 @@ export function LessonPdfViewer({
       className="fixed inset-0 z-[80] flex flex-col bg-[#14110e] text-white"
     >
       {/* title bar */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-white/10 px-3 py-2 sm:px-4">
-        <FileText aria-hidden="true" className="size-4 shrink-0 text-white/60" />
+      <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-2 py-2 sm:gap-3 sm:px-4">
+        <Tool label={c.pdfBack} onClick={onClose}>
+          <ArrowLeft aria-hidden="true" className="size-4" />
+        </Tool>
+        <FileText aria-hidden="true" className="hidden size-4 shrink-0 text-white/60 sm:block" />
         <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
         <a
           href={url}
@@ -371,14 +613,18 @@ export function LessonPdfViewer({
       {/* the page */}
       <div
         ref={scrollRef}
-        className="relative flex-1 overflow-auto overscroll-contain bg-[#1c1815]"
-        onDoubleClick={() => {
-          if (mode === "width") {
-            setMode("custom");
-            setCustom(1);
-          } else {
-            zoomToWidth();
-          }
+        /* `pan-y` leaves vertical scrolling to the browser and hands the
+           horizontal axis to us, which is what makes a swipe a page turn and a
+           pinch our own zoom instead of the browser's. */
+        style={{ touchAction: "pan-y" }}
+        className="relative flex-1 select-none overflow-auto overscroll-contain bg-[#1c1815]"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={(event) => endPointer(event, false)}
+        onPointerCancel={(event) => endPointer(event, true)}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          toggleReadZoom({ x: event.clientX, y: event.clientY });
         }}
       >
         {status === "loading" && (
@@ -403,20 +649,19 @@ export function LessonPdfViewer({
         )}
 
         <div className="flex min-h-full items-center justify-center p-7">
-          <canvas
-            ref={canvasRef}
-            onDoubleClick={(event) => {
-              event.stopPropagation();
-              if (mode === "width") {
-                setMode("custom");
-                setCustom(1);
-              } else {
-                zoomToWidth();
-              }
-            }}
-            className={`bg-white shadow-2xl ${status === "ready" ? "" : "hidden"}`}
-          />
+          <div ref={sheetRef} className="bg-white shadow-2xl">
+            <canvas
+              ref={canvasRef}
+              className={`block ${status === "ready" ? "" : "hidden"}`}
+            />
+          </div>
         </div>
+
+        {showHint && status === "ready" && (
+          <p className="pointer-events-none absolute inset-x-0 bottom-4 mx-auto w-fit max-w-[90%] rounded-full bg-black/70 px-4 py-2 text-center text-xs leading-relaxed text-white/90 backdrop-blur">
+            {c.pdfHint}
+          </p>
+        )}
       </div>
 
       {/* controls */}
@@ -507,7 +752,16 @@ export function LessonPdfButton({
   const { language } = useLanguage();
   const c = vocabularyCopy[language];
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const url = lessonPdfUrl(level, lesson);
+
+  /* Closing the reader puts the caret back on the button that opened it, so the
+     next one is a single keypress away instead of a hunt for the cursor. */
+  useEffect(() => {
+    if (open) return;
+    triggerRef.current?.focus({ preventScroll: true });
+  }, [open]);
+
   if (!url) return null;
 
   const title = `HSK ${localizeNumber(level, language)} · ${c.lesson} ${localizeNumber(lesson, language)}`;
@@ -518,7 +772,13 @@ export function LessonPdfButton({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} title={c.pdfOpenLesson} className={className ?? shell}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen(true)}
+        title={c.pdfOpenLesson}
+        className={className ?? shell}
+      >
         <FileText aria-hidden="true" className="size-3.5" />
         {c.lessonPdf}
       </button>

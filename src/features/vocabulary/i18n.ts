@@ -94,6 +94,8 @@ export const vocabularyCopy = {
     pdfRotate: "Rotate",
     pdfFullscreen: "Full screen",
     pdfExitFullscreen: "Leave full screen",
+    pdfBack: "Back to the page",
+    pdfHint: "Swipe left or right to turn the page · pinch or double-tap to zoom",
     pdfClose: "Close",
   },
   bn: {
@@ -170,6 +172,8 @@ export const vocabularyCopy = {
     pdfRotate: "ঘোরান",
     pdfFullscreen: "ফুল স্ক্রিন",
     pdfExitFullscreen: "ফুল স্ক্রিন থেকে বের হন",
+    pdfBack: "পেজে ফিরে যান",
+    pdfHint: "পাতা ওল্টাতে ডানে-বামে সোয়াইপ করুন · জুম করতে দুই আঙুল বা ডাবল ট্যাপ",
     pdfClose: "বন্ধ করুন",
   },
 } as const;
