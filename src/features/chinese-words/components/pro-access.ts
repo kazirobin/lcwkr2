@@ -29,13 +29,87 @@ const GUEST_KEY = "cw:guest-start";
 /** Ten minutes of Pro, once per device. */
 export const TRIAL_MS = 10 * 60 * 1000;
 
-export type ProAccessStatus = "checking" | "pro" | "guest" | "expired";
+export type ProAccessStatus = "checking" | "pro" | "guest" | "expired" | "unstarted";
 
 function noopSubscribe() {
   return () => {};
 }
 
 type TrialReply = { expiresAt: string; remainingMs: number } | null;
+
+/** What the visitor has to give before the ten minutes can start. */
+export type TrialRequest = {
+  name: string;
+  whatsapp: string;
+  location: string;
+};
+
+export type StartTrialResult = { ok: true } | { ok: false; message: string };
+
+/**
+ * Ask whether this browser already has a window.
+ *
+ * A null answer is the normal state for a first visit, and it is what puts the
+ * name-and-number form in front of them rather than a clock. It is also what a
+ * blocked browser or a database problem looks like, which is why the caller does
+ * not treat it as an error.
+ */
+async function askServer(): Promise<TrialReply> {
+  const id = visitorId();
+  if (!id) return null;
+  try {
+    const res = await fetch("/api/pro/trial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "CHECK", visitorId: id }),
+    });
+    const data = (await res.json()) as {
+      trial?: { expiresAt?: string; remainingMs?: number } | null;
+    };
+    if (!data.trial || typeof data.trial.remainingMs !== "number") return null;
+    return { expiresAt: data.trial.expiresAt ?? "", remainingMs: data.trial.remainingMs };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Open the ten minutes, given the visitor's name, number and location.
+ *
+ * The server approves it there and then — the ten minutes are the marketing, not
+ * something a person has to wait for — and the details land on the admin's list
+ * so a renewal can be granted later against a real name.
+ */
+export async function startTrial(
+  request: TrialRequest,
+  rollNumber?: number | null,
+): Promise<StartTrialResult> {
+  const id = visitorId();
+  if (!id) {
+    return { ok: false, message: "This browser is blocking storage, so the preview cannot start here." };
+  }
+  try {
+    const res = await fetch("/api/pro/trial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "START",
+        visitorId: id,
+        name: request.name,
+        whatsapp: request.whatsapp,
+        location: request.location,
+        rollNumber: rollNumber ?? null,
+      }),
+    });
+    const data = (await res.json()) as { success?: boolean; message?: string };
+    if (!res.ok || !data.success) {
+      return { ok: false, message: data.message ?? "Could not start the preview." };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, message: "Network problem. Please try again." };
+  }
+}
 
 /**
  * How far through the preview we have already reported to the server.
@@ -80,43 +154,97 @@ function reportBeatUsed(flush = false) {
   });
 }
 
-/**
- * Ask the server what this browser's window is, creating it on first sight.
- *
- * Returns null for the two cases that are not worth failing over: a browser
- * that cannot give us a visitor id (private mode), and a network or database
- * problem. Both leave the caller on its own local clock, because a free
- * preview should never be taken away by infrastructure.
- */
-async function askServer(who: {
-  phone?: string;
-  name?: string;
-  rollNumber?: number | null;
-}): Promise<TrialReply> {
-  const id = visitorId();
-  if (!id) return null;
-  try {
-    const res = await fetch("/api/pro/trial", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitorId: id, ...who }),
-    });
-    const data = (await res.json()) as {
-      trial?: { expiresAt?: string; remainingMs?: number } | null;
-    };
-    if (!data.trial || typeof data.trial.remainingMs !== "number") return null;
-    return { expiresAt: data.trial.expiresAt ?? "", remainingMs: data.trial.remainingMs };
-  } catch {
-    return null;
-  }
-}
-
 export function useProAccess() {
   const { student: account, checking: accountChecking } = useAccount();
   const [localPro, setLocalPro] = useState(false);
   const [guestState, setGuestState] = useState<{ remainingMs: number } | null>(null);
+  // True once the server has confirmed a window exists for this browser. Until
+  // then the visitor is neither counting down nor locked out — they have not
+  // asked for the ten minutes yet.
+  const [started, setStarted] = useState(false);
+  // True once the server has answered at all. Before that we do not know whether
+  // to show a clock, a form or a wall, so the gate keeps showing the content
+  // rather than flashing the form at somebody who is already entitled to it.
+  const [checked, setChecked] = useState(false);
 
   const accountPro = Boolean(account?.isPro);
+  const isPro = localPro || accountPro;
+
+  // The window in which we do not yet know the answer. `status` deliberately
+  // reports "pro" throughout it so an entitled student never sees a lock flash,
+  // which means a caller that wants to hold back its own lock screen has to ask
+  // for `resolving` instead of checking for "checking".
+  //
+  // It ends when the account has been read and the server has said whether a
+  // window exists. Before that, "pro" — the gate stays out of the way.
+  //
+  // Computed here, above the effects, because the auto-start below has to be
+  // able to watch it: when it was computed further down the hook, this effect's
+  // dependency list could not name it, so the effect never re-ran at the moment
+  // the answer arrived and signed-in students were quietly left with no preview.
+  const resolving = accountChecking || (!checked && !isPro);
+
+  let status: ProAccessStatus;
+  if (resolving) {
+    // Still resolving: render unlocked rather than flashing a lock at someone
+    // who is actually entitled to see the content.
+    status = "pro";
+  } else if (isPro) {
+    status = "pro";
+  } else if (!started) {
+    // The server has answered and there is no window: this browser has not asked
+    // for the ten minutes yet, so what belongs on screen is the form, not a
+    // clock and not a wall.
+    status = "unstarted";
+  } else if ((guestState?.remainingMs ?? 0) > 0) {
+    status = "guest";
+  } else {
+    status = "expired";
+  }
+
+  // A Pro member never had a trial, and asking again would put a question in
+  // front of somebody who does not need one. Deferred through a microtask so the
+  // reset is not a synchronous render inside the effect body.
+  useEffect(() => {
+    if (!accountPro) return;
+    queueMicrotask(() => setStarted(false));
+  }, [accountPro]);
+
+  /**
+   * A signed-in student is never asked for their details — the account already
+   * holds a name, a number and a location, so the window opens with what is on
+   * file.
+   *
+   * This lives here rather than in each gate so that HSK 2, the Core Words
+   * builder and anything else that calls the hook all behave the same way; when
+   * it sat in one gate, the other quietly left signed-in students with no
+   * preview at all.
+   */
+  useEffect(() => {
+    if (!account || accountPro || status !== "unstarted") return;
+    void (async () => {
+      const result = await startTrial(
+        {
+          name: account.nameEnglish,
+          whatsapp: account.whatsapp,
+          location: account.location,
+        },
+        account.rollNumber ?? null,
+      );
+      if (result.ok) {
+        // Take the clock from the server rather than assuming a full ten
+        // minutes: it holds the authoritative window, and this is the one moment
+        // where reading it back cannot be a wasted request.
+        const reply = await askServer();
+        setChecked(true);
+        setStarted(true);
+        setGuestState({ remainingMs: reply?.remainingMs ?? TRIAL_MS });
+      }
+    })();
+    // `status` is a fresh string each render but only ever one of five values,
+    // so naming it costs nothing and is what makes the effect fire on the
+    // render where the answer finally arrives.
+  }, [account, accountPro, status]);
 
   // Read the legacy local flag once. It is never written any more.
   useEffect(() => {
@@ -146,6 +274,9 @@ export function useProAccess() {
     let alive = true;
     let expiresAt = 0;
     let serverAnswered = false;
+    // Set once the server has told us there is a window. Before that, the
+    // visitor has not earned one and needs to ask for it.
+    let started = false;
 
     const onHide = () => {
       if (document.visibilityState === "hidden" && serverAnswered) reportBeatUsed(true);
@@ -170,19 +301,17 @@ export function useProAccess() {
 
     const compute = () => {
       if (!alive) return;
-      setGuestState({ remainingMs: fromServer() });
+      if (started) setGuestState({ remainingMs: fromServer() });
     };
 
     const sync = async () => {
-      const reply = await askServer({
-        phone: account?.whatsapp,
-        name: account?.nameEnglish,
-        rollNumber: account?.rollNumber ?? null,
-      });
+      const reply = await askServer();
       const at = reply?.expiresAt ? Date.parse(reply.expiresAt) : 0;
       if (reply && at > 0) {
         expiresAt = at;
         serverAnswered = true;
+        started = true;
+        setStarted(true);
         // Mirror it locally so a reload or a flaky connection still counts the
         // same clock rather than restarting the ten minutes.
         try {
@@ -191,6 +320,10 @@ export function useProAccess() {
           /* ignore */
         }
       }
+      // The answer arrived either way: there is a window, or there is not and
+      // the form is what belongs on screen. Either way the gate now knows, and
+      // the "still working it out" state can end.
+      setChecked(true);
       compute();
     };
 
@@ -230,35 +363,7 @@ export function useProAccess() {
       if (serverAnswered) reportBeatUsed(true);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, [
-    localPro,
-    accountPro,
-    accountChecking,
-    account?.whatsapp,
-    account?.nameEnglish,
-    account?.rollNumber,
-  ]);
-
-  const isPro = localPro || accountPro;
-
-  // The window in which we do not yet know the answer. `status` deliberately
-  // reports "pro" throughout it so an entitled student never sees a lock flash,
-  // which means a caller that wants to hold back its own lock screen has to ask
-  // for this instead of checking for "checking".
-  const resolving = accountChecking || (guestState === null && !isPro);
-
-  let status: ProAccessStatus;
-  if (resolving) {
-    // Still resolving: render unlocked rather than flashing a lock at someone
-    // who is actually entitled to see the content.
-    status = "pro";
-  } else if (isPro) {
-    status = "pro";
-  } else if ((guestState?.remainingMs ?? 0) > 0) {
-    status = "guest";
-  } else {
-    status = "expired";
-  }
+  }, [localPro, accountPro, accountChecking, setStarted]);
 
   const remainingMs = guestState?.remainingMs ?? TRIAL_MS;
 
@@ -273,16 +378,16 @@ export function useProAccess() {
    */
   const resetTrial = useCallback(() => {
     void (async () => {
-      const reply = await askServer({
-        phone: account?.whatsapp,
-        name: account?.nameEnglish,
-        rollNumber: account?.rollNumber ?? null,
-      });
-      if (reply) setGuestState({ remainingMs: reply.remainingMs });
+      const reply = await askServer();
+      setChecked(true);
+      if (reply) {
+        setStarted(true);
+        setGuestState({ remainingMs: reply.remainingMs });
+      }
     })();
-  }, [account?.whatsapp, account?.nameEnglish, account?.rollNumber]);
+  }, []);
 
-  return { status, remainingMs, isPro, resolving, resetTrial };
+  return { status, remainingMs, isPro, resolving, started, resetTrial };
 }
 
 /**

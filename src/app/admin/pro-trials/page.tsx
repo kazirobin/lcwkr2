@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Clock, Hourglass, RefreshCw, Timer, User, Users } from "lucide-react";
+import { Clock, Hourglass, RefreshCw, Timer, Trash2, User, Users } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import {
   Button,
@@ -38,8 +38,9 @@ const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 type Row = {
   _id: string;
   visitorId: string;
-  whatsapp: string;
   name: string;
+  whatsapp: string;
+  location: string;
   rollNumber?: number | null;
   startedAt: string;
   expiresAt: string;
@@ -54,8 +55,8 @@ type Row = {
 type Summary = {
   total: number;
   activeNow: number;
-  signedIn: number;
-  anonymous: number;
+  students: number;
+  others: number;
   renewals: number;
   usedMsTotal: number;
 };
@@ -118,7 +119,7 @@ export default function AdminProTrialsPage() {
   }, [load]);
 
   const act = useCallback(
-    async (trialId: string, action: "RENEW" | "END") => {
+    async (trialId: string, action: "RENEW" | "END" | "DELETE") => {
       setBusy(`${action}-${trialId}`);
       try {
         const res = await fetch("/api/pro/trial", {
@@ -134,7 +135,9 @@ export default function AdminProTrialsPage() {
         toast(
           action === "RENEW"
             ? t("আরও ১০ মিনিট দেওয়া হয়েছে।", "Another ten minutes granted.")
-            : t("প্রিভিউ বন্ধ করা হয়েছে।", "Preview stopped."),
+            : action === "END"
+              ? t("প্রিভিউ বন্ধ করা হয়েছে।", "Preview stopped.")
+              : t("রেকর্ড মুছে ফেলা হয়েছে।", "Record deleted."),
           "success",
         );
         void load();
@@ -185,11 +188,11 @@ export default function AdminProTrialsPage() {
         </Card>
         <Card className="px-4 py-4">
           <p className="flex items-center gap-1.5 font-mono text-2xl font-bold tabular-nums text-text">
-            {summary?.anonymous ?? 0}
+            {summary?.others ?? 0}
             <Users className="size-4 text-text/45" aria-hidden="true" />
           </p>
           <p className="mt-0.5 text-[11px] text-text/55">
-            {t("লগইন ছাড়া", "signed out")}
+            {t("রোস্টারে নেই", "not on the roster")}
           </p>
         </Card>
         <Card className="px-4 py-4">
@@ -226,7 +229,8 @@ export default function AdminProTrialsPage() {
           minWidth="60rem"
           head={
             <>
-              <Th>{t("ভিজিটর", "Visitor")}</Th>
+              <Th>{t("যে চেয়েছে", "Who asked")}</Th>
+              <Th>{t("অবস্থান", "Location")}</Th>
               <Th>{t("শুরু", "Started")}</Th>
               <Th>{t("বাকি সময়", "Time left")}</Th>
               <Th>{t("ব্যবহার", "Used")}</Th>
@@ -238,25 +242,15 @@ export default function AdminProTrialsPage() {
           {shown.map((r) => (
             <tr key={r._id}>
               <Td>
-                {r.whatsapp ? (
-                  <>
-                    <span className="block font-semibold text-text">{r.name || "—"}</span>
-                    <span className="block font-mono text-[11px] text-text/50">
-                      {r.rollNumber != null ? `#${r.rollNumber} · ` : ""}
-                      {r.whatsapp}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="block font-semibold text-text/70">
-                      {t("লগইন করেনি", "Not signed in")}
-                    </span>
-                    <span className="block font-mono text-[11px] text-text/45">
-                      {r.visitorId.slice(0, 8)}…
-                    </span>
-                  </>
-                )}
+                <span className="block font-semibold text-text">{r.name || "—"}</span>
+                <span className="block font-mono text-[11px] text-text/50">
+                  {r.rollNumber != null && (
+                    <span className="text-ok">#{r.rollNumber} </span>
+                  )}
+                  {r.whatsapp || "—"}
+                </span>
               </Td>
+              <Td className="text-[12px] text-text/60">{r.location || "—"}</Td>
               <Td className="text-[12px] text-text/70">{when(r.startedAt)}</Td>
               <Td>
                 {r.active ? (
@@ -296,6 +290,16 @@ export default function AdminProTrialsPage() {
                       {t("আরও ১০ মিনিট", "Give 10 more")}
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy === `DELETE-${r._id}`}
+                    onClick={() => act(r._id, "DELETE")}
+                    aria-label={t("রেকর্ড মুছুন", "Delete record")}
+                    title={t("রেকর্ড মুছে ফেলুন", "Delete this record for good")}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
                 </div>
               </Td>
             </tr>
@@ -306,8 +310,8 @@ export default function AdminProTrialsPage() {
       <p className="mt-6 flex items-start gap-2 text-[11px] leading-relaxed text-text/45">
         <User className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
         {t(
-          "লগইন না করা ভিজিটরের কোনো নাম থাকে না — ব্রাউজার থেকে একটি এলোমেলো কোড ছাড়া আর কিছু জানা হয় না, এবং সেটাই এই সাইটের নীতি। renew করতে বললে ভিজিটর তার নম্বরটি WhatsApp-এ পাঠায়, তারপর মিলিয়ে নিতে হয়।",
-          "A signed-out visitor has no name attached — the site knows nothing but a random code from their browser, and that is deliberate. When somebody asks for more time they send their number on WhatsApp, and that is how you match the row to the person.",
+          "ভিজিটর নিজে নাম, মোবাইল নম্বর ও অবস্থান দিয়েই ১০ মিনিট চালু করেন — কোনো অনুমোদনের অপেক্ষা ছাড়াই। যার নম্বর রোস্টারে মিলছে তার roll স্বয়ংক্রিয়ভাবে বসে যায়। মুছে ফেললে রেকর্ড চিরতরে চলে যায়, তাই ভুল নম্বর থাকলে ব্যবহার করুন।",
+          "A visitor supplies their own name, number and location, and the ten minutes open there and then — no approval in between. A number that matches the roster fills in the roll by itself. Deleting removes the record for good, so use it for a number that is wrong.",
         )}
       </p>
     </AdminShell>

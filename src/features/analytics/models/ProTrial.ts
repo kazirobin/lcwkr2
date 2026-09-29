@@ -7,24 +7,42 @@ import { Schema, model, models } from "mongoose";
  * Until this existed the preview lived entirely in the browser under
  * `cw:guest-start`, which made it useful to the visitor and invisible to the
  * site owner: nobody could answer "has this person already had their ten
- * minutes" or "give them another ten". The browser clock is still kept as an
- * offline fallback, but `expiresAt` here is the authority whenever the server
- * can be reached.
+ * minutes" or "give them another ten because they asked?". The browser clock is
+ * still kept as an offline fallback, but `expiresAt` here is the authority
+ * whenever the server can be reached.
  *
- * One row per browser, keyed by the same random `visitorId` the traffic
- * counters use, so an anonymous visitor and a signed-in student are both
- * covered and neither is identifiable beyond what they typed in themselves.
- * `whatsapp` is filled in only if they are signed in, which is what lets the
- * admin list a trial next to a name.
+ * One row per person. They are asked for their name, WhatsApp number and
+ * location before the clock starts, which is what makes a row matchable to a
+ * human and a renewal grantable — an anonymous row can be renewed, but the
+ * owner has no idea who is holding it. Approval is automatic: a request with all
+ * three filled in is granted the ten minutes at once, because the ten minutes
+ * are the marketing rather than a purchase. What the admin is given is the list.
+ *
+ * `visitorId` is still kept, because it is how the same browser is recognised
+ * on a return visit without making them type their details in again. It is a
+ * random value, not derived from the device, so on its own it says nothing.
  */
 export interface IProTrialDoc {
   /** Random per-browser id from localStorage. Never derived from the device. */
   visitorId: string;
-  /** Empty until the visitor signs in; a student then has a trial we can name. */
-  whatsapp: string;
-  rollNumber?: number | null;
+  /**
+   * Further browsers this same person has used.
+   *
+   * The ten minutes belong to the person, not to the browser, so somebody who
+   * opens a second browser, or clears their site data, must land on the window
+   * they already have rather than a fresh ten minutes. Their extra browsers are
+   * collected here so `expiresAt` keeps being the single authority instead of
+   * each device keeping a private copy of a clock.
+   */
+  visitorIds?: string[];
+  /** As the person gave it, so it can be matched to a roster by eye. */
   name: string;
-  /** When this visitor first opened a Pro page. */
+  /** Normalised to 01XXXXXXXXX, so it lines up with a student record. */
+  whatsapp: string;
+  /** Free text as typed, e.g. "Mirpur 10". */
+  location: string;
+  rollNumber?: number | null;
+  /** When this person first opened a Pro page. */
   startedAt: Date;
   /** The authority: the preview is over the moment this passes. */
   expiresAt: Date;
@@ -44,9 +62,11 @@ const ProTrialSchema = new Schema<IProTrialDoc>({
   // Indexed only through the unique index below; declaring `index: true` as
   // well would ask mongoose for the same key twice.
   visitorId: { type: String, required: true, trim: true },
+  visitorIds: { type: [String], default: [] },
+  name: { type: String, default: "", trim: true },
   whatsapp: { type: String, default: "", trim: true, index: true },
+  location: { type: String, default: "", trim: true },
   rollNumber: { type: Number, default: null },
-  name: { type: String, default: "" },
   startedAt: { type: Date, default: Date.now, index: true },
   expiresAt: { type: Date, required: true, index: true },
   usedMs: { type: Number, default: 0, min: 0 },

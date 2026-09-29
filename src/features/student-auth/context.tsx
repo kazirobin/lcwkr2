@@ -4,6 +4,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -148,6 +149,51 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       /* offline — ignore */
     }
   }, [logout]);
+
+  /**
+   * Keep the account honest without asking anybody to press a button.
+   *
+   * The account was read once, when the page loaded, and that was the whole
+   * problem: the admin switches Pro on in /admin/pro, and a student who already
+   * had the site open carried on seeing the old answer for the rest of that
+   * session — locked out of content they had just paid for, with the Pro pages
+   * reachable only by typing a URL or pressing reload. The data was correct the
+   * whole time; the browser was simply holding yesterday's answer.
+   *
+   * So it is re-read when the tab comes back to the front, which is the moment
+   * this actually happens in practice (admin approves, student switches back),
+   * and once a minute while the tab sits open, which covers a student who walks
+   * away and comes back to a different page. A reload is no longer needed, and
+   * a revoked Pro likewise stops working on its own.
+   */
+  useEffect(() => {
+    if (!loadSessionPhone()) return;
+    let alive = true;
+
+    const revalidate = () => {
+      if (alive && document.visibilityState === "visible") void refresh();
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", revalidate);
+
+    // A student who has just paid should not wait a minute to find out. The
+    // events above catch the case where they were looking away; this catches
+    // the one where they are staring at the page the whole time, which is
+    // exactly what happens when the admin approves from another machine while
+    // they wait. One small lookup a student, every half minute.
+    const timer = setInterval(revalidate, 30_000);
+
+    return () => {
+      alive = false;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", revalidate);
+      clearInterval(timer);
+    };
+  }, [refresh]);
 
   const changePassword = useCallback(
     async (currentPassword: string, newPassword: string) => {

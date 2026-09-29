@@ -8,6 +8,7 @@ import { Lock, MessageCircle } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import ProAccessButton, { type ProAccessHandle } from "@/features/chinese-words/components/ProAccessButton";
+import TrialRequestForm from "@/features/chinese-words/components/TrialRequestForm";
 import {
   useProAccess,
   ASK_FOR_MORE_TIME_URL,
@@ -39,7 +40,7 @@ export default function ProLevelGate({
   const { language } = useLanguage();
   const t = (bn: string, en: string) => (language === "bn" ? bn : en);
   const { student: account } = useAccount();
-  const { status, isPro } = useProAccess();
+  const { status, isPro, resetTrial } = useProAccess();
   const proRef = useRef<ProAccessHandle>(null);
 
   if (level <= 1) return <>{children}</>;
@@ -73,6 +74,20 @@ export default function ProLevelGate({
         <ProAccessButton ref={proRef} />
       </>
     );
+  }
+
+  // No window yet. A signed-in student has all three details on file, so theirs
+  // opens by itself; only somebody with no account gets asked.
+  if (status === "unstarted") {
+    if (account) {
+      return (
+        <>
+          {children}
+          <ProAccessButton ref={proRef} />
+        </>
+      );
+    }
+    return <TrialRequestForm onStarted={resetTrial} />;
   }
 
   // Preview spent.

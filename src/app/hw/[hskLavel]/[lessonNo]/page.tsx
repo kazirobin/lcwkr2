@@ -33,7 +33,7 @@ import { lesson1Dialogue } from "@/features/hw/data/hsk1/lesson1-dialogue";
 import { matchesPinyinAnswer } from "@/features/hw/pinyin";
 import { round2 } from "@/features/hw/marks";
 import { loadAccountPhone } from "@/features/student-auth";
-import ProGate from "@/features/chinese-words/components/ProGate";
+import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 
 interface MistakeItem {
   section: string;
@@ -128,13 +128,13 @@ export default function HomeworkDynamicPage() {
 
   if (!exam) {
     return (
-      <ProGate>
+      <ProLevelGate level={level}>
         <main className="max-w-4xl mx-auto p-6 my-8 text-center">
           <h1 className="text-2xl font-bold text-text">
             {t("এই লেসনের পরীক্ষা পাওয়া যায়নি", "Exam not found for this lesson")}
           </h1>
         </main>
-      </ProGate>
+      </ProLevelGate>
     );
   }
 
@@ -320,7 +320,7 @@ export default function HomeworkDynamicPage() {
   };
 
   return (
-    <ProGate>
+    <ProLevelGate level={level}>
       <main
         className={`max-w-4xl mx-auto p-4 sm:p-6 bg-card border border-border shadow-sm rounded-3xl my-8 hsk-page ${
           language === "bn" ? "font-bn" : "font-en"
@@ -647,6 +647,6 @@ export default function HomeworkDynamicPage() {
         </div>
       )}
       </main>
-    </ProGate>
+    </ProLevelGate>
   );
 }
