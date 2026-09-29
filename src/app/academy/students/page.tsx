@@ -3,8 +3,22 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, Copy, Check, Lock, MapPin, Phone, RefreshCw, Search, X } from "lucide-react";
-import { IStudent, ICourse } from "@/features/academy";
+import {
+  ArrowUpRight,
+  Check,
+  Copy,
+  Lock,
+  LockOpen,
+  MapPin,
+  MessageCircle,
+  RefreshCw,
+  Search,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from "lucide-react";
+import { ICourse } from "@/features/academy";
 import { isSubAdminPasscode } from "@/features/academy/subAdminPasswords";
 import { useLanguage } from "@/i18n";
 import {
@@ -19,9 +33,36 @@ import {
   InlineSelect,
   LoadingBlock,
   PageHeader,
+  ProgressBar,
   SectionHanzi,
   StatusMark,
 } from "@/components/ui";
+
+type Tally = { held: number; attended: number; rate: number | null };
+
+type Homework = {
+  totalMarks: number;
+  obtained: number;
+  percent: number | null;
+  examsGiven: number;
+  examsTotal: number;
+};
+
+type DirectoryRow = {
+  rollNumber: number;
+  nameEnglish: string;
+  avatarUrl?: string;
+  isPro?: boolean;
+  location?: string;
+  courseIds: string[];
+  attendance: Tally;
+  homework: Homework;
+  badges: { topAttendee: boolean; leastAttendee: boolean };
+};
+
+type SortKey = "roll" | "attendanceDesc" | "attendanceAsc" | "marksDesc" | "name";
+
+const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function ScholarsDirectoryPage() {
   const { language } = useLanguage();
@@ -30,16 +71,16 @@ export default function ScholarsDirectoryPage() {
     [language],
   );
 
-  const [students, setStudents] = useState<IStudent[]>([]);
+  const [rows, setRows] = useState<DirectoryRow[]>([]);
   const [courses, setCourses] = useState<ICourse[]>([]);
-  const [marks, setMarks] = useState<
-    Record<string, { mark: number; level: number; lesson: number }>
-  >({});
+  const [phoneByRoll, setPhoneByRoll] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingContacts, setLoadingContacts] = useState(false);
 
   const [query, setQuery] = useState("");
   const [track, setTrack] = useState("all");
-  const [sortBy, setSortBy] = useState<"roll" | "attendance">("roll");
+  const [sortBy, setSortBy] = useState<SortKey>("roll");
+  const [only, setOnly] = useState<"all" | "present" | "absent">("all");
 
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
@@ -47,7 +88,17 @@ export default function ScholarsDirectoryPage() {
   const [pinError, setPinError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
 
-  const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+  /** One way out of admin mode, so the number cache is always dropped with it. */
+  const lockAdminMode = useCallback(() => {
+    setAdminUnlocked(false);
+    setPhoneByRoll({});
+    setCopied(null);
+    try {
+      sessionStorage.removeItem("academy_admin_unlocked");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -59,31 +110,45 @@ export default function ScholarsDirectoryPage() {
     });
   }, []);
 
+  // One request for the whole directory. The old page fetched students, courses
+  // and every dialogue mark separately and recomputed attendance in the
+  // browser, so the three numbers on a card could disagree with the profile
+  // page — and all three had to load before the page was usable.
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, c, m] = await Promise.all([
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
+      const [dir, c] = await Promise.all([
+        fetch("/api/academy/students/overview", { cache: "no-store" }).then((r) => r.json()),
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/hw/marks", { cache: "no-store" }).then((r) => r.json()).catch(() => null),
       ]);
-      if (s.success && Array.isArray(s.students)) setStudents(s.students);
+      if (dir.success && Array.isArray(dir.students)) setRows(dir.students);
       if (c.success && Array.isArray(c.courses)) setCourses(c.courses);
-      if (m?.success && Array.isArray(m.marks)) {
-        const map: Record<string, { mark: number; level: number; lesson: number }> = {};
-        for (const item of m.marks) {
-          map[String(item.rollNumber)] = {
-            mark: item.mark,
-            level: item.level,
-            lesson: item.lesson,
-          };
-        }
-        setMarks(map);
-      }
     } catch (err) {
       console.error("Failed to load directory:", err);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Phone numbers are a second, opt-in request. A visitor never receives them
+  // at all, so "hidden" means absent from the page rather than covered up in it.
+  const fetchContacts = useCallback(async () => {
+    setLoadingContacts(true);
+    try {
+      const res = await fetch(
+        `/api/academy/students?status=Approved&include=contact&passcode=${encodeURIComponent(ADMIN_SECRET_PIN)}`,
+        { cache: "no-store" },
+      );
+      const data = await res.json();
+      if (data.success && Array.isArray(data.students)) {
+        const map: Record<string, string> = {};
+        for (const s of data.students) map[String(s.rollNumber)] = s.whatsapp;
+        setPhoneByRoll(map);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoadingContacts(false);
     }
   }, []);
 
@@ -93,69 +158,62 @@ export default function ScholarsDirectoryPage() {
     });
   }, [fetchData]);
 
-  const enrolledIds = (s: IStudent): string[] => {
-    if (Array.isArray(s.enrolledCourseIds) && s.enrolledCourseIds.length)
-      return s.enrolledCourseIds.map((id) => String(id).trim());
-    const legacy = (s as { enrolledCourseId?: string }).enrolledCourseId;
-    return legacy ? [String(legacy).trim()] : [];
-  };
+  useEffect(() => {
+    if (!adminUnlocked) return;
+    queueMicrotask(() => {
+      void fetchContacts();
+    });
+  }, [adminUnlocked, fetchContacts]);
 
-  const attendance = useCallback(
-    (roll: string | number, ids: string[]) => {
-      let held = 0;
-      let attended = 0;
-      const target = String(roll).trim();
-      courses.forEach((c) => {
-        if (ids.some((id) => id.toLowerCase() === c.courseId.toLowerCase())) {
-          const cls = c.classes ?? [];
-          held += cls.length;
-          attended += cls.filter((s) =>
-            s.presentStudents?.some((r) => String(r).trim() === target),
-          ).length;
-        }
-      });
-      return { held, attended, rate: held > 0 ? Math.round((attended / held) * 100) : null };
-    },
-    [courses],
-  );
-
-  const rows = useMemo(() => {
+  const listed = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return students
-      .map((s) => {
-        const ids = enrolledIds(s);
-        return { s, ids, att: attendance(s.rollNumber, ids) };
-      })
-      .filter(({ s, ids }) => {
+    return rows
+      .filter((r) => {
         const matchesQ =
           !q ||
-          (s.nameEnglish || "").toLowerCase().includes(q) ||
-          String(s.rollNumber).includes(q) ||
-          (s.location || "").toLowerCase().includes(q);
+          (r.nameEnglish || "").toLowerCase().includes(q) ||
+          String(r.rollNumber).includes(q) ||
+          (r.location || "").toLowerCase().includes(q);
         const matchesTrack =
-          track === "all" || ids.some((id) => id.toLowerCase() === track.toLowerCase());
-        return matchesQ && matchesTrack;
+          track === "all" ||
+          r.courseIds.some((id) => id.toLowerCase() === track.toLowerCase());
+        const matchesOnly =
+          only === "all" ||
+          (only === "present" && r.badges.topAttendee) ||
+          (only === "absent" && r.badges.leastAttendee);
+        return matchesQ && matchesTrack && matchesOnly;
       })
       .sort((a, b) => {
-        if (sortBy === "attendance") return (b.att.rate ?? -1) - (a.att.rate ?? -1);
-        return Number(a.s.rollNumber) - Number(b.s.rollNumber);
+        switch (sortBy) {
+          case "attendanceDesc":
+            return (b.attendance.rate ?? -1) - (a.attendance.rate ?? -1);
+          case "attendanceAsc":
+            return (a.attendance.rate ?? 101) - (b.attendance.rate ?? 101);
+          case "marksDesc":
+            return b.homework.obtained - a.homework.obtained;
+          case "name":
+            return (a.nameEnglish || "").localeCompare(b.nameEnglish || "");
+          default:
+            return a.rollNumber - b.rollNumber;
+        }
       });
-  }, [students, query, track, sortBy, attendance]);
+  }, [rows, query, track, only, sortBy]);
 
-  const filtersActive = query !== "" || track !== "all" || sortBy !== "roll";
+  const filtersActive = query !== "" || track !== "all" || sortBy !== "roll" || only !== "all";
 
-  const maskPhone = (num: string): string => {
-    const digits = (num || "").replace(/\D/g, "");
-    if (digits.length <= 6) return digits;
-    return `${digits.slice(0, 3)}***${digits.slice(-2)}`;
-  };
+  const rateTone = (rate: number | null) =>
+    rate === null ? "neutral" : rate >= 75 ? "done" : "pending";
 
   const submitPin = (e: React.FormEvent) => {
     e.preventDefault();
     const v = pin.trim();
     if (v === ADMIN_SECRET_PIN.trim() || isSubAdminPasscode(v)) {
       setAdminUnlocked(true);
-      sessionStorage.setItem("academy_admin_unlocked", "true");
+      try {
+        sessionStorage.setItem("academy_admin_unlocked", "true");
+      } catch {
+        /* ignore */
+      }
       setPinOpen(false);
     } else {
       setPinError(t("ভুল পাসকোড।", "Incorrect passcode."));
@@ -167,8 +225,20 @@ export default function ScholarsDirectoryPage() {
       await navigator.clipboard.writeText(num || "");
       setCopied(num);
       setTimeout(() => setCopied(null), 1500);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
+
+  /** Digits only, in international form, for wa.me. */
+  const waHref = (num: string) => {
+    const digits = (num || "").replace(/\D/g, "");
+    const intl = digits.startsWith("880") ? digits : `88${digits.replace(/^0+/, "")}`;
+    return `https://wa.me/${intl}?text=${encodeURIComponent("Hi")}`;
+  };
+
+  const topCount = rows.filter((r) => r.badges.topAttendee).length;
+  const lowCount = rows.filter((r) => r.badges.leastAttendee).length;
 
   return (
     <div className="relative isolate mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
@@ -183,16 +253,18 @@ export default function ScholarsDirectoryPage() {
 
       <PageHeader
         className="mt-6"
-        eyebrow={<Eyebrow seal="生" label={t("শিক্ষার্থী তালিকা", "Scholars")} detail={`${students.length}`} />}
+        eyebrow={<Eyebrow seal="生" label={t("শিক্ষার্থী তালিকা", "Scholars")} detail={`${rows.length}`} />}
         title={t("যাঁরা একসাথে শিখছেন", "The people learning together")}
         lede={t(
-          "চলমান ব্যাচের শিক্ষার্থী ও তাঁদের ক্লাস উপস্থিতি।",
-          "Everyone in the running cohorts, and how their attendance is going.",
+          "চলমান ব্যাচের শিক্ষার্থী, তাঁদের উপস্থিতি আর কতটুকু কাজ হয়েছে।",
+          "Everyone in the running cohorts, how their attendance is going, and how much they have actually completed.",
         )}
         actions={
           <div className="flex items-center gap-2">
             {adminUnlocked ? (
-              <StatusMark tone="done">{t("অ্যাডমিন মোড", "Admin mode")}</StatusMark>
+              <Button variant="ghost" size="sm" onClick={lockAdminMode} iconLeft={<LockOpen className="h-3.5 w-3.5" />}>
+                {t("অ্যাডমিন মোড বন্ধ", "Leave admin mode")}
+              </Button>
             ) : (
               <Button
                 variant="ghost"
@@ -200,13 +272,13 @@ export default function ScholarsDirectoryPage() {
                 onClick={() => { setPin(""); setPinError(""); setPinOpen(true); }}
                 iconLeft={<Lock className="h-3.5 w-3.5" />}
               >
-                {t("সাব-অ্যাডমিন লগইন", "Sub-admin login")}
+                {t("অ্যাডমিন মোড", "Admin mode")}
               </Button>
             )}
             <IconButton
               label={t("তালিকা রিফ্রেশ করুন", "Refresh list")}
               size="sm"
-              spinning={loading}
+              spinning={loading || loadingContacts}
               onClick={fetchData}
             >
               <RefreshCw className="h-4 w-4" />
@@ -215,8 +287,83 @@ export default function ScholarsDirectoryPage() {
         }
       />
 
+      {/* Attendance highlights */}
+      {!loading && rows.length > 0 && (
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => setOnly(only === "present" ? "all" : "present")}
+            aria-pressed={only === "present"}
+            className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+              only === "present"
+                ? "border-ok/50 bg-ok/10"
+                : "border-ok/25 bg-ok/5 hover:border-ok/50"
+            }`}
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ok/15 text-ok">
+              <TrendingUp className="h-4.5 w-4.5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-text">
+                {t("সবচেয়ে বেশি উপস্থিত", "Most present")}
+              </span>
+              <span className="block text-[11px] text-text/55">
+                {t(`${topCount} জন শিক্ষার্থী`, `${topCount} scholars`)}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOnly(only === "absent" ? "all" : "absent")}
+            aria-pressed={only === "absent"}
+            className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+              only === "absent"
+                ? "border-danger/50 bg-danger/10"
+                : "border-danger/25 bg-danger/5 hover:border-danger/50"
+            }`}
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-danger/15 text-danger">
+              <TrendingDown className="h-4.5 w-4.5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-text">
+                {t("সবচেয়ে বেশি অনুপস্থিত", "Least present")}
+              </span>
+              <span className="block text-[11px] text-text/55">
+                {t(`${lowCount} জন শিক্ষার্থী`, `${lowCount} scholars`)}
+              </span>
+            </span>
+          </button>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-text/12 bg-card px-4 py-3.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              <Sparkles className="h-4.5 w-4.5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-text">
+                {t("গড় উপস্থিতি", "Average attendance")}
+              </span>
+              <span className="block text-[11px] tabular-nums text-text/55">
+                {(() => {
+                  const withRate = rows.filter((r) => r.attendance.rate !== null);
+                  if (!withRate.length) return t("এখনো ক্লাস হয়নি", "No classes yet");
+                  const avg = Math.round(
+                    withRate.reduce((sum, r) => sum + (r.attendance.rate ?? 0), 0) / withRate.length,
+                  );
+                  return t(
+                    `${avg}% · ${withRate.length} জনের তথ্য`,
+                    `${avg}% across ${withRate.length} scholars`,
+                  );
+                })()}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="relative flex-1">
           <label htmlFor="dir-search" className="sr-only">
             {t("নাম, রোল বা অবস্থান খুঁজুন", "Search by name, roll, or location")}
@@ -241,8 +388,8 @@ export default function ScholarsDirectoryPage() {
             </button>
           )}
         </div>
-        <InlineSelect label={t("ট্র্যাক", "Track")} value={track} onChange={(e) => setTrack(e.target.value)}>
-          <option value="all">{t("সব ট্র্যাক", "All tracks")}</option>
+        <InlineSelect label={t("কোর্স", "Course")} value={track} onChange={(e) => setTrack(e.target.value)}>
+          <option value="all">{t("সব কোর্স", "All courses")}</option>
           {courses.map((c) => (
             <option key={c.courseId} value={c.courseId}>
               {c.courseId}
@@ -252,18 +399,21 @@ export default function ScholarsDirectoryPage() {
         <InlineSelect
           label={t("সাজান", "Sort")}
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as "roll" | "attendance")}
+          onChange={(e) => setSortBy(e.target.value as SortKey)}
         >
           <option value="roll">{t("রোল অনুযায়ী", "By roll")}</option>
-          <option value="attendance">{t("উপস্থিতি অনুযায়ী", "By attendance")}</option>
+          <option value="name">{t("নাম অনুযায়ী", "By name")}</option>
+          <option value="attendanceDesc">{t("সবচেয়ে বেশি উপস্থিত", "Most present first")}</option>
+          <option value="attendanceAsc">{t("সবচেয়ে কম উপস্থিত", "Least present first")}</option>
+          <option value="marksDesc">{t("সবচেয়ে বেশি নম্বর", "Most marks first")}</option>
         </InlineSelect>
       </div>
 
       <div className="mt-4 flex items-center justify-between px-1 text-xs text-text/50" aria-live="polite">
         <span className="tabular-nums">
           {t(
-            `${students.length} জনের মধ্যে ${rows.length} জন`,
-            `Showing ${rows.length} of ${students.length}`,
+            `${rows.length} জনের মধ্যে ${listed.length} জন`,
+            `Showing ${listed.length} of ${rows.length}`,
           )}
         </span>
         {filtersActive && (
@@ -273,6 +423,7 @@ export default function ScholarsDirectoryPage() {
               setQuery("");
               setTrack("all");
               setSortBy("roll");
+              setOnly("all");
             }}
             className="font-medium text-text underline decoration-text/25 underline-offset-2 hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
           >
@@ -284,142 +435,156 @@ export default function ScholarsDirectoryPage() {
       <div className="mt-6">
         {loading ? (
           <LoadingBlock label={t("তালিকা লোড হচ্ছে", "Loading directory")} rows={3} />
-        ) : rows.length === 0 ? (
+        ) : listed.length === 0 ? (
           <EmptyState
             title={t("কোনো শিক্ষার্থী পাওয়া যায়নি", "No scholars found")}
             description={t("অন্য নাম দিয়ে খুঁজুন বা ফিল্টার বাদ দিন।", "Try a different name, or clear the filters.")}
           />
         ) : (
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map(({ s, ids, att }) => (
-              <li key={String(s.rollNumber)}>
-                <Card interactive className="flex h-full flex-col p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-text/10 bg-text/5">
-                      <Image
-                        src={
-                          s.avatarUrl ||
-                          `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(s.nameEnglish || "student")}`
-                        }
-                        alt=""
-                        width={48}
-                        height={48}
-                        className="h-full w-full object-cover"
-                        unoptimized
-                      />
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="flex items-center gap-1.5 truncate text-sm font-bold text-text">
-                        <span className="truncate">{s.nameEnglish}</span>
-                        {s.isPro && (
-                          <span className="inline-flex shrink-0 items-center rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-500">
-                            ⭐ Pro
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-xs tabular-nums text-text/45">
-                        {t("রোল", "Roll")} #{s.rollNumber}
+            {listed.map((r) => {
+              const phone = phoneByRoll[String(r.rollNumber)];
+              return (
+                <li key={r.rollNumber}>
+                  <Card interactive className="flex h-full flex-col p-5">
+                    <div className="flex items-center gap-3">
+                      <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-text/10 bg-text/5">
+                        <Image
+                          src={
+                            r.avatarUrl ||
+                            `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(r.nameEnglish || "student")}`
+                          }
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="h-full w-full object-cover"
+                          unoptimized
+                        />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="flex items-center gap-1.5 truncate text-sm font-bold text-text">
+                          <span className="truncate">{r.nameEnglish}</span>
+                          {r.isPro && (
+                            <span className="inline-flex shrink-0 items-center rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-500">
+                              ⭐ Pro
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-xs tabular-nums text-text/45">
+                          {t("রোল", "Roll")} #{r.rollNumber}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-3 flex items-center gap-1.5 text-xs text-text/55">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-text/35" aria-hidden="true" />
+                      <span className="truncate">{r.location || t("অবস্থান নেই", "Location not set")}</span>
+                    </p>
+
+                    {/* Attendance — the headline number, with the sessions behind it. */}
+                    <div className="mt-4">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-text/45">
+                          {t("উপস্থিতি", "Attendance")}
+                        </span>
+                        <span className="font-mono text-lg font-bold tabular-nums text-text">
+                          {r.attendance.rate === null
+                            ? "—"
+                            : `${r.attendance.rate}%`}
+                        </span>
+                      </div>
+                      <div className="mt-1.5">
+                        <ProgressBar
+                          value={r.attendance.rate ?? 0}
+                          max={100}
+                          label={t("উপস্থিতি", "Attendance")}
+                        />
+                      </div>
+                      <p className="mt-1 text-[11px] tabular-nums text-text/45">
+                        {r.attendance.held > 0
+                          ? t(
+                              `${r.attendance.attended}/${r.attendance.held} ক্লাসে`,
+                              `${r.attendance.attended} of ${r.attendance.held} classes`,
+                            )
+                          : t("এখনো ক্লাস হয়নি", "No classes held yet")}
                       </p>
                     </div>
-                  </div>
 
-                  <p className="mt-3 flex items-center gap-1.5 text-xs text-text/55">
-                    <MapPin className="h-3.5 w-3.5 shrink-0 text-text/35" aria-hidden="true" />
-                    <span className="truncate">{s.location || t("অবস্থান নেই", "Location not set")}</span>
-                  </p>
+                    {/* Homework totals, in place of the old single dialogue mark. */}
+                    <div className="mt-3 flex items-center justify-between rounded-xl border border-text/10 bg-text/3 px-3.5 py-2.5">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-text/45">
+                        {t("হোমওয়ার্ক", "Homework")}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {r.homework.totalMarks > 0 && (
+                          <span className="font-mono text-[11px] tabular-nums text-text/45">
+                            {r.homework.obtained} / {r.homework.totalMarks}
+                          </span>
+                        )}
+                        <StatusMark tone={rateTone(r.homework.percent)}>
+                          <span className="tabular-nums">
+                            {r.homework.percent === null
+                              ? t("এখনো নেই", "—")
+                              : `${r.homework.percent}%`}
+                          </span>
+                        </StatusMark>
+                      </span>
+                    </div>
 
-                  {s.whatsapp && (
-                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-text/10 bg-text/[0.03] px-3.5 py-2.5">
-                      <Phone className="h-4 w-4 shrink-0 text-text/35" aria-hidden="true" />
-                       <a
-                         href={`https://wa.me/${s.whatsapp.replace(/\D/g, "")}`}
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         className="min-w-0 flex-1 truncate font-mono text-sm font-bold tabular-nums text-text hover:text-text/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
-                         title={t("হোয়াটসঅ্যাপ কল করুন", "Call on WhatsApp")}
-                       >
-                        {adminUnlocked ? s.whatsapp : maskPhone(s.whatsapp)}
-                      </a>
-                      {adminUnlocked && (
+                    {(r.badges.topAttendee || r.badges.leastAttendee) && (
+                      <p
+                        className={`mt-2.5 text-[11px] font-bold ${
+                          r.badges.topAttendee ? "text-ok" : "text-danger"
+                        }`}
+                      >
+                        {r.badges.topAttendee
+                          ? t("সর্বোচ্চ উপস্থিতি", "Highest attendance")
+                          : t("সর্বনিম্ন উপস্থিতি", "Lowest attendance")}
+                      </p>
+                    )}
+
+                    {/* Contact details exist only while admin mode is on. */}
+                    {adminUnlocked && phone && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-text/10 bg-text/[0.03] px-3.5 py-2.5">
+                        <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-text">
+                          {phone}
+                        </span>
                         <button
                           type="button"
-                          onClick={() => copyNumber(s.whatsapp)}
+                          onClick={() => copyNumber(phone)}
                           aria-label={t("নম্বর কপি করুন", "Copy number")}
                           title={t("কপি করুন", "Copy")}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-text/15 text-text/50 transition-colors hover:border-text/30 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
                         >
-                          {copied === s.whatsapp ? (
+                          {copied === phone ? (
                             <Check className="h-3.5 w-3.5 text-ok" />
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
                         </button>
-                      )}
-                    </div>
-                  )}
-                  {!adminUnlocked && s.whatsapp && (
-                    <p className="mt-1.5 text-[10px] text-text/40">
-                      {t("পুরো নম্বর দেখতে সাব-অ্যাডমিন লগইন করুন।", "Login as sub-admin to see full number.")}
-                    </p>
-                  )}
+                        <a
+                          href={waHref(phone)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ok px-2.5 py-1.5 text-[11px] font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                          {t("হোয়াটসঅ্যাপ", "WhatsApp")}
+                        </a>
+                      </div>
+                    )}
 
-                  <dl className="mt-4 space-y-2 rounded-xl border border-text/10 bg-text/3 p-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <dt className="text-text/50">{t("সংলাপ মার্ক", "Dialogue mark")}</dt>
-                      <dd>
-                        {marks[String(s.rollNumber)] ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <StatusMark tone="done">
-                              <span className="tabular-nums">
-                                {marks[String(s.rollNumber)].mark}/10
-                              </span>
-                            </StatusMark>
-                            <span className="font-mono text-[10px] text-text/40">
-                              HSK{marks[String(s.rollNumber)].level}
-                              {marks[String(s.rollNumber)].lesson > 0
-                                ? `·L${marks[String(s.rollNumber)].lesson}`
-                                : ""}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-text/45">{t("এখনও নেই", "—")}</span>
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-text/50">{t("উপস্থিতি", "Attendance")}</dt>
-                      <dd>
-                        {att.rate === null ? (
-                          <span className="text-text/45">{t("এখনও নেই", "—")}</span>
-                        ) : (
-                          <StatusMark tone={att.rate >= 75 ? "done" : "neutral"}>
-                            <span className="tabular-nums">{att.rate}%</span>
-                          </StatusMark>
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-text/50">{t("ক্লাসে উপস্থিত", "Sessions attended")}</dt>
-                      <dd className="font-semibold tabular-nums text-text">
-                        {att.attended} / {att.held}
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between border-t border-text/10 pt-2">
-                      <dt className="text-text/50">{t("ট্র্যাক", "Track")}</dt>
-                      <dd className="font-semibold text-text">{ids.length ? ids.join(", ") : "—"}</dd>
-                    </div>
-                  </dl>
-
-                  <Link
-                    href={`/academy/students/${s.rollNumber}`}
-                    className="mt-4 inline-flex items-center gap-1 self-start border-t border-text/10 pt-3 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
-                  >
-                    {t("প্রোফাইল ও উপস্থিতি", "Profile & attendance")}
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Link>
-                </Card>
-              </li>
-            ))}
+                    <Link
+                      href={`/academy/students/${r.rollNumber}`}
+                      className="mt-auto inline-flex items-center gap-1 border-t border-text/10 pt-3 text-sm font-semibold text-text underline decoration-text/25 underline-offset-4 transition-colors hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+                    >
+                      {t("প্রোফাইল", "Profile")}
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -428,8 +593,11 @@ export default function ScholarsDirectoryPage() {
       <Dialog
         open={pinOpen}
         onClose={() => setPinOpen(false)}
-        title={t("সাব-অ্যাডমিন যাচাই", "Sub-admin verification")}
-        description={t("পুরো হোয়াটসঅ্যাপ নম্বর দেখতে পাসকোড দিন।", "Enter passcode to see full phone numbers.")}
+        title={t("অ্যাডমিন মোড", "Admin mode")}
+        description={t(
+          "ফোন নম্বর দেখতে পাসকোড দিন। সাধারণ দর্শকেরা নম্বর ও হোয়াটসঅ্যাপ লিংক কোনোভাবেই পাবে না।",
+          "Enter the passcode to see phone numbers. Visitors never receive a number or a WhatsApp link.",
+        )}
         size="sm"
       >
         <form onSubmit={submitPin} className="space-y-4">

@@ -202,6 +202,9 @@ export default function DialoguePlayer({ level, lesson, builtin, collapsible }: 
           lesson,
           audioUrl: upJson.secure_url,
           durationSec: Math.round(upJson.duration ?? secs),
+          // Cloudinary reports the stored size; the local blob is the fallback
+          // so the student's storage total counts audio even if it doesn't.
+          bytes: Math.max(0, Math.round(Number(upJson.bytes ?? blob.size ?? 0))),
         }),
       });
       const data = await res.json();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Check,
   ChevronDown,
@@ -17,6 +17,7 @@ import {
   Star,
   GraduationCap,
   Tags,
+  UserPlus,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
@@ -86,6 +87,23 @@ type Student = {
   enrolledCourseId?: string;
 };
 
+/** A paid-enrollment row, as the course page needs to show it. */
+type EnrollmentRow = {
+  _id: string;
+  courseId: string;
+  courseName?: string;
+  name: string;
+  whatsapp?: string;
+  trxId?: string;
+  amount?: number;
+  status: "Pending" | "Approved" | "Rejected";
+  rollNumber?: number | null;
+  location?: string;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 type PendingLog = {
   _id: string;
   courseId: string;
@@ -102,6 +120,30 @@ type ClassForm = {
   time: string;
   topic: string;
   presentStudents: string[];
+};
+
+/** Days the class meets, in the app's own order (Sat first) — the same order the
+ *  public timetable prints them in. */
+const ROUTINE_DAYS: { value: number; short: string; name: string }[] = [
+  { value: 6, short: "শনি", name: "শনিবার" },
+  { value: 0, short: "রবি", name: "রবিবার" },
+  { value: 1, short: "সোম", name: "সোমবার" },
+  { value: 2, short: "মঙ্গল", name: "মঙ্গলবার" },
+  { value: 3, short: "বুধ", name: "বুধবার" },
+  { value: 4, short: "বৃহ", name: "বৃহস্পতিবার" },
+  { value: 5, short: "শুক্র", name: "শুক্রবার" },
+];
+
+/** A blank saved-link form; the schedule starts Sat/Mon/Wed at 9:00 PM Dhaka,
+ *  which is the timetable the school actually teaches. */
+const EMPTY_LINK_FORM = {
+  label: "",
+  meetLink: "",
+  topic: "",
+  days: [6, 1, 3] as number[],
+  time: "21:00",
+  durationMin: 60,
+  active: false,
 };
 
 const EMPTY_COURSE: Course = {
@@ -151,6 +193,20 @@ export default function AdminCoursesPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // ── enrollments (approve / reject / delete from the course itself) ────
+  const [enrollOpen, setEnrollOpen] = useState<Course | null>(null);
+  const [enrollTab, setEnrollTab] = useState<"Pending" | "Approved" | "Rejected">("Pending");
+  const [enrollRows, setEnrollRows] = useState<Record<string, EnrollmentRow[]>>({
+    Pending: [],
+    Approved: [],
+    Rejected: [],
+  });
+  const [enrollBusy, setEnrollBusy] = useState(false);
+  const [enrollRowBusy, setEnrollRowBusy] = useState<string | null>(null);
+  const enrollReq = useRef(0);
+  const [directRoll, setDirectRoll] = useState("");
+  const [directBusy, setDirectBusy] = useState(false);
+
   // class log dialog (create + edit share it)
   const [classForm, setClassForm] = useState<ClassForm | null>(null);
   const [savingClass, setSavingClass] = useState(false);
@@ -174,6 +230,15 @@ export default function AdminCoursesPage() {
     }
   }, [t, toast]);
 
+  /** Roster only. Approving a seat adds a student, and the list they are added
+   *  to is the one the admin is about to look at. */
+  const loadStudents = useCallback(async () => {
+    const stu = await fetch("/api/academy/students?status=Approved", { cache: "no-store" })
+      .then((r) => r.json())
+      .catch(() => null);
+    if (stu?.success) setStudents(stu.students || []);
+  }, []);
+
   // ── live class sessions ──────────────────────────────────────────────
   const [liveSessions, setLiveSessions] = useState<
     { _id: string; courseId: string; meetLink: string; topic?: string; assignmentPrompt?: string; date: string; time?: string; open: boolean; attendance: { rollNumber: number; name: string }[] }[]
@@ -191,8 +256,8 @@ export default function AdminCoursesPage() {
 
   // ── saved Google Meet links per course ─────────────────────────────────
   const [linksOpen, setLinksOpen] = useState<Course | null>(null);
-  const [links, setLinks] = useState<{ _id: string; courseId: string; label: string; meetLink: string; topic: string }[]>([]);
-  const [linkForm, setLinkForm] = useState<{ _id?: string; label: string; meetLink: string; topic: string }>({ label: "", meetLink: "", topic: "" });
+  const [links, setLinks] = useState<{ _id: string; courseId: string; label: string; meetLink: string; topic: string; days?: number[] | null; time?: string | null; durationMin?: number | null; active?: boolean | null }[]>([]);
+  const [linkForm, setLinkForm] = useState<{ _id?: string; label: string; meetLink: string; topic: string; days: number[]; time: string; durationMin: number; active: boolean }>(EMPTY_LINK_FORM);
   const [linksBusy, setLinksBusy] = useState(false);
 
   const fetchLinks = useCallback(async (courseId: string) => {
@@ -207,7 +272,7 @@ export default function AdminCoursesPage() {
 
   const openLinks = (course: Course) => {
     setLinksOpen(course);
-    setLinkForm({ label: "", meetLink: "", topic: "" });
+    setLinkForm({ ...EMPTY_LINK_FORM });
     fetchLinks(course.courseId);
   };
 
@@ -231,6 +296,10 @@ export default function AdminCoursesPage() {
             label: linkForm.label,
             meetLink: linkForm.meetLink,
             topic: linkForm.topic,
+            days: linkForm.days,
+            time: linkForm.time,
+            durationMin: linkForm.durationMin,
+            active: linkForm.active,
             adminPasscode: ADMIN_PASSCODE,
           }),
         },
@@ -238,7 +307,7 @@ export default function AdminCoursesPage() {
       const data = await res.json();
       if (data.success) {
         toast(isEdit ? t("লিংক আপডেট হয়েছে।", "Link updated.") : t("লিংক সংরক্ষিত হয়েছে।", "Link saved."), "success");
-        setLinkForm({ label: "", meetLink: "", topic: "" });
+        setLinkForm({ ...EMPTY_LINK_FORM });
         fetchLinks(linksOpen.courseId);
       } else {
         toast(data.error || data.message || t("সংরক্ষণ হয়নি।", "Save failed."), "error");
@@ -466,6 +535,159 @@ export default function AdminCoursesPage() {
       toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
     } finally {
       setCloseBusy(false);
+    }
+  };
+
+  // ── enrollments ────────────────────────────────────────────────────────
+  // Approving a payment and deleting a bad row used to live on its own
+  // /admin/enrollments screen, one click away from nothing. An admin looking
+  // at a course is looking at "who is joining this", so the decision belongs on
+  // the course itself. The standalone page still works; this is where the work
+  // now happens.
+  const openEnrollments = async (course: Course) => {
+    setEnrollOpen(course);
+    setEnrollTab("Pending");
+    setEnrollBusy(true);
+    // Clicking a second course while the first is still loading would
+    // otherwise let the slower response land last and show course A's rows
+    // under course B's name. A ticket discards the stale answer.
+    const ticket = ++enrollReq.current;
+    try {
+      const [pending, approved, rejected] = await Promise.all(
+        (["Pending", "Approved", "Rejected"] as const).map((status) =>
+          fetch(
+            `/api/course-enrollments?courseId=${encodeURIComponent(course.courseId)}&status=${status}&passcode=${encodeURIComponent(ADMIN_PASSCODE)}`,
+            { cache: "no-store" },
+          )
+            .then((r) => r.json())
+            .catch(() => null),
+        ),
+      );
+      if (ticket !== enrollReq.current) return;
+      setEnrollRows({
+        Pending: pending?.enrollments ?? [],
+        Approved: approved?.enrollments ?? [],
+        Rejected: rejected?.enrollments ?? [],
+      });
+    } catch {
+      if (ticket !== enrollReq.current) return;
+      toast(t("ভর্তির তালিকা লোড করা যায়নি।", "Couldn't load enrollments."), "error");
+    } finally {
+      if (ticket === enrollReq.current) setEnrollBusy(false);
+    }
+  };
+
+  const reloadEnrollments = async (courseId: string) => {
+    const [pending, approved, rejected] = await Promise.all(
+      (["Pending", "Approved", "Rejected"] as const).map((status) =>
+        fetch(
+          `/api/course-enrollments?courseId=${encodeURIComponent(courseId)}&status=${status}&passcode=${encodeURIComponent(ADMIN_PASSCODE)}`,
+          {
+            cache: "no-store",
+          },
+        )
+          .then((r) => r.json())
+          .catch(() => null),
+      ),
+    );
+    setEnrollRows({
+      Pending: pending?.enrollments ?? [],
+      Approved: approved?.enrollments ?? [],
+      Rejected: rejected?.enrollments ?? [],
+    });
+  };
+
+  const actOnEnrollment = async (
+    row: EnrollmentRow,
+    action: "APPROVE" | "REJECT" | "DELETE",
+  ) => {
+    if (!enrollOpen) return;
+    if (action === "DELETE") {
+      const ok = await confirm({
+        title: t("ভর্তির রোড মুছবেন?", "Delete this enrollment?"),
+        message: t(
+          `${row.name} — এই সারি স্থায়ীভাবে মুছে যাবে। ভুল লেখা বা ডুপ্লিকেট পেমেন্টের ক্ষেত্রে ব্যবহার করুন।`,
+          `${row.name} — this row is removed for good. Use it for a mistyped entry or a duplicate payment.`,
+        ),
+        confirmLabel: t("মুছে ফেলুন", "Delete"),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setEnrollRowBusy(row._id);
+    try {
+      const res = await fetch("/api/course-enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, id: row._id, adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        toast(data.message || data.error || t("কাজটি হয়নি।", "That did not work."), "error");
+        return;
+      }
+      if (action === "APPROVE" && data.rollNumber) {
+        toast(
+          t(`ভর্তি অনুমোদিত — রোল নম্বর #${data.rollNumber}`, `Approved — roll #${data.rollNumber}`),
+          "success",
+        );
+        // The new student must appear in the roster without a page reload, or
+        // the admin approves them and then cannot find them.
+        void loadStudents();
+      } else if (action === "REJECT") {
+        toast(t("ভর্তি বাতিল হয়েছে।", "Enrollment rejected."), "success");
+      } else {
+        toast(t("রোড মুছে ফেলা হয়েছে।", "Row deleted."), "success");
+      }
+      await reloadEnrollments(enrollOpen.courseId);
+    } catch {
+      toast(t("কাজটি হয়নি।", "That did not work."), "error");
+    } finally {
+      setEnrollRowBusy(null);
+    }
+  };
+
+  /** Cash payment, or a student from an older batch: no TrxID to approve, they
+   *  just join. Lives here so the whole enrollment story is one dialog. */
+  const addStudentDirectly = async () => {
+    if (!enrollOpen) return;
+    const roll = Number(directRoll);
+    if (!Number.isFinite(roll) || roll <= 0) {
+      toast(t("সঠিক রোল নম্বর দিন।", "Enter a valid roll number."), "error");
+      return;
+    }
+    const who = students.find((s) => String(s.rollNumber) === String(roll));
+    if (!who) {
+      toast(t("এই রোল নম্বরের কোনো শিক্ষার্থী নেই।", "No student has that roll number."), "error");
+      return;
+    }
+    setDirectBusy(true);
+    try {
+      const res = await fetch("/api/course-enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ADD_STUDENT",
+          courseId: enrollOpen.courseId,
+          rollNumber: roll,
+          adminPasscode: ADMIN_PASSCODE,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        toast(data.message || data.error || t("যোগ করা যায়নি।", "Could not add."), "error");
+        return;
+      }
+      setDirectRoll("");
+      toast(
+        t(`${who.nameEnglish} কোর্সে যোগ হয়েছে।`, `${who.nameEnglish} was added to the course.`),
+        "success",
+      );
+      await reloadEnrollments(enrollOpen.courseId);
+    } catch {
+      toast(t("যোগ করা যায়নি।", "Could not add."), "error");
+    } finally {
+      setDirectBusy(false);
     }
   };
 
@@ -1258,6 +1480,14 @@ export default function AdminCoursesPage() {
                   <Button
                     size="sm"
                     variant="ghost"
+                    iconLeft={<GraduationCap className="h-4 w-4" />}
+                    onClick={() => void openEnrollments(c)}
+                  >
+                    {t("ভর্তি", "Enrollments")} {enrolledFor(c.courseId).length}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     iconLeft={<BookOpen className="h-4 w-4" />}
                     onClick={() => {
                       setLessonsForm(
@@ -1801,13 +2031,43 @@ export default function AdminCoursesPage() {
                 {links.map((l) => (
                   <li key={l._id} className="flex items-center justify-between gap-2 rounded-xl border border-text/12 bg-card px-3 py-2.5">
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-text">
-                        {l.label || l.meetLink}
+                      <span className="flex items-center gap-1.5">
+                        <span className="block truncate text-sm font-semibold text-text">
+                          {l.label || l.meetLink}
+                        </span>
+                        {l.active && (
+                          <span className="shrink-0 rounded-full bg-ok/15 px-1.5 py-0.5 text-[10px] font-bold text-ok">
+                            {t("সময়সূচিতে", "Scheduled")}
+                          </span>
+                        )}
                       </span>
                       {l.label && <span className="block truncate text-[11px] tabular-nums text-text/45">{l.meetLink}</span>}
+                      {(l.days?.length ?? 0) > 0 && l.time && (
+                        <span className="mt-0.5 block text-[11px] tabular-nums text-text/55">
+                          {(l.days ?? [])
+                            .map((d) => ROUTINE_DAYS.find((x) => x.value === d)?.short ?? "?")
+                            .join(" · ")}{" "}
+                          · {l.time} · {l.durationMin ?? 60} {t("মিনিট", "min")}
+                        </span>
+                      )}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
-                      <IconButton label={t("সম্পাদনা", "Edit")} size="sm" onClick={() => setLinkForm({ _id: l._id, label: l.label, meetLink: l.meetLink, topic: l.topic })}>
+                      <IconButton
+                        label={t("সম্পাদনা", "Edit")}
+                        size="sm"
+                        onClick={() =>
+                          setLinkForm({
+                            _id: l._id,
+                            label: l.label,
+                            meetLink: l.meetLink,
+                            topic: l.topic,
+                            days: (l.days ?? []).length ? [...l.days!] : [6, 1, 3],
+                            time: l.time || "21:00",
+                            durationMin: l.durationMin ?? 60,
+                            active: !!l.active,
+                          })
+                        }
+                      >
                         <Pencil className="h-4 w-4" />
                       </IconButton>
                       <IconButton label={t("মুছুন", "Delete")} size="sm" onClick={() => deleteLink(l._id)}>
@@ -1839,9 +2099,94 @@ export default function AdminCoursesPage() {
                 value={linkForm.topic}
                 onChange={(e) => setLinkForm({ ...linkForm, topic: e.target.value })}
               />
+
+              {/* Weekly timetable — this is what the public schedule and the
+                  pre-class popup are built from. */}
+              <fieldset className="space-y-3 rounded-xl border border-text/10 bg-text/[0.02] p-3">
+                <legend className="px-1 text-[11px] font-semibold uppercase tracking-wider text-text/45">
+                  {t("সাপ্তাহিক সময়সূচি", "Weekly timetable")}
+                </legend>
+
+                <div>
+                  <p className="mb-1.5 text-xs text-text/60">{t("কোন দিনগুলো", "Days")}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ROUTINE_DAYS.map((d) => {
+                      const on = linkForm.days.includes(d.value);
+                      return (
+                        <button
+                          key={d.value}
+                          type="button"
+                          aria-pressed={on}
+                          title={d.name}
+                          onClick={() =>
+                            setLinkForm({
+                              ...linkForm,
+                              days: on
+                                ? linkForm.days.filter((x) => x !== d.value)
+                                : [...linkForm.days, d.value].sort(
+                                    (a, b) =>
+                                      ROUTINE_DAYS.findIndex((x) => x.value === a) -
+                                      ROUTINE_DAYS.findIndex((x) => x.value === b),
+                                  ),
+                            })
+                          }
+                          className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
+                            on
+                              ? "border-primary bg-primary text-white"
+                              : "border-text/15 text-text/60 hover:border-text/30"
+                          }`}
+                        >
+                          {d.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    label={t("সময় (ঢাকা)", "Time (Dhaka)")}
+                    type="time"
+                    value={linkForm.time}
+                    onChange={(e) => setLinkForm({ ...linkForm, time: e.target.value })}
+                  />
+                  <Field
+                    label={t("কত মিনিট", "Duration (min)")}
+                    type="number"
+                    min={5}
+                    max={480}
+                    step={5}
+                    value={String(linkForm.durationMin)}
+                    onChange={(e) =>
+                      setLinkForm({ ...linkForm, durationMin: Number(e.target.value) || 60 })
+                    }
+                  />
+                </div>
+
+                <label className="flex cursor-pointer items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={linkForm.active}
+                    onChange={(e) => setLinkForm({ ...linkForm, active: e.target.checked })}
+                    className="mt-0.5 size-4 accent-primary"
+                  />
+                  <span className="text-xs leading-5 text-text/70">
+                    <span className="font-semibold text-text">
+                      {t("সাইটে দেখান", "Show on the site")}
+                    </span>
+                    <span className="block text-text/55">
+                      {t(
+                        "চালু করলে হোমপেজের সময়সূচিতে দেখাবে, আর ক্লাস শুরুর ১৫ মিনিট আগে পপআপ দেখাবে।",
+                        "Puts it in the public schedule and pops it up 15 minutes before the class.",
+                      )}
+                    </span>
+                  </span>
+                </label>
+              </fieldset>
+
               <div className="flex justify-end gap-2">
                 {linkForm._id && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setLinkForm({ label: "", meetLink: "", topic: "" })}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setLinkForm({ ...EMPTY_LINK_FORM })}>
                     {t("নতুন লিংক", "New link")}
                   </Button>
                 )}
@@ -2165,6 +2510,197 @@ export default function AdminCoursesPage() {
       </Dialog>
 
       {/* ── lessons manager dialog ── */}
+      {/* ── enrollments: approve / reject / delete, on the course itself ── */}
+      <Dialog
+        open={enrollOpen !== null}
+        onClose={() => setEnrollOpen(null)}
+        title={t("ভর্তি — অনুমোদন ও মুছে ফেলা", "Enrollments — approve or delete")}
+        description={
+          enrollOpen
+            ? `${enrollOpen.courseName} (${enrollOpen.courseId})`
+            : undefined
+        }
+        size="lg"
+        footer={
+          <Button variant="secondary" size="sm" onClick={() => setEnrollOpen(null)}>
+            {t("বন্ধ করুন", "Close")}
+          </Button>
+        }
+      >
+        {enrollOpen && (
+          <div className="space-y-4">
+            {/* Three tabs rather than one long mixed list: a decision is only
+                ever made on a Pending row, and burying those under Approved
+                rows is how a payment gets missed. */}
+            <div role="tablist" aria-label={t("ভর্তির অবস্থা", "Enrollment status")} className="flex gap-1.5">
+              {(["Pending", "Approved", "Rejected"] as const).map((s) => {
+                const n = (enrollRows[s] ?? []).length;
+                const on = enrollTab === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setEnrollTab(s)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                      on
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-text/15 bg-card text-text/65 hover:border-primary/40"
+                    }`}
+                  >
+                    {s === "Pending"
+                      ? t("অপেক্ষমাণ", "Pending")
+                      : s === "Approved"
+                        ? t("অনুমোদিত", "Approved")
+                        : t("বাতিল", "Rejected")}
+                    <span className="rounded-full bg-text/8 px-1.5 py-0.5 text-[10px] font-bold tabular-nums">
+                      {n}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {enrollBusy ? (
+              <LoadingBlock label={t("ভর্তি লোড হচ্ছে…", "Loading enrollments…")} rows={2} />
+            ) : (enrollRows[enrollTab] ?? []).length === 0 ? (
+              <EmptyState
+                icon={<Users className="size-5" />}
+                title={
+                  enrollTab === "Pending"
+                    ? t("কোনো অপেক্ষমাণ ভর্তি নেই।", "No pending enrollments.")
+                    : enrollTab === "Approved"
+                      ? t("এখনো কোনো ভর্তি অনুমোদিত হয়নি।", "Nothing approved yet.")
+                      : t("কোনো বাতিল ভর্তি নেই।", "No rejected enrollments.")
+                }
+                description={
+                  enrollTab === "Pending"
+                    ? t(
+                        "যে শিক্ষার্থী পেমেন্ট পাঠিয়েছে, সে এখানে দেখা যাবে।",
+                        "Anyone who has sent payment shows up here.",
+                      )
+                    : undefined
+                }
+              />
+            ) : (
+              <ul className="space-y-2.5">
+                {(enrollRows[enrollTab] ?? []).map((row) => {
+                  const busyRow = enrollRowBusy === row._id;
+                  return (
+                    <li
+                      key={row._id}
+                      className="rounded-xl border border-text/10 bg-card p-3.5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-text">{row.name}</p>
+                          <p className="mt-0.5 text-xs text-text/60">
+                            {row.whatsapp ? (
+                              <span className="select-all tabular-nums">{row.whatsapp}</span>
+                            ) : null}
+                            {row.whatsapp && row.trxId ? " · " : null}
+                            {row.trxId ? (
+                              <span className="select-all font-mono">{row.trxId}</span>
+                            ) : null}
+                          </p>
+                          {row.location ? (
+                            <p className="mt-0.5 text-xs text-text/45">{row.location}</p>
+                          ) : null}
+                          <p className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-text/45">
+                            {typeof row.amount === "number" ? (
+                              <span className="tabular-nums">৳{row.amount}</span>
+                            ) : null}
+                            {row.rollNumber ? (
+                              <span className="tabular-nums">
+                                {t("রোল", "roll")} #{row.rollNumber}
+                              </span>
+                            ) : null}
+                            {row.createdAt ? (
+                              <span>
+                                {new Date(row.createdAt).toLocaleDateString("en-GB")}
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          {enrollTab === "Pending" && (
+                            <>
+                              <Button
+                                size="sm"
+                                iconLeft={<Check className="h-4 w-4" />}
+                                disabled={busyRow}
+                                onClick={() => void actOnEnrollment(row, "APPROVE")}
+                              >
+                                {t("অনুমোদন", "Approve")}
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={busyRow}
+                                onClick={() => void actOnEnrollment(row, "REJECT")}
+                              >
+                                {t("বাতিল", "Reject")}
+                              </Button>
+                            </>
+                          )}
+                          {enrollTab === "Approved" && (
+                            <StatusPill tone="done">{t("অনুমোদিত", "Approved")}</StatusPill>
+                          )}
+                          {enrollTab === "Rejected" && (
+                            <StatusPill tone="closed">{t("বাতিল", "Rejected")}</StatusPill>
+                          )}
+                          <IconButton
+                            label={t("রোড মুছে ফেলুন", "Delete row")}
+                            size="sm"
+                            disabled={busyRow}
+                            onClick={() => void actOnEnrollment(row, "DELETE")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </IconButton>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {/* Cash, or an older batch: no payment form to sit through. */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void addStudentDirectly();
+              }}
+              className="flex flex-wrap items-end gap-2 border-t border-text/10 pt-4"
+            >
+              <div className="min-w-[10rem] flex-1">
+                <Field
+                  label={t("সরাসরি শিক্ষার্থী যোগ করুন", "Add a student directly")}
+                  hint={t(
+                    "নগদ পেমেন্ট বা পুরোনো ব্যাচ — ট্রানজেকশন ছাড়াই।",
+                    "Cash, or an older batch — no transaction needed.",
+                  )}
+                  value={directRoll}
+                  onChange={(e) => setDirectRoll(e.target.value)}
+                  placeholder={t("রোল নম্বর", "Roll number")}
+                  inputMode="numeric"
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={directBusy || directRoll.trim() === ""}
+                iconLeft={<UserPlus className="h-4 w-4" />}
+              >
+                {t("যোগ করুন", "Add")}
+              </Button>
+            </form>
+          </div>
+        )}
+      </Dialog>
+
       <Dialog
         open={lessonsOpen !== null}
         onClose={() => setLessonsOpen(null)}

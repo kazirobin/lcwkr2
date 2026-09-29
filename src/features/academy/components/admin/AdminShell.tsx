@@ -11,10 +11,10 @@ import {
   LogOut,
   Megaphone,
   MessageSquareQuote,
+  MoreHorizontal,
   PenLine,
   ShieldCheck,
   Sparkles,
-  Ticket,
   Timer,
   Trophy,
   UserPlus,
@@ -31,28 +31,44 @@ import {
   SectionHanzi,
   useConfirm,
 } from "@/components/ui";
-import { AdminStatsProvider, useAdminStats } from "./AdminStats";
+import { AdminStatsProvider, useAdminStats, type AdminCounts } from "./AdminStats";
 
 const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 const PIN_KEY = "academy_admin_pin";
 const UNLOCK_KEY = "academy_admin_unlocked";
 
-/** Every admin module — rendered as the persistent quick-access bar. */
+/**
+ * The primary bar: the modules Robin Sir opens most days.
+ *
+ * This used to be fourteen pills in a row, which meant a phone saw about four
+ * of them and a laptop had to scroll to reach Announcements. The bar now carries
+ * only what gets used daily — intake, students, courses, homework, money, reach
+ * — and everything else lives behind "More", where it is still one tap away but
+ * no longer competes for the same strip.
+ */
 const ADMIN_MODULES = [
-  { href: "/admin/registrations", bn: "৳৫০০ আবেদন", en: "Registrations", icon: UserPlus },
-  { href: "/admin/admissions", bn: "ভর্তি", en: "Admissions", icon: UserPlus },
-  { href: "/admin/students", bn: "শিক্ষার্থী", en: "Students", icon: Users },
-  { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen },
-  { href: "/admin/enrollments", bn: "ভর্তির তালিকা", en: "Enrollments", icon: Ticket },
-  { href: "/admin/pro",            bn: "Pro সাবস্ক্রিপশন",   en: "Pro",            icon: Sparkles },
-  { href: "/admin/pro-trials",      bn: "ফ্রি প্রিভিউ",     en: "Free trial",     icon: Timer },
-  { href: "/admin/analytics", bn: "ট্রাফিক", en: "Traffic", icon: BarChart3 },
-  { href: "/admin/announcements", bn: "ঘোষণা", en: "Announcements", icon: Megaphone },
-  { href: "/admin/chinese-words", bn: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
-  { href: "/admin/hanzi-pro", bn: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
-  { href: "/admin/donations", bn: "অনুদান", en: "Donations", icon: HandCoins },
-  { href: "/admin/reviews", bn: "রিভিউ", en: "Reviews", icon: MessageSquareQuote },
-  { href: "/admin/hw", bn: "হোমওয়ার্ক", en: "Homework", icon: PenLine },
+  { href: "/admin/registrations", bn: "আবেদন", en: "Intake", icon: UserPlus, badge: "pendingStudents" },
+  { href: "/admin/students", bn: "শিক্ষার্থী", en: "Students", icon: Users, badge: "totalStudents" },
+  { href: "/admin/courses", bn: "কোর্স", en: "Courses", icon: BookOpen, badge: "pendingEnrollments" },
+  { href: "/admin/hw", bn: "হোমওয়ার্ক", en: "Homework", icon: PenLine, badge: null },
+  { href: "/admin/pro", bn: "Pro", en: "Pro", icon: Sparkles, badge: "pendingPro" },
+  { href: "/admin/announcements", bn: "ঘোষণা", en: "Notices", icon: Megaphone, badge: null },
+  { href: "/admin/analytics", bn: "ট্রাফিক", en: "Traffic", icon: BarChart3, badge: null },
+] as const satisfies readonly {
+  href: string;
+  bn: string;
+  en: string;
+  icon: typeof Users;
+  badge: keyof AdminCounts | null;
+}[];
+
+/** Everything that did not earn a place in the bar, in one tidy menu. */
+const ADMIN_MORE = [
+  { href: "/admin/pro-trials", label: "ফ্রি প্রিভিউ", en: "Free trial", icon: Timer },
+  { href: "/admin/chinese-words", label: "কোর ওয়ার্ডস", en: "Core words", icon: Languages },
+  { href: "/admin/hanzi-pro", label: "হানজি প্রো", en: "Hanzi Pro", icon: Trophy },
+  { href: "/admin/donations", label: "অনুদান", en: "Donations", icon: HandCoins },
+  { href: "/admin/reviews", label: "রিভিউ", en: "Reviews", icon: MessageSquareQuote },
 ] as const;
 
 /**
@@ -247,27 +263,31 @@ function AdminQuickBar() {
     [language],
   );
 
-  const countFor = (href: string): number | null => {
-    const c = counts;
-    switch (href) {
-      case "/admin/admissions":
-        return c.pendingStudents;
-      case "/admin/students":
-        return c.approvedStudents;
-      case "/admin/courses":
-        return c.courses;
-      case "/admin/chinese-words":
-        return c.chineseWords;
-      case "/admin/hanzi-pro":
-        return c.hanziPro;
-      case "/admin/donations":
-        return c.donations;
-      case "/admin/reviews":
-        return c.reviews;
-      default:
-        return null;
-    }
-  };
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLLIElement>(null);
+
+  // The menu is a plain popover rather than a focus-trapping dialog: it closes
+  // on Escape or an outside click, and takes the first item on Tab so a
+  // keyboard user is not stranded behind it.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMoreOpen(false);
+    };
+    const onDown = (e: MouseEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+    };
+  }, [moreOpen]);
+
+  const moreActive = ADMIN_MORE.some(
+    (m) => pathname === m.href || pathname.startsWith(`${m.href}/`),
+  );
 
   // The bar scrolls sideways on narrow screens. Without this the current page
   // can sit off-screen after a jump, and there is no clue that more modules
@@ -408,7 +428,7 @@ function AdminQuickBar() {
           {ADMIN_MODULES.map((m) => {
             const Icon = m.icon;
             const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
-            const count = countFor(m.href);
+            const count = m.badge ? counts[m.badge] : null;
             return (
               <li key={m.href} className="shrink-0">
                 <Link
@@ -426,9 +446,7 @@ function AdminQuickBar() {
                   {count != null && (
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-                        active
-                          ? "bg-primary/15 text-primary"
-                          : "bg-text/8 text-text/60"
+                        active ? "bg-primary/15 text-primary" : "bg-text/8 text-text/60"
                       }`}
                     >
                       {loading ? "—" : count}
@@ -438,6 +456,53 @@ function AdminQuickBar() {
               </li>
             );
           })}
+
+          {/* The overflow: same links, out of the way until asked for. */}
+          <li className="relative shrink-0" ref={moreRef}>
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                moreActive
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
+              }`}
+            >
+              <MoreHorizontal className="size-4" aria-hidden="true" />
+              {t("আরও", "More")}
+            </button>
+
+            {moreOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-text/12 bg-card p-1.5 shadow-2xl"
+              >
+                {ADMIN_MORE.map((m) => {
+                  const Icon = m.icon;
+                  const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
+                  return (
+                    <Link
+                      key={m.href}
+                      href={m.href}
+                      role="menuitem"
+                      draggable={false}
+                      onClick={() => setMoreOpen(false)}
+                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${
+                        active
+                          ? "bg-primary/10 font-semibold text-primary"
+                          : "text-text/75 hover:bg-text/[0.05] hover:text-text"
+                      }`}
+                    >
+                      <Icon className="size-4 shrink-0 opacity-70" aria-hidden="true" />
+                      {t(m.label, m.en)}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </li>
         </ul>
 
         <button

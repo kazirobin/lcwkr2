@@ -107,19 +107,43 @@ export async function listLiveLinks(courseId?: string) {
   return docs.map((d) => ({ ...d, _id: d._id.toString() }));
 }
 
-export async function createLiveLink(input: { courseId: string; label: string; meetLink: string; topic: string }) {
+export type LiveLinkInput = {
+  courseId: string;
+  label: string;
+  meetLink: string;
+  topic: string;
+  /** Weekly timetable for this link; see server/routine.ts. */
+  days?: number[];
+  time?: string;
+  durationMin?: number;
+  active?: boolean;
+};
+
+export async function createLiveLink(input: LiveLinkInput) {
   await connectDB();
   return LiveLink.create({
     courseId: input.courseId,
     label: input.label.trim(),
     meetLink: input.meetLink.trim(),
     topic: input.topic.trim(),
+    days: normaliseDays(input.days),
+    time: normaliseTime(input.time),
+    durationMin: clampDuration(input.durationMin),
+    active: !!input.active,
   });
 }
 
 export async function updateLiveLink(
   id: string,
-  input: { label?: string; meetLink?: string; topic?: string },
+  input: {
+    label?: string;
+    meetLink?: string;
+    topic?: string;
+    days?: number[];
+    time?: string;
+    durationMin?: number;
+    active?: boolean;
+  },
 ) {
   await connectDB();
   const updated = await LiveLink.findByIdAndUpdate(
@@ -128,11 +152,46 @@ export async function updateLiveLink(
       ...(input.label !== undefined ? { label: input.label.trim() } : {}),
       ...(input.meetLink !== undefined ? { meetLink: input.meetLink.trim() } : {}),
       ...(input.topic !== undefined ? { topic: input.topic.trim() } : {}),
+      ...(input.days !== undefined ? { days: normaliseDays(input.days) } : {}),
+      ...(input.time !== undefined ? { time: normaliseTime(input.time) } : {}),
+      ...(input.durationMin !== undefined
+        ? { durationMin: clampDuration(input.durationMin) }
+        : {}),
+      ...(input.active !== undefined ? { active: !!input.active } : {}),
     },
     { new: true },
   ).lean();
   if (!updated) throw new Error("Live link not found.");
   return { ...updated, _id: updated._id.toString() };
+}
+
+/** Keep only real weekday indices, deduped and ordered. */
+function normaliseDays(days: unknown): number[] {
+  if (!Array.isArray(days)) return [];
+  return [...new Set(days.map((d) => Number(d)))]
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+    .sort((a, b) => a - b);
+}
+
+/** "H:MM" and "9:5pm" both become "09:05"; anything else is dropped. */
+function normaliseTime(time: unknown): string {
+  const raw = String(time ?? "").trim();
+  const m = /^(\d{1,2}):(\d{1,2})\s*(am|pm)?$/i.exec(raw);
+  if (!m) return "";
+  let h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || min > 59) return "";
+  const meridiem = m[3]?.toLowerCase();
+  if (meridiem === "pm" && h < 12) h += 12;
+  if (meridiem === "am" && h === 12) h = 0;
+  if (h > 23) return "";
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function clampDuration(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 60;
+  return Math.min(480, Math.max(5, Math.round(n)));
 }
 
 export async function deleteLiveLink(id: string) {

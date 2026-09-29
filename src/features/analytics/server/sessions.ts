@@ -19,38 +19,48 @@ export type StartSessionInput = {
 export async function startSession(input: StartSessionInput): Promise<void> {
   try {
     await connectDB();
+    const now = new Date();
     // Close anything still marked active for this student, so the totals stay
     // one row per real sign-in.
     await StudentSession.updateMany(
       { whatsapp: input.whatsapp, active: true },
-      { $set: { active: false, logoutAt: new Date() } },
+      { $set: { active: false, logoutAt: now } },
     );
+    // Duration has to be computed from the stored loginAt, which only an
+    // aggregation pipeline can do in a single update.
+    //
+    // `updatePipeline: true` is required, not optional: mongoose rejects a bare
+    // array with "Cannot pass an array to query updates unless the
+    // `updatePipeline` option is set". Without it this threw on every sign-in,
+    // and the catch below swallowed it — so no session was ever recorded and
+    // the admin's login report was permanently empty. That is exactly the bug
+    // it looked like from the outside.
     await StudentSession.updateMany(
       { whatsapp: input.whatsapp, active: false, logoutAt: null },
       [
         {
           $set: {
-            logoutAt: new Date(),
+            logoutAt: now,
             durationSec: {
-              $divide: [
-                { $subtract: [new Date(), "$loginAt"] },
-                1000,
-              ],
+              $max: [0, { $divide: [{ $subtract: [now, "$loginAt"] }, 1000] }],
             },
           },
         },
       ],
+      { updatePipeline: true },
     );
     await StudentSession.create({
       whatsapp: input.whatsapp,
       rollNumber: input.rollNumber ?? null,
       name: input.name,
       userAgent: (input.userAgent ?? "").slice(0, 200),
-      loginAt: new Date(),
+      loginAt: now,
       active: true,
     });
-  } catch {
-    /* never block a sign-in on analytics */
+  } catch (error) {
+    // Analytics must never block a sign-in — but silence here hid a broken
+    // write for the whole life of this function, so at least leave a trace.
+    console.error("[sessions] startSession failed:", error);
   }
 }
 
@@ -65,6 +75,7 @@ export async function endSessions(whatsapp: string): Promise<void> {
         $set: { active: false, logoutAt: now },
       },
     );
+    // Same `updatePipeline` requirement as above — see startSession.
     await StudentSession.updateMany(
       { whatsapp, logoutAt: { $ne: null }, durationSec: 0 },
       [
@@ -81,9 +92,10 @@ export async function endSessions(whatsapp: string): Promise<void> {
           },
         },
       ],
+      { updatePipeline: true },
     );
-  } catch {
-    /* best effort */
+  } catch (error) {
+    console.error("[sessions] endSessions failed:", error);
   }
 }
 

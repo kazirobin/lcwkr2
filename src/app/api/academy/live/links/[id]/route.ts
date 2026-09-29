@@ -7,11 +7,20 @@ type Props = { params: Promise<{ id: string }> };
 export async function PUT(req: NextRequest, props: Props) {
   try {
     const { id } = await props.params;
-    const { adminPasscode, label, meetLink, topic } = await req.json();
+    const { adminPasscode, label, meetLink, topic, days, time, durationMin, active } =
+      await req.json();
     if (adminPasscode !== process.env.ADMIN_PASSCODE && adminPasscode !== "8131") {
       return NextResponse.json({ success: false, message: "Unauthorized Admin PIN" }, { status: 401 });
     }
-    const link = await updateLiveLink(id, { label, meetLink, topic });
+    const link = await updateLiveLink(id, {
+      label,
+      meetLink,
+      topic,
+      days,
+      time,
+      durationMin,
+      active,
+    });
     return NextResponse.json({ success: true, link });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to update link";

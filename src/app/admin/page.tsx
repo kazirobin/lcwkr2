@@ -1,15 +1,17 @@
 "use client";
 
 import { useCallback } from "react";
+import Link from "next/link";
 import {
   BookOpen,
+  CheckCircle2,
   GraduationCap,
-  HandCoins,
-  Languages,
+  LogIn,
   RefreshCw,
-  Trophy,
+  Sparkles,
   UserPlus,
   Users,
+  Zap,
 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell, useAdminStats } from "@/features/academy";
@@ -26,13 +28,76 @@ export default function AdminDashboardPage() {
 
   const { counts, loading, refresh } = useAdminStats();
 
-  const overview: { label: string; count: number; icon: LucideIcon; tone: string }[] = [
-    { label: t("অপেক্ষমাণ ভর্তি", "Pending admissions"), count: counts.pendingStudents, icon: UserPlus, tone: "text-warn" },
-    { label: t("শিক্ষার্থী", "Students"), count: counts.approvedStudents, icon: GraduationCap, tone: "text-primary" },
-    { label: t("কোর্স", "Courses"), count: counts.courses, icon: BookOpen, tone: "text-primary" },
-    { label: t("কোর ওয়ার্ডস", "Core words"), count: counts.chineseWords, icon: Languages, tone: "text-ok" },
-    { label: t("হানজি প্রো", "Hanzi Pro"), count: counts.hanziPro, icon: Trophy, tone: "text-ok" },
-    { label: t("অনুদান", "Donations"), count: counts.donations, icon: HandCoins, tone: "text-ok" },
+  /* The tiles are the numbers that ask for a decision. Library size — how many
+     core words are seeded, how many donations were ever received — does not, so
+     it lives on its own page instead of on the front screen. */
+  const overview: {
+    label: string;
+    count: number;
+    icon: LucideIcon;
+    tone: string;
+    href: string;
+    hint: string;
+  }[] = [
+    {
+      label: t("মোট শিক্ষার্থী", "Total students"),
+      count: counts.totalStudents,
+      icon: Users,
+      tone: "text-primary",
+      href: "/admin/students",
+      hint: t("সব স্ট্যাটাস মিলিয়ে", "every status"),
+    },
+    {
+      label: t("অপেক্ষমাণ আবেদন", "Pending intake"),
+      count: counts.pendingStudents,
+      icon: UserPlus,
+      tone: counts.pendingStudents > 0 ? "text-warn" : "text-text/40",
+      href: "/admin/registrations",
+      hint: t("এখনো সিদ্ধান্ত দেওয়া হয়নি", "not decided yet"),
+    },
+    {
+      label: t("অপেক্ষমাণ ভর্তি", "Pending enrollments"),
+      count: counts.pendingEnrollments,
+      icon: GraduationCap,
+      tone: counts.pendingEnrollments > 0 ? "text-warn" : "text-text/40",
+      href: "/admin/courses",
+      hint: t("কোর্স পেজেই ঠিক করুন", "approve from the course page"),
+    },
+    {
+      label: t("প্রো সদস্য", "Pro members"),
+      count: counts.proMembers,
+      icon: Sparkles,
+      tone: "text-ok",
+      href: "/admin/pro",
+      hint: t("পেমেন্ট ও ট্রায়াল মিলিয়ে", "paid + trial"),
+    },
+    {
+      label: t("এখন অনলাইন", "Online now"),
+      count: counts.onlineNow,
+      icon: Zap,
+      tone: counts.onlineNow > 0 ? "text-ok" : "text-text/40",
+      href: "/admin/students",
+      hint: t("সেশন এখনো খোলা", "session still open"),
+    },
+    {
+      label: t("কোর্স", "Courses"),
+      count: counts.courses,
+      icon: BookOpen,
+      tone: "text-primary",
+      href: "/admin/courses",
+      hint: t("পাঠ ও ভর্তি একসাথে", "lessons and enrollments"),
+    },
+  ];
+
+  /* Sign-in reach is a different question from the tiles above: not "how many
+     people are here now" but "how many turn up at all". */
+  const reach: { label: string; value: string; icon: LucideIcon }[] = [
+    { label: t("আজ লগইন", "Sign-ins today"), value: String(counts.loginsToday), icon: LogIn },
+    {
+      label: t("মোট কতজন লগইন করেছে", "Ever signed in"),
+      value: `${counts.everLoggedIn} / ${counts.totalStudents}`,
+      icon: CheckCircle2,
+    },
   ];
 
   return (
@@ -41,8 +106,8 @@ export default function AdminDashboardPage() {
       crumb={t("ড্যাশবোর্ড", "Dashboard")}
       seal="政"
       lede={t(
-        "একাডেমির ভর্তি, শিক্ষার্থী, ক্লাস লগ, কোর্স, কোর ওয়ার্ডস ও অনুদান — সব এক জায়গায়।",
-        "Admissions, students, class logs, courses, core words and donations — all in one place."
+        "আজ কী করতে হবে — অপেক্ষমাণ আবেদন, ভর্তি ও লগইন — সব প্রথম স্ক্রিনেই।",
+        "What needs doing today — intake, enrollments, sign-ins — on the first screen.",
       )}
       actions={
         <IconButton
@@ -55,7 +120,6 @@ export default function AdminDashboardPage() {
         </IconButton>
       }
     >
-      {/* ── overview metrics ── */}
       <section aria-label={t("সারসংক্ষেপ", "Overview")}>
         <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text/45">
           {t("সারসংক্ষেপ", "Overview")}
@@ -65,9 +129,11 @@ export default function AdminDashboardPage() {
           {overview.map((o) => {
             const Icon = o.icon;
             return (
-              <div
+              <Link
                 key={o.label}
-                className="rounded-2xl border border-text/10 bg-card p-4 shadow-sm"
+                href={o.href}
+                draggable={false}
+                className="group rounded-2xl border border-text/10 bg-card p-4 shadow-sm transition-colors hover:border-primary/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
               >
                 <div className="flex items-center justify-between gap-2">
                   <Icon className={`size-4 ${o.tone}`} aria-hidden="true" />
@@ -75,20 +141,45 @@ export default function AdminDashboardPage() {
                     {loading ? "—" : o.count}
                   </span>
                 </div>
-                <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-text/50">
+                <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-text/60">
                   {o.label}
                 </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-text/40">{o.hint}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section aria-label={t("লগইন", "Sign-ins")} className="mt-8">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-text/45">
+          {t("লগইন", "Sign-ins")}
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {reach.map((r) => {
+            const Icon = r.icon;
+            return (
+              <div
+                key={r.label}
+                className="inline-flex items-center gap-3 rounded-2xl border border-text/10 bg-card px-4 py-3 shadow-sm"
+              >
+                <Icon className="size-4 text-primary/70" aria-hidden="true" />
+                <div>
+                  <p className="font-mono text-lg font-bold leading-none tabular-nums text-text">
+                    {loading ? "—" : r.value}
+                  </p>
+                  <p className="mt-1 text-[11px] text-text/50">{r.label}</p>
+                </div>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* ── quick hint ── */}
       <p className="mt-10 border-t border-text/10 pt-6 text-sm text-text/55">
         {t(
-          "উপরের বার থেকে যেকোনো মডিউলে এক ক্লিকে যান — বর্তমান পেজটি হাইলাইট থাকে।",
-          "Use the bar above to jump to any module in one click — the current page stays highlighted."
+          "উপরের বার থেকে যেকোনো মডিউলে এক ক্লিকে যান — বাকিগুলো “আরও” মেনুতে আছে।",
+          "The bar jumps to any module in one click — the rest live under “More”.",
         )}
       </p>
     </AdminShell>

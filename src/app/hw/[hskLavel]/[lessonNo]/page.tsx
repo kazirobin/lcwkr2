@@ -29,6 +29,7 @@ import McqSection from "@/features/hw/components/McqSection";
 import SpeakingSection from "@/features/hw/components/SpeakingSection";
 import DialoguePlayer from "@/features/hw/components/DialoguePlayer";
 import HandwritingAssignment from "@/features/hw/components/HandwritingAssignment";
+import LevelProgressPanel from "@/features/hw/components/LevelProgressPanel";
 import { lesson1Dialogue } from "@/features/hw/data/hsk1/lesson1-dialogue";
 import { matchesPinyinAnswer } from "@/features/hw/pinyin";
 import { round2 } from "@/features/hw/marks";
@@ -391,6 +392,12 @@ export default function HomeworkDynamicPage() {
           📊 {t("আমার রেজাল্ট", "My Results")}
         </button>
       </header>
+
+      {/* Whole-level picture: how many marks this HSK is worth, how many the
+          student has taken, and how many exams are left. */}
+      <div className="mb-6">
+        <LevelProgressPanel level={level} highlightLesson={lessonNo} />
+      </div>
 
       {/* History panel */}
       {showHistory && (

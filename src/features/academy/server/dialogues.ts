@@ -50,6 +50,8 @@ export type DialogueSubmissionInput = {
   lesson: number;
   audioUrl: string;
   durationSec?: number;
+  /** Size of the upload in bytes, reported by the recorder. */
+  bytes?: number;
 };
 
 export async function createDialogueSubmission(input: DialogueSubmissionInput) {
@@ -79,6 +81,7 @@ export async function createDialogueSubmission(input: DialogueSubmissionInput) {
     lesson,
     audioUrl,
     durationSec: Math.max(0, Math.round(Number(input.durationSec ?? 0))),
+    bytes: Math.min(Math.max(0, Math.round(Number(input.bytes ?? 0))), 512 * 1024 * 1024),
     mark: null,
     feedback: "",
     status: "Pending",

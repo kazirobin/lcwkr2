@@ -132,7 +132,10 @@ export function LessonPdfViewer({
   // Extra rotation the reader has asked for on top of whatever the file itself
   // asks for. Starts at 0 so every book opens the way its author intended.
   const [userRotation, setUserRotation] = useState(0);
-  const [mode, setMode] = useState<ViewMode>("width");
+  // Every book opens at its printed size — scale 1 is 100% of the PDF, so a
+  // character is drawn at the size the author set. Fit-width and fit-page stay
+  // available from the toolbar for the times a screen is too narrow for that.
+  const [mode, setMode] = useState<ViewMode>("custom");
   const [custom, setCustom] = useState(1);
   const [scale, setScale] = useState(1);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -152,7 +155,8 @@ export function LessonPdfViewer({
   /* Live mirrors of what is on screen. Gestures run outside React's render,
      so they need the drawn size without waiting for the next state. */
   const scaleRef = useRef(1);
-  const fitWidthRef = useRef(1);
+  /** The scale a double tap should return to; see `toggleReadZoom`. */
+  const readingRef = useRef(1);
   const fitsRef = useRef(true);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
@@ -248,14 +252,18 @@ export function LessonPdfViewer({
   const zoomToWidth = useCallback(() => setMode("width"), []);
   const zoomToPage = useCallback(() => setMode("page"), []);
 
-  /* A double tap flips between "the whole page" and "readable size". */
+  /* A double tap flips between "the size you were reading" and "readable
+     size". The remembered size is whichever scale the reader is *not* currently
+     at, so this works from 100%, from fit-width and from fit-page alike rather
+     than assuming the book opened fit-to-width. */
   const toggleReadZoom = useCallback(
     (anchor: { x: number; y: number }) => {
       const from = scaleRef.current;
-      if (Math.abs(from - fitWidthRef.current) < 0.05) {
-        zoomTo(READ_SCALE, anchor);
+      if (from > READ_SCALE - 0.05) {
+        zoomTo(readingRef.current, anchor);
       } else {
-        zoomTo(fitWidthRef.current, anchor);
+        readingRef.current = from;
+        zoomTo(READ_SCALE, anchor);
       }
     },
     [zoomTo],
@@ -322,10 +330,9 @@ export function LessonPdfViewer({
           MAX_SCALE,
         );
 
-        /* Gesture maths reads these straight away, so set them before the
-           render rather than in the setState below. */
+        /* Gesture maths reads this straight away, so set it before the render
+           rather than in the setState below. */
         scaleRef.current = wanted;
-        fitWidthRef.current = fitWidth;
 
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
         const viewport = pdfPage.getViewport({ scale: wanted * ratio, rotation });

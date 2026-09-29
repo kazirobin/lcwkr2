@@ -15,6 +15,10 @@ export type PublicStudent = {
   location: string;
   avatarUrl?: string;
   enrolledCourseId: string;
+  /** Every course this student is on. `enrolledCourseId` is the original
+   *  single-course field, kept because older pages and imported rows still
+   *  read it. */
+  enrolledCourseIds: string[];
   registrationStatus: string;
 };
 
@@ -27,8 +31,12 @@ export function toPublicStudent(doc: {
   location: string;
   avatarUrl?: string;
   enrolledCourseId: string;
+  enrolledCourseIds?: string[];
   registrationStatus: string;
 }): PublicStudent {
+  const list = Array.isArray(doc.enrolledCourseIds)
+    ? doc.enrolledCourseIds.filter(Boolean)
+    : [];
   return {
     rollNumber: doc.rollNumber,
     nameEnglish: doc.nameEnglish,
@@ -38,6 +46,7 @@ export function toPublicStudent(doc: {
     location: doc.location,
     avatarUrl: doc.avatarUrl,
     enrolledCourseId: doc.enrolledCourseId,
+    enrolledCourseIds: list.length ? list : [doc.enrolledCourseId].filter(Boolean),
     registrationStatus: doc.registrationStatus,
   };
 }
@@ -48,7 +57,7 @@ async function findByPhone(phone: string) {
   if (!norm) return null;
   const all = await Student.find({})
     .select(
-      "nameEnglish whatsapp registrationStatus passwordHash isPro isWhatsAppGroupJoined location avatarUrl enrolledCourseId rollNumber",
+      "nameEnglish whatsapp registrationStatus passwordHash isPro isWhatsAppGroupJoined location avatarUrl enrolledCourseId enrolledCourseIds rollNumber",
     )
     .lean();
   const hit = all.find((s) => normalizePhone(s.whatsapp) === norm);

@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 // POST /api/hw/dialogues → student submission (approved students only).
 export async function POST(req: Request) {
   try {
-    const { name, phone, level, lesson, audioUrl, durationSec } = await req.json();
+    const { name, phone, level, lesson, audioUrl, durationSec, bytes } = await req.json();
     const submission = await createDialogueSubmission({
       name: String(name ?? ""),
       phone: String(phone ?? ""),
@@ -44,6 +44,9 @@ export async function POST(req: Request) {
       lesson: Number(lesson),
       audioUrl: String(audioUrl ?? ""),
       durationSec: Number(durationSec ?? 0),
+      // Reported by the recorder so the student's storage total includes audio
+      // and not just their photos.
+      bytes: Number(bytes ?? 0),
     });
     return NextResponse.json({ success: true, submission }, { status: 201 });
   } catch (error: unknown) {

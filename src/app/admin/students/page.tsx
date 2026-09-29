@@ -38,7 +38,16 @@ type SessionInfo = {
   logins: number;
   totalSeconds: number;
   lastLoginAt: string | null;
-  active: boolean;
+  lastLogoutAt: string | null;
+  onlineNow: boolean;
+};
+
+/** School-wide sign-in figures, for the summary strip above the table. */
+type LoginTotals = {
+  distinctStudents: number;
+  logins: number;
+  onlineNow: number;
+  lastLoginAt: string | null;
 };
 
 /** "2h 15m" reads faster than a minute count when a row is 60 students tall. */
@@ -73,6 +82,7 @@ export default function AdminStudentsPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   /** Keyed by the student's phone, the same identity the login uses. */
   const [sessions, setSessions] = useState<Record<string, SessionInfo>>({});
+  const [loginTotals, setLoginTotals] = useState<LoginTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "joined" | "pending">("all");
 
@@ -113,16 +123,27 @@ export default function AdminStudentsPage() {
     try {
       // The session summary is a separate read so a database hiccup there
       // cannot stop the student list itself from rendering.
+      //
+      // Both of these need the passcode. The public student list deliberately
+      // withholds phone numbers, and the login report is keyed by phone — so
+      // without the passcode the table was looking sessions up by a field that
+      // was not in the response, and every row showed a blank history.
+      const qs = `passcode=${encodeURIComponent(ADMIN_PASSCODE)}`;
       const [s, c, sess] = await Promise.all([
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
+        fetch(`/api/academy/students?status=Approved&include=contact&${qs}`, {
+          cache: "no-store",
+        }).then((r) => r.json()),
         fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/students/sessions", { cache: "no-store" })
+        fetch(`/api/academy/students/sessions?${qs}`, { cache: "no-store" })
           .then((r) => r.json())
           .catch(() => null),
       ]);
       if (s.success) setStudents(s.students || []);
       if (c.success) setCourses(c.courses || []);
-      if (sess?.success) setSessions(sess.sessions || {});
+      if (sess?.success) {
+        setSessions(sess.sessions || {});
+        if (sess.totals) setLoginTotals(sess.totals);
+      }
     } catch {
       toast(t("তথ্য লোড করা যায়নি।", "Couldn't load data."), "error");
     } finally {
@@ -312,6 +333,27 @@ export default function AdminStudentsPage() {
         />
       </div>
 
+      {/* Sign-in reach across the school. Per-row figures are only trustworthy
+          next to the total, because a table of 66 rows does not tell you that
+          3 of them have ever signed in. */}
+      {loginTotals ? (
+        <dl className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {(
+            [
+              { k: t("অন্তত একবার সাইন ইন", "Ever signed in"), v: String(loginTotals.distinctStudents) },
+              { k: t("মোট সাইন ইন", "Total sign-ins"), v: String(loginTotals.logins) },
+              { k: t("এখন অনলাইন", "Online now"), v: String(loginTotals.onlineNow) },
+              { k: t("শেষ সাইন ইন", "Last sign-in"), v: daysAgo(loginTotals.lastLoginAt) },
+            ] as const
+          ).map((cell) => (
+            <div key={cell.k} className="rounded-xl border border-text/15 bg-card px-3.5 py-2.5">
+              <dt className="text-[11px] text-text/55">{cell.k}</dt>
+              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-text">{cell.v}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
       {loading ? (
         <LoadingBlock label={t("লোড হচ্ছে", "Loading")} rows={3} />
       ) : rows.length === 0 ? (
@@ -356,11 +398,17 @@ export default function AdminStudentsPage() {
               <Td className="tabular-nums">
                 {(() => {
                   const info = sessions[s.whatsapp];
-                  if (!info) return <span className="text-text/40">—</span>;
+                  if (!info) {
+                    return (
+                      <span className="text-text/40" title={t("কখনো লগইন করেননি", "never signed in")}>
+                        0
+                      </span>
+                    );
+                  }
                   return (
                     <span className="inline-flex items-center gap-1.5">
                       {info.logins}
-                      {info.active && (
+                      {info.onlineNow && (
                         <span
                           className="size-1.5 rounded-full bg-ok"
                           title={t("এখন অনলাইন", "online now")}

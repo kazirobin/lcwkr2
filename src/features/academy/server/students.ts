@@ -4,13 +4,21 @@ import { Student, Course } from "@/features/academy/models";
 /** Data-access + business rules for academy students. Route handlers own
  *  request parsing, passcode checks, and HTTP status mapping. */
 
-export async function listStudents(status: string) {
+/**
+ * Every scholar's phone number is a personal detail, and this list is served to
+ * anonymous visitors. So the number is left out of the projection entirely and
+ * only handed over when a caller proves they are an admin — the old behaviour
+ * sent the real number to everyone and merely covered it up on screen, which
+ * meant the digits were still in the JSON for anyone to copy out of devtools.
+ */
+export async function listStudents(status: string, includeContact = false) {
   await connectDB();
   // Never leak password hashes to list consumers.
+  const projection = includeContact ? "-passwordHash" : "-passwordHash -whatsapp";
   return Student.find(
     status === "All" ? {} : { registrationStatus: status },
   )
-    .select("-passwordHash")
+    .select(projection)
     .sort({ rollNumber: 1 });
 }
 

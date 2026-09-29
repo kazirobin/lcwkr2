@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { messageOf } from "@/lib/api-error";
+import { adminPasscode, canSeeContact } from "@/lib/admin-guard";
 import {
   approveCourseEnrollment,
   deleteCourseEnrollment,
@@ -10,16 +11,28 @@ import {
 } from "@/features/academy/server/course-enrollments";
 
 function isAdmin(passcode: unknown): boolean {
-  return passcode === process.env.ADMIN_PASSCODE || passcode === "8131";
+  return passcode === adminPasscode();
 }
 
 /**
  * GET /api/course-enrollments?courseId=&status= — the paid-enrollment list the
- * admin reviews. The GET side is ungated like the other academy reads, so the
- * list never blocks a signed-out page; nothing sensitive is in it.
+ * admin reviews.
+ *
+ * This was left ungated on the grounds that it held "nothing sensitive". It
+ * does: every row is a person's name, WhatsApp number, bKash TrxID and amount,
+ * so an unauthenticated caller could read the whole payment ledger of the
+ * academy — including customers who never appear anywhere else. The public
+ * pages do not use this; the catalogue reads `/summary` instead, and the public
+ * "join" form only POSTs. So gating it costs the site nothing.
+ *
+ * Sub-admin passcodes are accepted too, since a sub-admin reviewing a roster is
+ * exactly the intended reader.
  */
 export async function GET(req: NextRequest) {
   try {
+    if (!canSeeContact(req, req.nextUrl)) {
+      return NextResponse.json({ error: "Unauthorized Admin PIN" }, { status: 401 });
+    }
     const courseId = req.nextUrl.searchParams.get("courseId") ?? undefined;
     const status = req.nextUrl.searchParams.get("status") ?? "Pending";
     const rows = await listCourseEnrollments(courseId, status);

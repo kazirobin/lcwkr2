@@ -14,10 +14,12 @@ export async function GET(req: Request) {
   }
 }
 
-/** POST /api/academy/live/links — admin adds a Meet link (requires passcode). */
+/** POST /api/academy/live/links — admin adds a Meet link (requires passcode).
+ *  `days`/`time`/`durationMin`/`active` turn it into a weekly class slot. */
 export async function POST(req: Request) {
   try {
-    const { adminPasscode, courseId, label, meetLink, topic } = await req.json();
+    const { adminPasscode, courseId, label, meetLink, topic, days, time, durationMin, active } =
+      await req.json();
     if (adminPasscode !== process.env.ADMIN_PASSCODE && adminPasscode !== "8131") {
       return NextResponse.json({ success: false, message: "Unauthorized Admin PIN" }, { status: 401 });
     }
@@ -29,6 +31,10 @@ export async function POST(req: Request) {
       label: label || "",
       meetLink,
       topic: topic || "",
+      days,
+      time,
+      durationMin,
+      active,
     });
     return NextResponse.json({ success: true, link });
   } catch (error: unknown) {

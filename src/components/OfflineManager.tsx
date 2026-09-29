@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CloudDownload, CheckCircle2, WifiOff, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
-import { Button, Dialog, Field } from "@/components/ui";
-import { isValidProPassword } from "@/features/chinese-words/data/pro-passwords";
+import { Button, Dialog } from "@/components/ui";
+import { useAccount } from "@/features/student-auth";
 import { warmLessonReader } from "@/features/vocabulary/reader-offline";
 
 const LS = {
   seen: "lcwkr_offline_seen_v2",
-  pro: "lcwkr_offline_pro_v2",
   downloaded: "lcwkr_offline_downloaded_v2",
   pillHidden: "lcwkr_offline_pill_hidden_v2",
   savedCount: "lcwkr_offline_saved_v2",
@@ -18,7 +17,7 @@ const LS = {
 
 const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 
-type View = "welcome" | "unlock" | "progress" | "done" | "members" | null;
+type View = "welcome" | "progress" | "done" | "members" | null;
 
 /* Non-standard PWA install event (Chrome/Edge/Android). */
 interface BeforeInstallPromptEvent extends Event {
@@ -32,6 +31,12 @@ export default function OfflineManager() {
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
   );
+  /* Pro is whatever the signed-in account says it is. There is no code to
+     type and no local flag to go stale: the admin switches Pro on in
+     /admin/pro and this component is correct on the next render, the same as
+     when the subscription is cancelled. */
+  const { student } = useAccount();
+  const pro = !!student?.isPro;
 
   const store = (key: string, value: string) => {
     try {
@@ -57,11 +62,8 @@ export default function OfflineManager() {
   );
 
   const [view, setView] = useState<View>(null);
-  const [pro, setPro] = useState(() => load(LS.pro) === "1");
   const [downloaded, setDownloaded] = useState(() => load(LS.downloaded) === "1");
   const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [code, setCode] = useState("");
-  const [verifying, setVerifying] = useState(false);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(() => load(LS.seen) === "1");
@@ -247,8 +249,9 @@ export default function OfflineManager() {
    *
    * This used to drop a visitor who only wanted to read a lesson into a welcome
    * screen, a Pro code box and a server round trip — for a feature they cannot
-   * use. Asking them for a code they do not have was the wrong first question;
-   * the only thing worth saying is that it is for members.
+   * use. Asking a stranger for a code they were never issued was the wrong
+   * first question; signing in is the right one, because the account is what
+   * says whether they are a member.
    */
   const openDialog = () => {
     setOpen(true);
@@ -273,43 +276,20 @@ export default function OfflineManager() {
     closeDialog();
   };
 
-  /* Ask for the Pro code; on success start the full download. */
-  const verifyCode = async () => {
-    if (!code.trim() || verifying) return;
-    setVerifying(true);
-    setFeedback(null);
-    const unlockLocally = () => {
-      store(LS.pro, "1");
-      setPro(true);
-      downloadRef.current.cancelled = false;
-      setView("progress");
-      void beginDownload();
-    };
-    // 1) Local list first (pro-passwords.ts) — works fully offline, no fetch.
-    if (isValidProPassword(code)) {
-      setVerifying(false);
-      unlockLocally();
-      return;
-    }
-    // 2) Server fallback (covers server-only PRO_CODE env).
-    try {
-      const res = await fetch("/api/offline/unlock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setFeedback(data.error ?? t("কোডটি সঠিক নয়", "Code is not correct"));
-        return;
-      }
-      unlockLocally();
-    } catch {
-      setFeedback(t("কিছু সমস্যা হয়েছে। আবার চেষ্টা করুন।", "Something went wrong. Try again."));
-    } finally {
-      setVerifying(false);
-    }
+  /* A Pro member taps straight into the download; there is nothing to verify
+     first because the account already is the proof. */
+  const startDownload = () => {
+    downloadRef.current.cancelled = false;
+    setView("progress");
+    void beginDownload();
   };
+
+  /* Keep a member who is mid-download (or has just finished) on the progress
+     screen even if the dialog is reopened, rather than showing the welcome
+     again. */
+  useEffect(() => {
+    if (pro && downloadRef.current.active) setView("progress");
+  }, [pro]);
 
   const beginDownload = async () => {
     if (busy || downloadRef.current.active) return;
@@ -480,7 +460,7 @@ export default function OfflineManager() {
         </div>
       )}
 
-      {/* ── not a member: one line, no code box ── */}
+      {/* ── not a member: sign in, or join — no code box ── */}
       <Dialog
         open={open && view === "members"}
         onClose={closeDialog}
@@ -490,22 +470,28 @@ export default function OfflineManager() {
           "Offline setup is for Pro members only.",
         )}
         footer={
-          <>
-            <Button variant="ghost" onClick={closeDialog}>
-              {t("বন্ধ করুন", "Close")}
-            </Button>
-            {/* Without this the code box is unreachable: a member who has not
-                set up offline yet has no local flag, so they land here, and the
-                welcome view that leads to the code only opens for members the
-                device already knows about. Tapping the pill is a deliberate act,
-                so ask for the code rather than dead-ending them at the price. */}
-            <Button variant="secondary" onClick={() => setView("unlock")}>
-              {t("আমার Pro কোড আছে", "I have a Pro code")}
-            </Button>
-            <Button onClick={() => (window.location.href = "/hsk/2")}>
-              {t("Pro নিন — ৳৫০০", "Get Pro — ৳500")}
-            </Button>
-          </>
+          student ? (
+            <>
+              <Button variant="ghost" onClick={closeDialog}>
+                {t("বন্ধ করুন", "Close")}
+              </Button>
+              <Button onClick={() => (window.location.href = "/account")}>
+                {t("Pro নিন — ৳৫০০", "Get Pro — ৳500")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={closeDialog}>
+                {t("বন্ধ করুন", "Close")}
+              </Button>
+              <Button variant="secondary" onClick={() => (window.location.href = "/register")}>
+                {t("অ্যাকাউন্ট খুলুন", "Create account")}
+              </Button>
+              <Button onClick={() => (window.location.href = "/login")}>
+                {t("লগইন করুন", "Sign in")}
+              </Button>
+            </>
+          )
         }
       >
         <p className="text-sm leading-relaxed text-text/70">
@@ -513,6 +499,17 @@ export default function OfflineManager() {
             "HSK 1 আর পিনয়িন সবসময় ফ্রি থাকবে — ইন্টারনেট ছাড়াও।",
             "HSK 1 and Pinyin stay free, even without internet.",
           )}
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-text/70">
+          {student
+            ? t(
+                "আপনার অ্যাকাউন্টে Pro নেই। Robin Sir-এর সাথে যোগাযোগ করে Pro চালু করালেই এখান থেকেই ডাউনলোড শুরু হবে।",
+                "Pro is not enabled on your account yet. Once Robin Sir switches it on, the download starts from right here.",
+              )
+            : t(
+                "লগইন করলেই বোঝা যাবে আপনি Pro সদস্য কিনা — কোনো কোড লিখতে হবে না।",
+                "Sign in and we will see whether you are a Pro member — there is no code to type.",
+              )}
         </p>
       </Dialog>
 
@@ -530,8 +527,8 @@ export default function OfflineManager() {
             <Button variant="ghost" onClick={skip}>
               {t("বাদ দিন", "Not now")}
             </Button>
-            <Button onClick={() => setView("unlock")}>
-              {t("প্রো কোড দিয়ে ডাউনলোড", "Download with Pro code")}
+            <Button loading={busy} onClick={startDownload}>
+              {t("ডাউনলোড শুরু করুন", "Download for offline")}
             </Button>
           </>
         }
@@ -544,57 +541,14 @@ export default function OfflineManager() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-text/50">
           {t(
-            "প্রো কোড ছাড়াও অ্যাপ ব্যবহার করা যায় — মোবাইল ডেটা ছাড়া শুধু যে পেজগুলো খুলেছেন সেগুলো অফলাইনে দেখা যাবে।",
-            "You can also use the app without a Pro code — pages you have already visited stay available offline.",
+            "ডাউনলোড না করলেও অ্যাপ ব্যবহার করা যায় — মোবাইল ডেটা ছাড়া শুধু যে পেজগুলো খুলেছেন সেগুলো অফলাইনে দেখা যাবে।",
+            "You can also use the app without downloading — pages you have already visited stay available offline.",
           )}
         </p>
         {canInstall && (
           <Button variant="secondary" onClick={promptInstall} className="mt-4 w-full">
             📲 {t("অ্যাপ ইনস্টল করুন", "Install app")}
           </Button>
-        )}
-      </Dialog>
-
-      {/* ── Pro code entry ── */}
-      <Dialog
-        open={open && view === "unlock"}
-        onClose={closeDialog}
-        title={t("প্রো কোড", "Pro code")}
-        description={t(
-          "প্রো কোড লিখুন — পুরো সাইট ডাউনলোড হবে।",
-          "Enter your Pro code to download the full site.",
-        )}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setView("welcome")}>
-              {t("পেছনে", "Back")}
-            </Button>
-            <Button loading={verifying} onClick={verifyCode}>
-              {t("যাচাই করুন", "Verify")}
-            </Button>
-          </>
-        }
-      >
-        <Field
-          label={t("প্রো কোড", "Pro code")}
-          required
-          hint={t("কোড প্রাপ্তির জন্য রবিন স্যারের সাথে যোগাযোগ করুন।", "Ask Robin Sir for a code.")}
-        >
-          <input
-            className="w-full rounded-lg border border-text/15 bg-card px-3 py-2 text-sm text-text outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
-            autoFocus
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") verifyCode();
-            }}
-            placeholder="XXXXXX"
-          />
-        </Field>
-        {feedback && (
-          <p className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400">
-            {feedback}
-          </p>
         )}
       </Dialog>
 

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Radio, X, ExternalLink, Check } from "lucide-react";
+import { Radio, X, ExternalLink, Check, LogIn } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/i18n";
 import { Dialog, Button } from "@/components/ui";
+import { useAccount } from "@/features/student-auth/context";
 
 type LiveSession = {
   _id: string;
@@ -16,17 +18,18 @@ type LiveSession = {
   attendance: { rollNumber: number; name: string }[];
 };
 
-type AcademyStudent = {
-  rollNumber: number;
-  nameEnglish: string;
-  enrolledCourseId: string;
-};
-
 // A persistent "LIVE CLASS" badge shown on every page while a class is running.
-// Clicking it opens a popup where a student enters their roll to mark
-// attendance, and a Join button that opens the Google Meet link.
+// Clicking it opens a popup where a signed-in student marks their own
+// attendance with one button, and a Join button that opens the Google Meet link.
+//
+// It used to be a roll-number dropdown, which meant anyone could put anyone
+// else present by picking their number, and the page had to download the whole
+// student roster to populate it. The student now marks themselves and the
+// server derives the roll from their account, so the roster is never fetched
+// here at all.
 export default function LiveClassBanner() {
   const { language } = useLanguage();
+  const { student } = useAccount();
   const t = useCallback(
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
@@ -40,11 +43,9 @@ export default function LiveClassBanner() {
   };
 
   const [sessions, setSessions] = useState<LiveSession[]>([]);
-  const [students, setStudents] = useState<AcademyStudent[]>([]);
   const [dismissed, setDismissed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [roll, setRoll] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string }>({ ok: false, text: "" });
 
@@ -64,13 +65,6 @@ export default function LiveClassBanner() {
     } catch {
       /* ignore */
     }
-    try {
-      const sres = await fetch("/api/academy/students?status=All", { cache: "no-store" });
-      const sdata = await sres.json();
-      if (sdata.success) setStudents(sdata.students || []);
-    } catch {
-      /* ignore */
-    }
   }, []);
 
   useEffect(() => {
@@ -79,25 +73,25 @@ export default function LiveClassBanner() {
     return () => clearInterval(iv);
   }, [fetchLive]);
 
+  // Clear a stale confirmation when the signed-in account changes.
+  useEffect(() => {
+    setMsg({ ok: false, text: "" });
+  }, [student?.whatsapp]);
+
   if (sessions.length === 0 || dismissed) return null;
 
   const selected = sessions.find((s) => s._id === selectedId) ?? sessions[0];
-  const courseStudents = students
-    .filter((s) => s.enrolledCourseId === selected.courseId)
-    .sort((a, b) => a.rollNumber - b.rollNumber);
-  const attendedRolls = new Set((selected.attendance || []).map((a) => a.rollNumber));
+  const myRoll = student?.rollNumber ?? 0;
+  const alreadyIn = (selected.attendance || []).some((a) => a.rollNumber === myRoll);
 
   const markAttendance = async () => {
-    if (!roll) {
-      setMsg({ ok: false, text: t("রোল নম্বর সিলেক্ট করুন।", "Select your roll number.") });
-      return;
-    }
+    if (!student) return;
     setBusy(true);
     try {
       const res = await fetch("/api/academy/live/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId: selected.courseId, rollNumber: Number(roll) }),
+        body: JSON.stringify({ courseId: selected.courseId, phone: student.whatsapp }),
       });
       const data = await res.json();
       if (data.success) {
@@ -188,7 +182,6 @@ export default function LiveClassBanner() {
               value={selectedId}
               onChange={(e) => {
                 setSelectedId(e.target.value);
-                setRoll("");
                 setMsg({ ok: false, text: "" });
               }}
               className="w-full rounded-xl border border-text/20 bg-card px-3.5 py-2.5 text-sm font-semibold text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
@@ -203,41 +196,67 @@ export default function LiveClassBanner() {
         )}
 
         <div className="space-y-3">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-text/55">
-              {t("আপনার রোল নম্বর", "Your roll number")}
-            </label>
-            <select
-              value={roll}
-              onChange={(e) => {
-                setRoll(e.target.value);
-                setMsg({ ok: false, text: "" });
-              }}
-              className="w-full rounded-xl border border-text/20 bg-card px-3.5 py-2.5 text-sm font-semibold text-text focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
-            >
-              <option value="">
-                {t("রোল সিলেক্ট করুন", "Select your roll")}
-              </option>
-              {courseStudents.map((s) => (
-                <option key={s.rollNumber} value={s.rollNumber}>
-                  {s.rollNumber} · {s.nameEnglish}
-                  {attendedRolls.has(s.rollNumber) ? " ✓" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button onClick={markAttendance} loading={busy} iconLeft={<Check className="h-4 w-4" />}>
-            {t("হাজিরা দিন", "Mark attendance")}
-          </Button>
-          {msg.text && (
-            <p className={`text-xs font-medium ${msg.ok ? "text-ok" : "text-danger"}`}>{msg.text}</p>
+          {student ? (
+            <>
+              {alreadyIn ? (
+                <div className="flex items-center gap-2.5 rounded-2xl border border-ok/40 bg-ok/10 px-4 py-3.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ok text-white">
+                    <Check className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-ok">
+                      {t("আপনার হাজিরা হয়ে গেছে", "Your attendance is marked")}
+                    </p>
+                    <p className="text-[11px] text-text/55">
+                      {t(
+                        "এই ক্লাসে আপনি উপস্থিত আছেন।",
+                        "You are counted present for this class.",
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={markAttendance}
+                  loading={busy}
+                  iconLeft={<Check className="h-4 w-4" />}
+                >
+                  {t("আমি উপস্থিত", "I'm present")}
+                </Button>
+              )}
+              {msg.text && (
+                <p className={`text-xs font-medium ${msg.ok ? "text-ok" : "text-danger"}`}>{msg.text}</p>
+              )}
+              <p className="text-[11px] text-text/45">
+                {t(
+                  "হাজিরা দেওয়ার পর উপরের Join বাটনে ক্লিক করে গুগল মিটে যোগ দিন।",
+                  "After marking attendance, click the Join button above to enter Google Meet.",
+                )}
+              </p>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-text/15 bg-card px-4 py-4">
+              <p className="text-sm font-bold text-text">
+                {t(
+                  "হাজিরা দিতে লগইন করতে হবে",
+                  "Sign in to mark your attendance",
+                )}
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-text/60">
+                {t(
+                  "হাজিরা নিজের নামে দিতে হয়, তাই প্রথমে লগইন করুন। তারপর এক ক্লিকেই উপস্থিত বলে দেওয়া যাবে।",
+                  "Attendance is recorded against your own name, so sign in first. Then one tap marks you present.",
+                )}
+              </p>
+              <Link
+                href="/login"
+                className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
+              >
+                <LogIn className="h-4 w-4" />
+                {t("লগইন করুন", "Sign in")}
+              </Link>
+            </div>
           )}
-          <p className="text-[11px] text-text/45">
-            {t(
-              "হাজিরা দেওয়ার পর উপরের Join বাটনে ক্লিক করে গুগল মিটে যোগ দিন।",
-              "After marking attendance, click the Join button above to enter Google Meet.",
-            )}
-          </p>
         </div>
       </Dialog>
     </>

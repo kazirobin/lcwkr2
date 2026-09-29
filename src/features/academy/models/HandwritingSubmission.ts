@@ -8,6 +8,11 @@ import { Schema, model, models } from "mongoose";
 export interface IHandwritingImage {
   url: string;
   publicId: string;
+  /** Size of the original upload in bytes. The student is shown this per
+   *  photo, and it is summed for their storage counter — without it the site
+   *  can show a picture but never say what it costs. Missing on old rows. */
+  bytes?: number;
+  source?: "cloudinary" | "external";
 }
 
 export interface IHandwritingSubmissionDoc {
@@ -30,6 +35,8 @@ const HandwritingImageSchema = new Schema<IHandwritingImage>(
   {
     url: { type: String, required: true, trim: true },
     publicId: { type: String, default: "" },
+    bytes: { type: Number, default: 0, min: 0 },
+    source: { type: String, enum: ["cloudinary", "external"], default: "cloudinary" },
   },
   { _id: false },
 );

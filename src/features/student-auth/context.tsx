@@ -18,6 +18,7 @@ export interface AccountStudent {
   location: string;
   avatarUrl?: string;
   enrolledCourseId: string;
+  enrolledCourseIds?: string[];
   registrationStatus: string;
 }
 

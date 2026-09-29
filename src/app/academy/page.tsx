@@ -41,6 +41,7 @@ import {
 
 const WHATSAPP_URL = "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY";
 const FACEBOOK_GROUP_URL = "https://www.facebook.com/groups/lcwkr/";
+const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 export default function AcademyHubPage() {
   const { language } = useLanguage();
@@ -174,7 +175,14 @@ export default function AcademyHubPage() {
       const res = await fetch("/api/academy/live/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, rollNumber: Number(roll) }),
+        // This grid is the teacher's on-the-call tool, so it marks students on
+        // their behalf and needs a staff passcode; a signed-in student uses the
+        // one-tap "I'm present" button in the live banner instead.
+        body: JSON.stringify({
+          courseId,
+          rollNumber: Number(roll),
+          adminPasscode: ADMIN_SECRET_PIN,
+        }),
       });
       const data = await res.json();
       setAttendMsg((prev) => ({

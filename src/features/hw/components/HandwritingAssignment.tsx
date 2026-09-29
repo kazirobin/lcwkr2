@@ -2,9 +2,10 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Eye, EyeOff } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, Link2 as LinkIcon } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
+import { formatBytes } from "@/lib/format";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -24,17 +25,28 @@ const UPLOAD_PRESET =
 const MAX_PHOTOS = 8;
 const MAX_BYTES = 8 * 1024 * 1024;
 
+/**
+ * A picked photo. `bytes` is null for one the student pasted as a link, since
+ * the site never saw the file — the browser only fetched the host's headers.
+ */
 interface QueuedPhoto {
   key: string;
-  file: File;
+  file: File | null;
   url: string;
+  bytes: number | null;
+  /** Set when the entry came from a pasted image link rather than a file. */
+  externalUrl?: string;
+  /** The browser could not draw `url` — almost always an image host's share
+   *  page rather than the picture itself. The link is still submitted; only the
+   *  preview changes, so the student is not left staring at a broken box. */
+  previewBroken?: boolean;
 }
 
 interface Submission {
   _id: string;
   level: number;
   lesson: number;
-  images: { url: string; publicId?: string }[];
+  images: { url: string; publicId?: string; bytes?: number; source?: string }[];
   mark: number | null;
   feedback: string;
   status: string;
@@ -59,6 +71,10 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
   const [sendError, setSendError] = useState<string | null>(null);
   const [sentOk, setSentOk] = useState(false);
   const [myList, setMyList] = useState<Submission[] | null>(null);
+  /* Submitted photos whose URL the browser could not draw — an image host's
+     share page rather than the picture. Kept per URL, not per submission, so a
+     later submission of the same lesson is judged on its own. */
+  const [brokenImages, setBrokenImages] = useState<Record<string, true>>({});
   const [subsOpen, setSubsOpen] = useState(false);
   const [busyExisting, setBusyExisting] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -66,6 +82,7 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
   const camInputRef = useRef<HTMLInputElement | null>(null);
   const multiInputRef = useRef<HTMLInputElement | null>(null);
   const previewUrlsRef = useRef<string[]>([]);
+  const [linkInput, setLinkInput] = useState("");
 
   const accountPhone = account?.whatsapp.trim() ?? "";
 
@@ -128,7 +145,12 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
       }
       const url = URL.createObjectURL(file);
       previewUrlsRef.current.push(url);
-      accepted.push({ key: `${Date.now()}-${file.name}-${file.size}`, file, url });
+      accepted.push({
+        key: `${Date.now()}-${file.name}-${file.size}`,
+        file,
+        url,
+        bytes: file.size,
+      });
     }
     if (accepted.length > 0) setQueue((prev) => [...prev, ...accepted]);
     setSendError(problem);
@@ -143,6 +165,16 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
     setSendError(null);
   };
 
+  /** One flag flip, no refetch: the entry stays queued and is still sent. */
+  const markPreviewBroken = (key: string) => {
+    setQueue((prev) => prev.map((q) => (q.key === key ? { ...q, previewBroken: true } : q)));
+  };
+
+  /** Same idea for photos already on the server. */
+  const noteImageBroken = (url: string) => {
+    setBrokenImages((prev) => (prev[url] ? prev : { ...prev, [url]: true }));
+  };
+
   const clearQueue = () => {
     queue.forEach((q) => revoke(q.url));
     setQueue([]);
@@ -150,7 +182,59 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
     setSentOk(false);
   };
 
+  /**
+   * Add a photo the student already uploaded somewhere else (ImageBB and
+   * friends) by pasting the link. It goes into the same queue as a local file,
+   * so the size cap, the slot count and the submit call behave identically —
+   * only the upload step is skipped.
+   */
+  const addLinkedImage = async () => {
+    const raw = linkInput.trim();
+    setSendError(null);
+    if (!raw) return;
+    if (queue.length + savedCount >= MAX_PHOTOS) {
+      setSendError(
+        t(
+          `এই লেসনে সর্বোচ্চ ${MAX_PHOTOS}টি ছবি পাঠানো যাবে।`,
+          `You can send up to ${MAX_PHOTOS} photos for this lesson.`,
+        ),
+      );
+      return;
+    }
+    let parsed: URL;
+    try {
+      parsed = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    } catch {
+      setSendError(t("সঠিক লিংক দিন।", "That doesn't look like a valid link."));
+      return;
+    }
+    if (parsed.protocol !== "https:") {
+      setSendError(t("শুধু https লিংক নেওয়া যাবে।", "Only https links are accepted."));
+      return;
+    }
+    if (!/\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(parsed.pathname)) {
+      setSendError(
+        t("সরাসরি ছবির লিংক দিন (.jpg, .png, .webp)।", "Link to the image file itself (.jpg, .png, .webp)."),
+      );
+      return;
+    }
+    setQueue((prev) => [
+      ...prev,
+      {
+        key: `${Date.now()}-link-${parsed.href}`,
+        file: null,
+        url: parsed.href,
+        bytes: null,
+        externalUrl: parsed.href,
+      },
+    ]);
+    setLinkInput("");
+  };
+
   const uploadOne = async (q: QueuedPhoto) => {
+    if (!q.file) {
+      return { url: q.externalUrl ?? q.url, publicId: "", bytes: 0, source: "external" as const };
+    }
     const form = new FormData();
     // Unique filename per upload — otherwise Cloudinary reuses the same
     // public_id/URL and browsers show stale cached bytes.
@@ -164,7 +248,14 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
     if (!up.ok || !upJson.secure_url) {
       throw new Error(t("ছবি আপলোড হয়নি। আবার চেষ্টা করুন।", "Photo upload failed. Try again."));
     }
-    return { url: String(upJson.secure_url), publicId: String(upJson.public_id ?? "") };
+    return {
+      url: String(upJson.secure_url),
+      publicId: String(upJson.public_id ?? ""),
+      // Cloudinary reports the stored size; falling back to the local file size
+      // keeps the storage counter honest when it is missing.
+      bytes: Math.max(0, Math.round(Number(upJson.bytes ?? q.file.size ?? 0))),
+      source: "cloudinary" as const,
+    };
   };
 
   const uploadAndSubmit = async () => {
@@ -174,7 +265,12 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
     setSentOk(false);
     setUploadedCount(0);
     try {
-      const images: { url: string; publicId: string }[] = [];
+      const images: {
+        url: string;
+        publicId: string;
+        bytes: number;
+        source: "cloudinary" | "external";
+      }[] = [];
       for (const q of queue) {
         images.push(await uploadOne(q));
         setUploadedCount(images.length);
@@ -385,6 +481,16 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
                   >
                     🖼️ {t("একাধিক ছবি বেছে নিন", "Choose multiple")}
                   </button>
+                  {/* Slow connection: the photo is already on their phone, so
+                      sending a link beats waiting on a re-upload. */}
+                  {!CLOUD_NAME || !UPLOAD_PRESET ? (
+                    <p className="text-[11px] text-warn">
+                      {t(
+                        "ডাইরেক্ট আপলোড চালু নেই — লিংক দিয়ে পাঠান।",
+                        "Direct upload is off — send a link instead.",
+                      )}
+                    </p>
+                  ) : null}
                   {full && (
                     <span className="text-[11px] font-mono text-warn">
                       {t(`${MAX_PHOTOS}টির সীমা পূর্ণ`, `Limit reached (${MAX_PHOTOS})`)}
@@ -403,6 +509,45 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
                   )}
                 </div>
 
+                {/* Link fallback — paste an image you already uploaded. */}
+                <div className="flex flex-col gap-2 rounded-xl border border-dashed border-text/15 bg-background p-3 sm:flex-row sm:items-center">
+                  <label htmlFor={`hw-link-${level}-${lesson}`} className="flex items-center gap-1.5 text-xs font-semibold text-text/70">
+                    <LinkIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                    {t("আগে আপলোড করা ছবির লিংক", "Already-uploaded image link")}
+                  </label>
+                  <div className="flex flex-1 gap-2">
+                    <input
+                      id={`hw-link-${level}-${lesson}`}
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://i.ibb.co/…"
+                      value={linkInput}
+                      onChange={(e) => setLinkInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void addLinkedImage();
+                        }
+                      }}
+                      className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-xs text-text placeholder:text-text/40 focus:ring-2 focus:ring-primary outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void addLinkedImage()}
+                      disabled={full || !linkInput.trim()}
+                      className="shrink-0 rounded-xl border border-secondary/40 px-3 py-2 text-xs font-bold text-secondary hover:bg-secondary/10 disabled:opacity-40"
+                    >
+                      {t("যোগ করো", "Add")}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted sm:w-full">
+                    {t(
+                      "ImageBB-তে ছবি আপলোড করে সেই লিংক এখানে দিলেই চলবে।",
+                      "Upload the photo on ImageBB, then paste that link here.",
+                    )}
+                  </p>
+                </div>
+
                 {/* picked-but-not-sent photos */}
                 {queue.length > 0 && (
                   <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
@@ -412,12 +557,37 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
                     <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {queue.map((q) => (
                         <li key={q.key} className="relative">
-                          {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
-                          <img
-                            src={q.url}
-                            alt={t("বেছে নেওয়া ছবির প্রিভিউ", "Preview of a chosen photo")}
-                            className="h-28 w-full rounded-lg border border-text/10 bg-card object-cover"
-                          />
+                          {q.previewBroken ? (
+                            /* An image host's share link is a web page, not a
+                               picture, so the browser cannot draw it. Rather
+                               than show a torn-image box, say what it is and
+                               keep it clickable — the server swaps in the real
+                               file on submit. */
+                            <a
+                              href={q.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex h-28 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-text/20 bg-card px-2 text-center"
+                            >
+                              <LinkIcon className="size-4 text-text/45" aria-hidden="true" />
+                              <span className="text-[10px] leading-tight text-text/60">
+                                {t("লিংক — ছবি খুলে দেখুন", "Link — tap to open")}
+                              </span>
+                            </a>
+                          ) : (
+                            /* eslint-disable-next-line @next/next/no-img-element -- local blob preview */
+                            <img
+                              src={q.url}
+                              alt={t("বেছে নেওয়া ছবির প্রিভিউ", "Preview of a chosen photo")}
+                              onError={() => markPreviewBroken(q.key)}
+                              className="h-28 w-full rounded-lg border border-text/10 bg-card object-cover"
+                            />
+                          )}
+                          {/* Per-photo size, so a student can see which page is
+                              the heavy one before sending everything. */}
+                          <span className="absolute bottom-1 left-1 rounded bg-background/85 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-text">
+                            {q.bytes !== null ? formatBytes(q.bytes) : t("লিংক", "link")}
+                          </span>
                           <button
                             type="button"
                             onClick={() => dropQueued(q.key)}
@@ -430,6 +600,14 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
                         </li>
                       ))}
                     </ul>
+                    <p className="text-[11px] text-muted">
+                      {t("মোট আকার", "Total size")}:{" "}
+                      <span className="font-mono tabular-nums text-text">
+                        {formatBytes(
+                          queue.reduce((n, q) => n + (q.bytes ?? 0), 0),
+                        )}
+                      </span>
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -457,17 +635,34 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
                     <p className="text-xs font-bold text-text">
                       🖼️ {t("তোমার পাঠানো ছবি", "Your submitted photos")} ({existing.images.length})
                     </p>
-                    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {existing.images.map((img, i) => (
                         <li key={img.url} className="relative">
                           <a href={img.url} target="_blank" rel="noopener noreferrer" className="block">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary CDN, no next.config images setup */}
-                            <img
-                              src={img.url}
-                              alt={`${t("পাঠানো হাতে-লেখার ছবি", "Submitted handwriting photo")} ${i + 1}`}
-                              className="h-28 w-full rounded-lg border border-text/10 bg-card object-cover"
-                            />
+                            {brokenImages[img.url] ? (
+                              <span className="flex h-28 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-text/20 bg-card px-2 text-center">
+                                <LinkIcon className="size-4 text-text/45" aria-hidden="true" />
+                                <span className="text-[10px] leading-tight text-text/60">
+                                  {t("লিংক — ছবি খুলে দেখুন", "Link — tap to open")}
+                                </span>
+                              </span>
+                            ) : (
+                              /* eslint-disable-next-line @next/next/no-img-element -- Cloudinary CDN, no next.config images setup */
+                              <img
+                                src={img.url}
+                                alt={`${t("পাঠানো হাতে-লেখার ছবি", "Submitted handwriting photo")} ${i + 1}`}
+                                onError={() => noteImageBroken(img.url)}
+                                className="h-28 w-full rounded-lg border border-text/10 bg-card object-cover"
+                              />
+                            )}
                           </a>
+                          <span className="absolute bottom-1 left-1 rounded bg-background/85 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-text">
+                            {/* A photo the student hosted themselves has no size
+                                on our side — the browser never sees the bytes.
+                                "0 B" would read as a failed upload, so say
+                                where it actually is. */}
+                            {img.bytes ? formatBytes(img.bytes) : t("লিংক", "link")}
+                          </span>
                           <button
                             type="button"
                             onClick={() => void removeOne(i)}
@@ -601,7 +796,16 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
                             <span className="font-semibold text-text">
                               HSK {s.level} · {t("লেসন", "Lesson")} {s.lesson}
                               <span className="ml-1.5 font-mono text-text/45">
-                                ({s.images.length} {t("ছবি", "photos")})
+                                ({s.images.length} {t("ছবি", "photos")}
+                                {/* Summing the bytes of photos hosted elsewhere
+                                    would always be 0, so only mention a size
+                                    when at least one photo has one. */}
+                                {s.images.some((img) => img.bytes)
+                                  ? ` · ${formatBytes(
+                                      s.images.reduce((n, img) => n + (img.bytes ?? 0), 0),
+                                    )}`
+                                  : null}
+                                )
                               </span>
                             </span>
                             {s.status === "Marked" && s.mark !== null ? (

@@ -14,8 +14,10 @@ import {
   Lock,
   MapPin,
   Phone,
+  Plus,
   Radio,
   RefreshCw,
+  Trash2,
   Trophy,
 } from "lucide-react";
 import { ICourse, IStudent, ILiveClassView, ILiveLink } from "@/features/academy";
@@ -322,8 +324,69 @@ export default function CoursesListPage() {
     }
   };
 
-  const toggleAttendance = async (roll: number) => {
-    if (!courseLive?.open || !selected) return;
+  /* ── lesson list editing (staff) ──────────────────────────────────────
+   * The syllabus is a real list with real names, not "Lesson 1..15", because
+   * the whole point of the page is telling a student and a parent exactly
+   * where the class has got to. Ticking a lesson uses its own endpoint so a
+   * rename never has to resend the ticks. */
+  const [lessonBusy, setLessonBusy] = useState(false);
+  const [lessonNotice, setLessonNotice] = useState<string | null>(null);
+
+  const saveLessons = async (lessons: { lessonNumber: number; title: string; description?: string }[]) => {
+    if (!selected) return;
+    setLessonBusy(true);
+    setLessonNotice(null);
+    try {
+      const res = await fetch(`/api/academy/courses/${encodeURIComponent(selected.courseId)}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessons, adminPasscode: adminPin || ADMIN_SECRET_PIN }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCourses((prev) =>
+          prev.map((c) => (c.courseId === selected.courseId ? { ...c, ...data.course } : c)),
+        );
+      } else {
+        setLessonNotice(data.message || data.error || t("সংরক্ষণ হয়নি।", "Save failed."));
+      }
+    } catch {
+      setLessonNotice(t("সমস্যা হয়েছে।", "Something went wrong."));
+    } finally {
+      setLessonBusy(false);
+    }
+  };
+
+  const markLesson = async (lessonNumber: number, done: boolean) => {
+    if (!selected) return;
+    setLessonBusy(true);
+    setLessonNotice(null);
+    try {
+      const res = await fetch(`/api/academy/courses/${encodeURIComponent(selected.courseId)}/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonNumber,
+          lessonDone: done,
+          adminPasscode: adminPin || ADMIN_SECRET_PIN,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCourses((prev) =>
+          prev.map((c) => (c.courseId === selected.courseId ? { ...c, ...data.course } : c)),
+        );
+      } else {
+        setLessonNotice(data.message || data.error || t("আপডেট হয়নি।", "Update failed."));
+      }
+    } catch {
+      setLessonNotice(t("সমস্যা হয়েছে।", "Something went wrong."));
+    } finally {
+      setLessonBusy(false);
+    }
+  };
+
+  const toggleAttendance = async (roll: number) => {    if (!courseLive?.open || !selected) return;
     const present = (courseLive.attendance ?? []).some((a) => a.rollNumber === roll);
     setToggleBusy(roll);
     try {
@@ -331,8 +394,13 @@ export default function CoursesListPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          courseId: selected.courseId, rollNumber: roll,
+          courseId: selected.courseId,
+          rollNumber: roll,
           ...(present ? { action: "unmark" } : {}),
+          // Marking somebody else's attendance is a staff action, so the server
+          // only accepts a bare roll number from a teacher/admin passcode. A
+          // student marks themselves through their account instead.
+          adminPasscode: ADMIN_SECRET_PIN,
         }),
       });
       const data = await res.json();
@@ -573,7 +641,7 @@ export default function CoursesListPage() {
 
           {/* ── lesson progress ── */}
           <Card className="p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-text/55">
                 {t("পাঠ তালিকা", "Lesson list")}
               </p>
@@ -584,31 +652,117 @@ export default function CoursesListPage() {
                 {lessonList.length}
               </span>
             </div>
-            <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-5">
-              {lessonList.map((lesson) => {
-                const covered = coveredLessons.has(lesson.lessonNumber);
-                return (
-                  <li
-                    key={lesson.lessonNumber}
-                    className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${
-                      covered
-                        ? "border-ok/35 bg-ok-surface"
-                        : "border-text/12 bg-text/[0.03]"
-                    }`}
-                  >
-                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border mt-0.5 ${
-                      covered ? "border-ok bg-ok text-card" : "border-text/25 text-transparent"
-                    }`}>
-                      {covered && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[10px] tabular-nums text-text/45">#{lesson.lessonNumber}</span>
-                      <span className="block truncate text-xs font-medium text-text">{lesson.title}</span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+
+            {adminUnlocked ? (
+              /* Staff view: the list is editable in place, because the admin is
+                 the one who knows what the next lesson is called. */
+              <div className="mt-3 space-y-2">
+                {lessonNotice && (
+                  <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs font-medium text-danger">
+                    {lessonNotice}
+                  </p>
+                )}
+                {lessonList.map((lesson, index) => {
+                  const covered = coveredLessons.has(lesson.lessonNumber);
+                  return (
+                    <div
+                      key={lesson.lessonNumber}
+                      className={`flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 ${
+                        covered ? "border-ok/35 bg-ok-surface" : "border-text/12 bg-text/[0.03]"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        disabled={lessonBusy}
+                        onClick={() => markLesson(lesson.lessonNumber, !covered)}
+                        title={covered ? t("অসমাপ্ত করুন", "Mark not done") : t("সম্পন্ন করুন", "Mark done")}
+                        aria-pressed={covered}
+                        className={`flex size-4 shrink-0 items-center justify-center rounded-full border transition-opacity ${
+                          covered ? "border-ok bg-ok text-card" : "border-text/25 text-transparent"
+                        } ${lessonBusy ? "opacity-50" : "hover:opacity-80"}`}
+                      >
+                        <Check className="size-2.5" strokeWidth={3} />
+                      </button>
+                      <span className="w-9 shrink-0 text-[10px] tabular-nums text-text/45">
+                        #{lesson.lessonNumber}
+                      </span>
+                      <input
+                        defaultValue={lesson.title}
+                        onBlur={(e) => {
+                          const title = e.target.value.trim();
+                          if (!title || title === lesson.title) return;
+                          void saveLessons(
+                            lessonList.map((l, i) =>
+                              i === index ? { ...l, title } : { lessonNumber: l.lessonNumber, title: l.title },
+                            ),
+                          );
+                        }}
+                        aria-label={t("পাঠের নাম", "Lesson title")}
+                        className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-xs font-medium text-text outline-none hover:border-text/15 focus-visible:border-text/30"
+                      />
+                      <button
+                        type="button"
+                        disabled={lessonBusy || lessonList.length <= 1}
+                        onClick={() =>
+                          void saveLessons(
+                            lessonList
+                              .filter((_, i) => i !== index)
+                              .map((l, i) => ({ ...l, lessonNumber: i + 1 })),
+                          )
+                        }
+                        title={t("মুছুন", "Remove")}
+                        className="rounded-lg p-1.5 text-text/35 hover:bg-text/5 hover:text-danger disabled:opacity-30"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={lessonBusy}
+                  iconLeft={<Plus className="size-3.5" />}
+                  onClick={() =>
+                    void saveLessons([
+                      ...lessonList.map((l) => ({ lessonNumber: l.lessonNumber, title: l.title })),
+                      {
+                        lessonNumber: lessonList.length + 1,
+                        title: t(`পাঠ ${lessonList.length + 1}`, `Lesson ${lessonList.length + 1}`),
+                      },
+                    ])
+                  }
+                >
+                  {t("পাঠ যোগ করুন", "Add lesson")}
+                </Button>
+              </div>
+            ) : (
+              <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-5">
+                {lessonList.map((lesson) => {
+                  const covered = coveredLessons.has(Number(lesson.lessonNumber));
+                  return (
+                    <li
+                      key={lesson.lessonNumber}
+                      className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${
+                        covered
+                          ? "border-ok/35 bg-ok-surface"
+                          : "border-text/12 bg-text/[0.03]"
+                      }`}
+                    >
+                      <span className={`flex size-4 shrink-0 items-center justify-center rounded-full border mt-0.5 ${
+                        covered ? "border-ok bg-ok text-card" : "border-text/25 text-transparent"
+                      }`}>
+                        {covered && <Check className="size-2.5" strokeWidth={3} />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] tabular-nums text-text/45">#{lesson.lessonNumber}</span>
+                        <span className="block truncate text-xs font-medium text-text">{lesson.title}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </Card>
 
           {/* ═══════════════════════════════════════

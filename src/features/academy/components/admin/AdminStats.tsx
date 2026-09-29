@@ -16,25 +16,43 @@ import {
  */
 
 export type AdminCounts = {
+  /** Every student record, whatever their status. */
+  totalStudents: number;
   pendingStudents: number;
   approvedStudents: number;
-  pendingClasses: number;
   courses: number;
-  chineseWords: number;
-  hanziPro: number;
-  donations: number;
-  reviews: number;
+  /** Enrollments waiting on a decision, and the ones already seated. */
+  pendingEnrollments: number;
+  approvedEnrollments: number;
+  /** Pro subscribers plus unexpired trials. */
+  proMembers: number;
+  /** The two halves of that number, for the page that needs to separate them. */
+  proStudents: number;
+  activeTrials: number;
+  /** Payments submitted and not yet reviewed. */
+  pendingPro: number;
+  /** Sign-in figures for the whole school. */
+  loginsToday: number;
+  /** Students with a session still open right now. */
+  onlineNow: number;
+  /** Distinct students who have ever signed in. */
+  everLoggedIn: number;
 };
 
 const EMPTY: AdminCounts = {
+  totalStudents: 0,
   pendingStudents: 0,
   approvedStudents: 0,
-  pendingClasses: 0,
   courses: 0,
-  chineseWords: 0,
-  hanziPro: 0,
-  donations: 0,
-  reviews: 0,
+  pendingEnrollments: 0,
+  approvedEnrollments: 0,
+  proMembers: 0,
+  proStudents: 0,
+  activeTrials: 0,
+  pendingPro: 0,
+  loginsToday: 0,
+  onlineNow: 0,
+  everLoggedIn: 0,
 };
 
 type AdminStatsContextType = {
@@ -56,26 +74,12 @@ export function AdminStatsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [pStu, aStu, logs, crs, words, hp, donate, rev] = await Promise.all([
-        fetch("/api/academy/students?status=Pending", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/students?status=Approved", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/classes/pending", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/courses", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/chinese-words", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/hanzi-pro", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/donations", { cache: "no-store" }).then((r) => r.json()),
-        fetch("/api/academy/reviews?all=1", { cache: "no-store" }).then((r) => r.json()),
-      ]);
-      setCounts({
-        pendingStudents: pStu.students?.length || 0,
-        approvedStudents: aStu.students?.length || 0,
-        pendingClasses: logs.pendingClasses?.length || 0,
-        courses: crs.courses?.length || 0,
-        chineseWords: words.data?.length || 0,
-        hanziPro: hp.students?.length || 0,
-        donations: donate.donations?.length || 0,
-        reviews: rev.reviews?.length || 0,
-      });
+      // One request instead of eight. The old version counted by fetching whole
+      // collections and taking `.length`, so every /admin page pulled in every
+      // student, every course and every review just to render a few pills.
+      const res = await fetch("/api/admin/overview", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success) setCounts({ ...EMPTY, ...data.counts });
     } catch (err) {
       console.error("Failed to load admin stats:", err);
     } finally {

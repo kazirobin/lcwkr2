@@ -5,11 +5,17 @@ import { connectDB } from "@/lib/db";
 import { HandwritingSubmission, Student } from "@/features/academy/models";
 import type { IHandwritingImage } from "@/features/academy/models/HandwritingSubmission";
 import { findApprovedStudentByPhone, normalizePhone } from "./dialogues";
+import { normalizeImageUrl, resolveDisplayImageUrl } from "./image-links";
 
 /** Per-lesson cap, mirroring the model validator. */
 export const MAX_PHOTOS = 8;
 
-export type HandwritingImageInput = { url: string; publicId?: string };
+export type HandwritingImageInput = {
+  url: string;
+  publicId?: string;
+  bytes?: number;
+  source?: "cloudinary" | "external";
+};
 
 export type HandwritingSubmissionInput = {
   name: string;
@@ -19,18 +25,70 @@ export type HandwritingSubmissionInput = {
   images: HandwritingImageInput[];
 };
 
+/** Hosts a student may point us at when they host the photo themselves. The
+ *  list is deliberately short: it exists so a school full of students on slow
+ *  connections can use an image host instead of filling the site's own quota,
+ *  not so the site will render anything a browser can be pointed at. */
+const EXTERNAL_IMAGE_HOSTS = [
+  "i.ibb.co",
+  "ibb.co",
+  "imagebin.net",
+  "imgur.com",
+  "i.imgur.com",
+  "postimages.org",
+  "lens.google.com",
+  "drive.google.com",
+  "googleusercontent.com",
+  "drive.usercontent.google.com",
+  "supabase.co",
+  "cloudinary.com",
+  "res.cloudinary.com",
+  "imgbb.com",
+];
+
+function isExternalImage(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (url.startsWith("data:image/")) return false;
+  return EXTERNAL_IMAGE_HOSTS.some(
+    (allowed) => host === allowed || host.endsWith(`.${allowed}`),
+  );
+}
+
 function cleanImages(raw: unknown): IHandwritingImage[] {
   if (!Array.isArray(raw) || raw.length === 0) throw new Error("At least one photo is required.");
   if (raw.length > MAX_PHOTOS) {
     throw new Error(`Maximum ${MAX_PHOTOS} photos per lesson.`);
   }
   return raw.map((item) => {
-    const entry = (item ?? {}) as { url?: unknown; publicId?: unknown };
-    const url = String(entry.url ?? "").trim();
-    if (!/^https:\/\/res\.cloudinary\.com\//.test(url)) {
+    const entry = (item ?? {}) as {
+      url?: unknown;
+      publicId?: unknown;
+      bytes?: unknown;
+      source?: unknown;
+    };
+    // `ibb.co.com` is a typo people make constantly, and it fails the host
+    // check below. Putting the host right first means a correct upload is not
+    // rejected as an invalid link.
+    const url = normalizeImageUrl(String(entry.url ?? "").trim());
+    const onCloudinary = /^https:\/\/res\.cloudinary\.com\//.test(url);
+    const external = !onCloudinary && isExternalImage(url);
+    if (!onCloudinary && !external) {
       throw new Error("Invalid image URL.");
     }
-    return { url, publicId: String(entry.publicId ?? "").trim() };
+    const rawBytes = Number(entry.bytes);
+    const bytes =
+      Number.isFinite(rawBytes) && rawBytes > 0 ? Math.min(Math.round(rawBytes), 512 * 1024 * 1024) : 0;
+    return {
+      url,
+      publicId: String(entry.publicId ?? "").trim(),
+      bytes,
+      source: onCloudinary ? "cloudinary" : "external",
+    };
   });
 }
 
@@ -55,13 +113,25 @@ export async function createHandwritingSubmission(input: HandwritingSubmissionIn
     throw new Error("Student list-এ এই নম্বর নেই — শুধু approved student পাঠাতে পারবে।");
   }
 
+  // A share page is a web page, not a picture, so `<img src>` on it shows
+  // nothing. Swap each link for the file the host advertises before saving, so
+  // the student sees their own photo in the queue and the admin sees it while
+  // marking. If resolution fails the original link is kept, never dropped.
+  const resolved = await Promise.all(
+    images.map(async (img) =>
+      img.source === "cloudinary"
+        ? img
+        : { ...img, url: await resolveDisplayImageUrl(img.url) },
+    ),
+  );
+
   await connectDB();
   const created = await HandwritingSubmission.create({
     name,
     whatsapp: norm,
     level,
     lesson,
-    images,
+    images: resolved,
     mark: null,
     feedback: "",
     status: "Pending",

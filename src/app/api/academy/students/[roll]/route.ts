@@ -11,21 +11,32 @@ import {
   StudentRegistration,
 } from "@/features/academy/models";
 import { sessionSummaries } from "@/features/analytics/server/sessions";
+import { canSeeContact } from "@/lib/admin-guard";
 
 /**
- * GET /api/academy/students/[roll] — everything the owner needs about one
- * student on a single page: the account itself, which courses they are on and
- * what they have paid for, every homework item ever submitted with its mark,
- * exam results, and their sign-in history.
+ * GET /api/academy/students/[roll] — everything the admin console needs about
+ * one student on a single page: the account itself, which courses they are on
+ * and what they have paid for, every homework item ever submitted with its
+ * mark, exam results, and their sign-in history.
  *
- * Read-only and ungated in the same way as the other academy reads; the admin
- * page that calls it is behind the passcode gate.
+ * This is the full private record — phone number, transaction history, every
+ * submission — so unlike the public profile it is admin-only. It used to be
+ * open to anyone, which meant the whole roster could be read one roll at a
+ * time without a passcode. The public view lives at `[roll]/profile`.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   props: { params: Promise<{ roll: string }> },
 ) {
   try {
+    const url = new URL(req.url);
+    if (!canSeeContact(req, url)) {
+      return NextResponse.json(
+        { success: false, error: "Admin passcode required." },
+        { status: 403 },
+      );
+    }
+
     const { roll } = await props.params;
     const rollNumber = Number(roll);
     if (!Number.isInteger(rollNumber)) {

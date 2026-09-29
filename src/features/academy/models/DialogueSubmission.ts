@@ -12,6 +12,9 @@ export interface IDialogueSubmissionDoc {
   lesson: number;
   audioUrl: string;
   durationSec: number;
+  /** Size of the uploaded recording in bytes, so the student's storage counter
+   *  can include audio and not just photos. Missing on old rows. */
+  bytes?: number;
   mark: number | null;
   feedback: string;
   status: "Pending" | "Marked";
@@ -29,6 +32,7 @@ const DialogueSubmissionSchema = new Schema<IDialogueSubmissionDoc>(
     lesson: { type: Number, required: true, min: 1 },
     audioUrl: { type: String, required: true, trim: true },
     durationSec: { type: Number, default: 0, min: 0 },
+    bytes: { type: Number, default: 0, min: 0 },
     mark: { type: Number, default: null, min: 0, max: 10 },
     feedback: { type: String, default: "" },
     status: {

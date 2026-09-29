@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { ExternalLink, ImageOff } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { AdminShell } from "@/features/academy";
 import { Button, SelectField, TextArea, useToast } from "@/components/ui";
@@ -22,6 +23,50 @@ import {
 } from "@/features/hw/dialogue-store";
 
 const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
+
+/**
+ * A photo, or an honest placeholder when the browser cannot draw it.
+ *
+ * Handwriting photos come from two places: our own storage, and whatever image
+ * host a student used. An image host's *share page* is a web page, not a
+ * picture, and `<img src>` on one produces a torn-image box. When the mark
+ * fails, saying so — and leaving the link clickable — is more useful to a
+ * marking teacher than a grey rectangle.
+ */
+function BrokenImg({
+  src,
+  alt,
+  label,
+  className,
+}: {
+  src: string;
+  alt: string;
+  label: string;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        className={`flex flex-col items-center justify-center gap-1.5 border border-dashed border-text/20 bg-card px-2 text-center ${className ?? ""}`}
+      >
+        <ImageOff className="size-5 text-text/40" aria-hidden="true" />
+        <span className="text-[11px] leading-tight text-text/60">{label}</span>
+        <ExternalLink className="size-3 text-text/35" aria-hidden="true" />
+      </span>
+    );
+  }
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element -- student-hosted CDN, no next.config images setup */
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className={className}
+    />
+  );
+}
 
 interface Submission {
   _id: string;
@@ -602,11 +647,13 @@ export default function AdminHwPage() {
                       {s.images.map((img, i) => (
                         <li key={img.url}>
                           <a href={img.url} target="_blank" rel="noopener noreferrer" className="block">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- Cloudinary CDN, no next.config images setup */}
-                            <img
+                            {/* A share-page link cannot be drawn. Rather than a
+                                torn-image box the admin has to guess about,
+                                say what it is and keep the photo one click away. */}
+                            <BrokenImg
                               src={img.url}
                               alt={`${t("শিক্ষার্থীর হাতে লেখার ছবি", "Student handwriting photo")} ${i + 1}`}
-                              loading="lazy"
+                              label={t("ছবি খুলতে ক্লিক করুন", "Click to open the photo")}
                               className="h-36 w-full rounded-xl border border-text/10 bg-card object-cover"
                             />
                           </a>

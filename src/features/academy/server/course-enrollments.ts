@@ -234,6 +234,26 @@ export async function approveCourseEnrollment(
     await student.save();
 
     row.rollNumber = student.rollNumber;
+  } else {
+    /* Someone can pay for a course without ever having filled in the ৳500
+       intake form — a walk-in, or someone who joined before the intake form
+       existed. Previously approving them only flipped a status: no account, no
+       roll number, and a confirmed payment belonging to nobody in the roster.
+       So the account is created here, the same way approving an intake does,
+       with the next roll number. */
+    const highest = await Student.findOne({}).sort({ rollNumber: -1 }).select("rollNumber").lean();
+    const roll = (highest?.rollNumber ?? 0) + 1;
+    const made = await Student.create({
+      rollNumber: roll,
+      nameEnglish: row.name || "নতুন শিক্ষার্থী",
+      whatsapp: row.whatsapp,
+      isPro: false,
+      enrolledCourseId: row.courseId,
+      enrolledCourseIds: [row.courseId],
+      registrationStatus: "Approved",
+      location: "",
+    });
+    row.rollNumber = made.rollNumber;
   }
 
   row.status = "Approved";
@@ -288,6 +308,19 @@ export async function deleteCourseEnrollment(
           student.enrolledCourseId = next[0] ?? "";
         }
         await student.save();
+      }
+
+      /* Approving can create the account when the person had never registered.
+         Deleting the row then has to take that account away again, or a
+         mistyped payment leaves an empty shell in the roster that nobody ever
+         asked for. Only when this was their one and only course — a student
+         with a history of courses is a real student and stays. */
+      if (next.length === 0 && existing.length === 1) {
+        const otherRows = await CourseEnrollment.countDocuments({ whatsapp: row.whatsapp });
+        if (otherRows === 0) {
+          await Student.deleteOne({ _id: student._id });
+          removedFromCourse = true;
+        }
       }
     }
   }
