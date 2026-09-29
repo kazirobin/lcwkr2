@@ -50,5 +50,7 @@ yarn.lock
 dev.*
 devserver.*
 lcwkr-*.log
+# the local `next start` log, which is machine output and not source
+run.log
 
 
