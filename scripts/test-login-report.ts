@@ -37,8 +37,14 @@ async function main() {
   const ov = await fetch(`${BASE}/api/admin/overview`).then((r) => r.json());
   check(ov.success, "overview responds");
   check(ov.counts.onlineNow === 1, "online now counts the open session", `onlineNow=${ov.counts.onlineNow}`);
-  check(ov.counts.loginsToday === 1, "sign-ins today counts it", `loginsToday=${ov.counts.loginsToday}`);
-  check(ov.counts.everLoggedIn === 1, "ever signed in counts it", `everLoggedIn=${ov.counts.everLoggedIn}`);
+
+  /* These two are school-wide, so they can only be "at least one". Real students
+     sign in during the day, and their sessions are left alone on purpose — the
+     test must not need a quiet database to pass, and must not delete someone
+     else's record to get one. What matters is that our own sign-in is among
+     the ones counted. */
+  check(ov.counts.loginsToday >= 1, "sign-ins today counts it", `loginsToday=${ov.counts.loginsToday}`);
+  check(ov.counts.everLoggedIn >= 1, "ever signed in counts it", `everLoggedIn=${ov.counts.everLoggedIn}`);
   check(ov.counts.totalStudents > 0, "total students is a real number", `totalStudents=${ov.counts.totalStudents}`);
 
   // The per-student login report, with and without the passcode.
@@ -72,7 +78,7 @@ async function main() {
   check(!!after.sessions?.[phone]?.lastLogoutAt, "and a logout time is recorded");
   const ov2 = await fetch(`${BASE}/api/admin/overview`).then((r) => r.json());
   check(ov2.counts.onlineNow === 0, "the overview's online count follows", `onlineNow=${ov2.counts.onlineNow}`);
-  check(ov2.counts.everLoggedIn === 1, "but they still count as ever signed in");
+  check(ov2.counts.everLoggedIn >= 1, "but they still count as ever signed in");
 
   // A never-signed-in student still gets a row, so the roll can be compared.
   const never = await Student.findOne({ registrationStatus: "Approved", whatsapp: { $nin: [phone, ""] } }).lean();

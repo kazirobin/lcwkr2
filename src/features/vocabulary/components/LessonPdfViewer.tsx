@@ -116,15 +116,21 @@ export function LessonPdfViewer({
   lesson,
   title,
   onClose,
+  url: urlOverride,
+  kind = "lesson",
 }: {
   level: number;
   lesson: number;
   title: string;
   onClose: () => void;
+  /** Read this file instead of the level's lesson book. Used for the workbooks. */
+  url?: string | null;
+  /** Which book is being read — only the wording differs. */
+  kind?: "lesson" | "workbook";
 }) {
   const { language } = useLanguage();
   const c = vocabularyCopy[language];
-  const url = lessonPdfUrl(level, lesson) ?? "";
+  const url = urlOverride || lessonPdfUrl(level, lesson) || "";
 
   const [status, setStatus] = useState<Status>("loading");
   const [numPages, setNumPages] = useState(0);
@@ -637,13 +643,13 @@ export function LessonPdfViewer({
         {status === "loading" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-white/70">
             <Loader2 aria-hidden="true" className="size-5 animate-spin" />
-            {c.pdfLoading}
+            {kind === "workbook" ? c.pdfLoadingWorkbook : c.pdfLoading}
           </div>
         )}
 
         {status === "error" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-sm text-white/70">
-            <p>{c.pdfError}</p>
+            <p>{kind === "workbook" ? c.pdfErrorWorkbook : c.pdfError}</p>
             <a
               href={url}
               target="_blank"
@@ -750,17 +756,23 @@ export function LessonPdfButton({
   lesson,
   className,
   variant = "pill",
+  url: urlOverride,
+  kind = "lesson",
 }: {
   level: number;
   lesson: number;
   className?: string;
   variant?: "pill" | "ghost";
+  /** Read this file instead of the level's lesson book. Used for the workbooks. */
+  url?: string | null;
+  /** Which book this button opens — decides the wording on the button. */
+  kind?: "lesson" | "workbook";
 }) {
   const { language } = useLanguage();
   const c = vocabularyCopy[language];
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const url = lessonPdfUrl(level, lesson);
+  const url = urlOverride || lessonPdfUrl(level, lesson);
 
   /* Closing the reader puts the caret back on the button that opened it, so the
      next one is a single keypress away instead of a hunt for the cursor. */
@@ -771,6 +783,7 @@ export function LessonPdfButton({
 
   if (!url) return null;
 
+  const isWorkbook = kind === "workbook";
   const title = `HSK ${localizeNumber(level, language)} · ${c.lesson} ${localizeNumber(lesson, language)}`;
   const shell =
     variant === "pill"
@@ -783,11 +796,11 @@ export function LessonPdfButton({
         ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
-        title={c.pdfOpenLesson}
+        title={isWorkbook ? c.pdfOpenWorkbook : c.pdfOpenLesson}
         className={className ?? shell}
       >
         <FileText aria-hidden="true" className="size-3.5" />
-        {c.lessonPdf}
+        {isWorkbook ? c.workbookPdf : c.lessonPdf}
       </button>
 
       {open && (
@@ -796,6 +809,8 @@ export function LessonPdfButton({
           lesson={lesson}
           title={title}
           onClose={() => setOpen(false)}
+          url={url}
+          kind={kind}
         />
       )}
     </>

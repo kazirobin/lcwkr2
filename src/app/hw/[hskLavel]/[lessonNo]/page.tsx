@@ -35,6 +35,8 @@ import { matchesPinyinAnswer } from "@/features/hw/pinyin";
 import { round2 } from "@/features/hw/marks";
 import { loadAccountPhone } from "@/features/student-auth";
 import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
+import { LessonPdfButton } from "@/features/vocabulary/components/LessonPdfViewer";
+import { workbookPdfUrl } from "@/features/vocabulary/pdf";
 
 interface MistakeItem {
   section: string;
@@ -384,13 +386,26 @@ export default function HomeworkDynamicPage() {
             )}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowHistory((v) => !v)}
-          className="self-start text-xs font-semibold border border-border rounded-xl px-3 py-2 text-muted hover:bg-text/5 transition"
-        >
-          📊 {t("আমার রেজাল্ট", "My Results")}
-        </button>
+        <div className="flex items-center gap-2 self-start">
+          {/* The printed workbook for this lesson, opened in the same reader the
+              vocabulary pages use. A student sitting the exam can turn to the
+              exercises without hunting for the file. Null when the level or the
+              lesson has no workbook, in which case the button hides itself. */}
+          <LessonPdfButton
+            level={level}
+            lesson={lessonNo}
+            url={workbookPdfUrl(level, lessonNo)}
+            kind="workbook"
+            variant="pill"
+          />
+          <button
+            type="button"
+            onClick={() => setShowHistory((v) => !v)}
+            className="text-xs font-semibold border border-border rounded-xl px-3 py-2 text-muted hover:bg-text/5 transition"
+          >
+            📊 {t("আমার রিজাল্ট", "My Results")}
+          </button>
+        </div>
       </header>
 
       {/* Whole-level picture: how many marks this HSK is worth, how many the
