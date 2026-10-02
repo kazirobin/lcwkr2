@@ -54,40 +54,53 @@ function loadSessionPhone(): string | null {
 export function AccountProvider({ children }: { children: React.ReactNode }) {
   const [student, setStudent] = useState<AccountStudent | null>(null);
   const [checking, setChecking] = useState(true);
-  const [booted, setBooted] = useState(false);
 
-  // Re-validate the saved session once on mount (no effect-setState lint:
-  // deferred via queueMicrotask, the codebase pattern).
-  if (!booted) {
-    setBooted(true);
-    queueMicrotask(() => {
-      const phone = loadSessionPhone();
-      if (!phone) {
-        setChecking(false);
-        return;
-      }
-      fetch("/api/auth/me", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.success) setStudent(d.student);
-          else {
-            try {
-              window.localStorage.removeItem(SESSION_KEY);
-            } catch {
-              /* ignore */
-            }
+  /* Re-validate the saved session once the tree is mounted.
+     This used to be done during render, behind a `booted` flag and a microtask,
+     which let the fetch and its state updates land before the provider was ready
+     to receive them — React logged "can't perform a React state update on a
+     component that hasn't mounted yet" on every page load, and the first tap
+     after a load could go nowhere. An effect runs after mount, and the `alive`
+     flag keeps a late answer from writing to a tree that has gone. */
+  useEffect(() => {
+    let alive = true;
+    const phone = loadSessionPhone();
+    if (!phone) {
+      /* Deferred so the update is a follow-up rather than a cascading render,
+         the pattern the rest of the app uses. Safe here precisely because this
+         runs after mount, which is what the old render-time version was not. */
+      queueMicrotask(() => {
+        if (alive) setChecking(false);
+      });
+      return;
+    }
+    fetch("/api/auth/me", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!alive) return;
+        if (d.success) setStudent(d.student);
+        else {
+          try {
+            window.localStorage.removeItem(SESSION_KEY);
+          } catch {
+            /* ignore */
           }
-        })
-        .catch(() => {
-          /* offline — keep logged-out view, session intact */
-        })
-        .finally(() => setChecking(false));
-    });
-  }
+        }
+      })
+      .catch(() => {
+        /* offline — keep logged-out view, session intact */
+      })
+      .finally(() => {
+        if (alive) setChecking(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const login = useCallback(async (phone: string, password: string) => {
     try {
