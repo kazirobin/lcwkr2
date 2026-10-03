@@ -185,8 +185,20 @@ export function LessonPdfViewer({
   const readingRef = useRef(1);
   const fitScaleRef = useRef(1);
   const pointersRef = useRef(new Map<number, { x: number; y: number; at: number }>());
-  const pinchRef = useRef<{ dist: number; scale: number } | null>(null);
-  const dragRef = useRef<{ x: number; y: number; at: number; panning: boolean } | null>(null);
+  /* A pinch is drawn straight onto the stage as a transform, so the page moves
+     with the fingers instead of waiting on a render. Only the fingers-up state
+     is committed. `sx/sy` is where the pinch started, in stage pixels, and
+     `startMid` is where those fingers began on screen. */
+  const pinchRef = useRef<{
+    dist: number;
+    scale: number;
+    startMid: { x: number; y: number };
+    sx: number;
+    sy: number;
+    frame: number;
+  } | null>(null);
+  const pinchTargetRef = useRef<{ dist: number; mid: { x: number; y: number } } | null>(null);
+  const dragRef = useRef<{ x: number; y: number; at: number; canTurn: boolean } | null>(null);
   const lastTapRef = useRef({ at: 0, x: 0, y: 0 });
 
   const theme = READER_THEMES[prefs.theme];
@@ -217,7 +229,10 @@ export function LessonPdfViewer({
 
   /* Gestures read the live values from here, so the callbacks stay free of
      render-time dependencies. */
-  const pendingZoomRef = useRef<{ anchor: { x: number; y: number }; k: number } | null>(null);
+  /* Where the page was under the fingers when a zoom was asked for, and where
+     that same spot should be afterwards. Keeping both ends lets one commit move
+     the page by a scale *and* a pan, which is what a two-finger pinch is. */
+  const pendingZoomRef = useRef<{ sx: number; sy: number; tx: number; ty: number; k: number } | null>(null);
   useEffect(() => {
     scaleRef.current = resolvedScale;
     fitScaleRef.current = fitScale;
@@ -325,11 +340,17 @@ export function LessonPdfViewer({
        once the real page has been laid out. */
     const node = scrollRef.current;
     const rect = node?.getBoundingClientRect();
-    const ax = anchor.x - (rect?.left ?? 0);
-    const ay = anchor.y - (rect?.top ?? 0);
-    stage.style.transformOrigin = `${ax}px ${ay}px`;
+    const stageRect = stage.getBoundingClientRect();
+    /* The anchor as it sits inside the stage, in content pixels, plus the stage's
+       own corner in the scroll content. Together they say where the page has to
+       move so that spot ends up back under the anchor. */
+    const left = rect ? stageRect.left - rect.left + node!.scrollLeft : 0;
+    const top = rect ? stageRect.top - rect.top + node!.scrollTop : 0;
+    const sx = rect ? node!.scrollLeft + (anchor.x - rect.left) - left : 0;
+    const sy = rect ? node!.scrollTop + (anchor.y - rect.top) - top : 0;
+    stage.style.transformOrigin = `${anchor.x - (rect?.left ?? 0)}px ${anchor.y - (rect?.top ?? 0)}px`;
     stage.style.transform = `scale(${to / from})`;
-    pendingZoomRef.current = { anchor, k: to / from };
+    pendingZoomRef.current = { sx, sy, tx: anchor.x, ty: anchor.y, k: to / from };
   }, []);
 
   /**
@@ -350,11 +371,8 @@ export function LessonPdfViewer({
     /* Where the stage's own corner sits in the scrollable content. */
     const left = stageRect.left - nodeRect.left + node.scrollLeft;
     const top = stageRect.top - nodeRect.top + node.scrollTop;
-    /* The anchor's position inside the stage, in content pixels. */
-    const ax = node.scrollLeft + (pending.anchor.x - nodeRect.left) - left;
-    const ay = node.scrollTop + (pending.anchor.y - nodeRect.top) - top;
-    node.scrollLeft = left + ax * pending.k - (pending.anchor.x - nodeRect.left);
-    node.scrollTop = top + ay * pending.k - (pending.anchor.y - nodeRect.top);
+    node.scrollLeft = left + pending.sx * pending.k - (pending.tx - nodeRect.left);
+    node.scrollTop = top + pending.sy * pending.k - (pending.ty - nodeRect.top);
   }, [resolvedScale, page, turn]);
 
   const zoomBy = useCallback((factor: number) => zoomTo(scaleRef.current * factor), [zoomTo]);
@@ -675,6 +693,47 @@ export function LessonPdfViewer({
   }, [zoomTo]);
 
   /* ── touch ── */
+  /**
+   * The fingers are gone: turn the transform the pinch was drawing into the
+   * real thing. A scale change is committed through the same pending path every
+   * other zoom uses; a pure two-finger pan has no scale to change, so its scroll
+   * is moved on the spot.
+   */
+  const commitPinch = useCallback(() => {
+    const inc = pinchRef.current;
+    const target = pinchTargetRef.current;
+    pinchRef.current = null;
+    pinchTargetRef.current = null;
+    const stage = stageRef.current;
+    const node = scrollRef.current;
+    if (inc?.frame) cancelAnimationFrame(inc.frame);
+    if (!inc || !stage) return;
+    if (!target) {
+      stage.style.transform = "none";
+      return;
+    }
+
+    const next = clamp(inc.scale * (target.dist / inc.dist), MIN_SCALE, MAX_SCALE);
+    const k = next / inc.scale;
+    const moved = { x: target.mid.x - inc.startMid.x, y: target.mid.y - inc.startMid.y };
+    if (Math.abs(next - scaleRef.current) < 0.0005) {
+      /* No zoom, just a pan: the translate that was on screen becomes scroll. */
+      stage.style.transform = "none";
+      if (node) {
+        node.scrollLeft -= moved.x;
+        node.scrollTop -= moved.y;
+      }
+      return;
+    }
+    /* Keep the gesture's final frame on screen while the sharper page renders,
+       and hand the settle effect the two ends it needs to place the scroll. */
+    stage.style.transformOrigin = `${inc.sx}px ${inc.sy}px`;
+    stage.style.transform = `translate(${moved.x}px, ${moved.y}px) scale(${k})`;
+    pendingZoomRef.current = { sx: inc.sx, sy: inc.sy, tx: target.mid.x, ty: target.mid.y, k };
+    setZoomMul(next / (fitScaleRef.current || 1));
+    if (prefsRef.current.zoomLock) setLockedAbs(next);
+  }, []);
+
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       if (isDrawingTool) return;
@@ -689,10 +748,22 @@ export function LessonPdfViewer({
 
       if (pointersRef.current.size >= 2) {
         const [a, b] = [...pointersRef.current.values()];
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        /* Measure with any turn preview off, so stage-local numbers are true. */
+        if (stage) {
+          stage.style.transition = "none";
+          stage.style.transform = "none";
+        }
+        const sr = stage?.getBoundingClientRect();
         pinchRef.current = {
           dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
           scale: scaleRef.current,
+          startMid: mid,
+          sx: sr ? mid.x - sr.left : 0,
+          sy: sr ? mid.y - sr.top : 0,
+          frame: 0,
         };
+        pinchTargetRef.current = null;
         dragRef.current = null;
         setShowHint(false);
         return;
@@ -703,10 +774,9 @@ export function LessonPdfViewer({
         x: event.clientX,
         y: event.clientY,
         at: performance.now(),
-        /* A page that fits has nothing to pan, so a sideways drag turns the
-           page. A zoomed page is panned instead, or the drag would fight the
-           scroll position. */
-        panning: !fits,
+        /* A page that fits has nothing to pan sideways, so a drifting sideways
+           drag turns the page. A zoomed page, or a vertical drag, pans. */
+        canTurn: fits,
       };
     },
     [isDrawingTool],
@@ -752,8 +822,25 @@ export function LessonPdfViewer({
       const pinch = pinchRef.current;
       if (pinch && pointersRef.current.size >= 2) {
         const [a, b] = [...pointersRef.current.values()];
-        const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-        zoomTo(pinch.scale * (dist / pinch.dist), { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+        pinchTargetRef.current = {
+          dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+          mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        };
+        /* One transform per frame. Drawing the pinch straight onto the stage
+           keeps the page under the fingers without a render per move, so it
+           tracks like a photo rather than stepping. */
+        if (!pinch.frame) {
+          pinch.frame = requestAnimationFrame(() => {
+            const inc = pinchRef.current;
+            const want = pinchTargetRef.current;
+            const el = stageRef.current;
+            if (!inc || !want || !el) return;
+            inc.frame = 0;
+            const k = clamp(inc.scale * (want.dist / inc.dist), MIN_SCALE, MAX_SCALE) / inc.scale;
+            el.style.transformOrigin = `${inc.sx}px ${inc.sy}px`;
+            el.style.transform = `translate(${want.mid.x - inc.startMid.x}px, ${want.mid.y - inc.startMid.y}px) scale(${k})`;
+          });
+        }
         return;
       }
 
@@ -762,28 +849,32 @@ export function LessonPdfViewer({
       if (!drag || !node) return;
       const dx = event.clientX - drag.x;
       const dy = event.clientY - drag.y;
+      const travelling = Math.abs(dx) > Math.abs(dy) * SWIPE_SLOP;
 
-      if (drag.panning) {
-        node.scrollLeft -= dx;
+      /* Where a turn is possible, a sideways drag follows the finger as a
+         preview. Everything else pans like an image: the page keeps up with the
+         finger in both directions. */
+      const stage = stageRef.current;
+      if (drag.canTurn && travelling) {
+        if (stage) {
+          stage.style.transition = "none";
+          stage.style.transform = `translate3d(${dx * 0.5}px, 0, 0)`;
+        }
         return;
       }
-      /* Follow the finger so the turn feels physical. On the element, not in
-         state, so a drag costs no renders. */
-      const stage = stageRef.current;
-      if (stage) {
-        const travelling = Math.abs(dx) > Math.abs(dy) * SWIPE_SLOP;
-        stage.style.transition = "none";
-        stage.style.transform = travelling ? `translate3d(${dx * 0.5}px, 0, 0)` : "none";
-      }
+      node.scrollLeft -= dx;
+      node.scrollTop -= dy;
     },
-    [isDrawingTool, prefs.magnifier, zoomTo],
+    [isDrawingTool, prefs.magnifier],
   );
 
   const endPointer = useCallback(
     (event: React.PointerEvent<HTMLDivElement>, cancelled: boolean) => {
       if (isDrawingTool) return;
       pointersRef.current.delete(event.pointerId);
-      if (pointersRef.current.size < 2) pinchRef.current = null;
+      /* Lifting either finger ends the pinch; fold the transform into real zoom
+         and scroll. */
+      if (pinchRef.current && pointersRef.current.size < 2) commitPinch();
 
       const drag = dragRef.current;
       if (!drag || pointersRef.current.size > 0) return;
@@ -824,12 +915,12 @@ export function LessonPdfViewer({
          quick flick is how you scroll, not how you turn, and treating those
          the same is what made the reader feel like it was running away. */
       const sideways = Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * SWIPE_SLOP;
-      if (sideways && elapsed > SWIPE_MAX_MS && drag.panning === false) {
+      if (sideways && elapsed > SWIPE_MAX_MS && drag.canTurn) {
         goTo(page + (dx < 0 ? 1 : -1));
       }
       if (stage) stage.style.transform = "none";
     },
-    [isDrawingTool, toggleReadZoom, goTo, page],
+    [isDrawingTool, toggleReadZoom, goTo, page, commitPinch],
   );
 
   /* Marking a note: prompt, then pin it to the page. */
@@ -981,10 +1072,12 @@ export function LessonPdfViewer({
         </BarButton>
       </div>
 
-      {/* the pages */}
+      {/* the pages. The reader owns every touch: pinch, two-finger pan and
+          one-finger drag in any direction. Letting the browser scroll as well
+          would cancel the pointers mid-gesture and cut the pinch short. */}
       <div
         ref={scrollRef}
-        style={{ touchAction: isDrawingTool ? "none" : "pan-y" }}
+        style={{ touchAction: "none" }}
         className="relative flex-1 overflow-auto overscroll-contain"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
