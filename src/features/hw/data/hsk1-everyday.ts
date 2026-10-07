@@ -1,9 +1,8 @@
 import type { HwDialogueLine } from "./hsk1/lesson1-dialogue";
 
 /**
- * HSK-1 everyday dialogues (Bangladesh-life conversations), one script
- * per lesson. Lessons 1–10 follow the course script; 11–15 are composed
- * from each lesson's own vocabulary words.
+ * HSK-1 dialogues (Bangladesh-life conversations), one script per lesson
+ * 1–15 — the course dialogues.
  *
  * TO EDIT OFFLINE: change any line here (hanzi / pinyin / en / bn),
  * save, reload — no database involved. Speakers alternate A (left) /
@@ -15,157 +14,154 @@ import type { HwDialogueLine } from "./hsk1/lesson1-dialogue";
 type L = HwDialogueLine;
 
 const L1: L[] = [
-  { speaker: "A", hanzi: "你好！你好吗？", pinyin: "Nǐ hǎo! Nǐ hǎo ma?", en: "Hi! How are you?", bn: "হাই! কেমন আছো?" },
-  { speaker: "B", hanzi: "我很好。你呢？", pinyin: "Wǒ hěn hǎo. Nǐ ne?", en: "I'm fine. And you?", bn: "আমি ভালো আছি। তুমি?" },
-  { speaker: "A", hanzi: "我也很好。你工作吗？", pinyin: "Wǒ yě hěn hǎo. Nǐ gōngzuò ma?", en: "I'm fine too. Do you work?", bn: "আমিও ভালো। তুমি কি কাজ করো?" },
-  { speaker: "B", hanzi: "对，我工作。我在服装厂工作。", pinyin: "Duì, wǒ gōngzuò. Wǒ zài fúzhuāngchǎng gōngzuò.", en: "Yes, I work. I work at a garment factory.", bn: "হ্যাঁ, কাজ করি। গার্মেন্টসে কাজ করি।" },
-  { speaker: "A", hanzi: "你做什么工作？", pinyin: "Nǐ zuò shénme gōngzuò?", en: "What work do you do?", bn: "তুমি কী কাজ করো?" },
-  { speaker: "B", hanzi: "我是工人。你呢？你学习吗？", pinyin: "Wǒ shì gōngrén. Nǐ ne? Nǐ xuéxí ma?", en: "I'm a worker. And you? Do you study?", bn: "আমি শ্রমিক। তুমি? পড়াশোনা করো?" },
-  { speaker: "A", hanzi: "对，我学习汉语。", pinyin: "Duì, wǒ xuéxí Hànyǔ.", en: "Yes, I study Chinese.", bn: "হ্যাঁ, চাইনিজ পড়ি।" },
-  { speaker: "B", hanzi: "太好了！再见！", pinyin: "Tài hǎo le! Zàijiàn!", en: "Great! Goodbye!", bn: "খুব ভালো! বিদায়!" },
+  { speaker: "A", hanzi: "你好吗？现在在做什么？", pinyin: "Nǐ hǎo ma? Xiànzài zài zuò shénme?", en: "How are you? What are you doing now?", bn: "কেমন আছো? এখন কী করছো?" },
+  { speaker: "B", hanzi: "我很好。我现在在服装厂工作。你做什么工作？", pinyin: "Wǒ hěn hǎo. Wǒ xiànzài zài fúzhuāngchǎng gōngzuò. Nǐ zuò shénme gōngzuò?", en: "I'm fine. I work at a garment factory now. What work do you do?", bn: "আমি ভালো আছি। এখন গার্মেন্টসে কাজ করি। তুমি কী কাজ করো?" },
+  { speaker: "A", hanzi: "我在学习。", pinyin: "Wǒ zài xuéxí.", en: "I'm studying.", bn: "আমি পড়াশোনা করছি।" },
 ];
 
 const L2: L[] = [
-  { speaker: "A", hanzi: "你好！你是马鲁夫吗？", pinyin: "Nǐ hǎo! Nǐ shì Mǎlǔfū ma?", en: "Hi! Are you Maruf?", bn: "হাই! তুমি কি মারুফ?" },
-  { speaker: "B", hanzi: "不，我不是马鲁夫，我是久韦尔。你是苏曼吗？", pinyin: "Bù, wǒ bú shì Mǎlǔfū, wǒ shì Jiǔwéi'ěr. Nǐ shì Sūmàn ma?", en: "No, I'm not Maruf, I'm Jewel. Are you Suman?", bn: "না, আমি মারুফ না, আমি জুয়েল। তুমি কি সুমন?" },
-  { speaker: "A", hanzi: "对，我是苏曼。认识你很高兴！", pinyin: "Duì, wǒ shì Sūmàn. Rènshi nǐ hěn gāoxìng!", en: "Yes, I'm Suman. Nice to meet you!", bn: "হ্যাঁ, আমি সুমন। পরিচিত হয়ে ভালো লাগলো!" },
+  { speaker: "A", hanzi: "你是马鲁夫吗？", pinyin: "Nǐ shì Mǎlǔfū ma?", en: "Are you Maruf?", bn: "তুমি কি মারুফ?" },
+  { speaker: "B", hanzi: "不，我不是马鲁夫，我是朱耶尔。你是苏蒙吗？", pinyin: "Bù, wǒ bú shì Mǎlǔfū, wǒ shì Zhūyē'ěr. Nǐ shì Sūméng ma?", en: "No, I'm not Maruf, I'm Juyel. Are you Sumon?", bn: "না, আমি মারুফ না, আমি জুয়েল। তুমি কি সুমন?" },
+  { speaker: "A", hanzi: "是的，我是苏蒙。很高兴认识你。", pinyin: "Shì de, wǒ shì Sūméng. Hěn gāoxìng rènshi nǐ!", en: "Yes, I'm Sumon. Nice to meet you!", bn: "হ্যাঁ, আমি সুমন। পরিচিত হয়ে ভালো লাগলো!" },
 ];
 
 const L3: L[] = [
-  { speaker: "A", hanzi: "哈尼夫，你的老家在哪儿？", pinyin: "Hānífū, nǐ de lǎojiā zài nǎr?", en: "Hanif, where is your hometown?", bn: "হানিফ, তোমার গ্রামের বাড়ি কোথায়?" },
-  { speaker: "B", hanzi: "我的老家在杰索尔。你旁边是谁？", pinyin: "Wǒ de lǎojiā zài Jiésuǒ'ěr. Nǐ pángbiān shì shéi?", en: "My hometown is in Jashore. Who is next to you?", bn: "আমার গ্রামের বাড়ি যশোরে। তোমার পাশে কে?" },
-  { speaker: "A", hanzi: "他是我的朋友。", pinyin: "Tā shì wǒ de péngyou.", en: "He is my friend.", bn: "উনি আমার বন্ধু।" },
-  { speaker: "B", hanzi: "你工作忙吗？怎么没有你的消息？", pinyin: "Nǐ gōngzuò máng ma? Zěnme méiyǒu nǐ de xiāoxi?", en: "Are you busy with work? Why no news from you?", bn: "কাজে ব্যস্ত? তোমার খবর নেই কেন?" },
-  { speaker: "A", hanzi: "我有点儿忙，但是我想你。", pinyin: "Wǒ yǒu diǎnr máng, dànshì wǒ xiǎng nǐ.", en: "I'm a bit busy, but I miss you.", bn: "একটু ব্যস্ত, তবে তোমার কথা মনে করি।" },
+  { speaker: "A", hanzi: "哈尼夫哥，你的老家在哪里？", pinyin: "Hānífū gē, nǐ de lǎojiā zài nǎlǐ?", en: "Brother Hanif, where is your hometown?", bn: "হানিফ ভাইয়া, তোমার গ্রামের বাড়ি কোথায়?" },
+  { speaker: "B", hanzi: "我的老家在杰索尔。你跟他是什么关系？", pinyin: "Wǒ de lǎojiā zài Jiésuǒ'ěr. Nǐ gēn tā shì shénme guānxi?", en: "My hometown is in Jashore. What is your relationship with him?", bn: "আমার গ্রামের বাড়ি যশোরে। তুমি তার সাথে কী সম্পর্ক?" },
+  { speaker: "A", hanzi: "他是我的朋友。", pinyin: "Tā shì wǒ de péngyou.", en: "He is my friend.", bn: "সে আমার বন্ধু।" },
+  { speaker: "B", hanzi: "你工作是不是很忙？怎么一直没有你的消息？", pinyin: "Nǐ gōngzuò shì bu shì hěn máng? Zěnme yìzhí méiyǒu nǐ de xiāoxi?", en: "Aren't you very busy with work? Why no news from you all this while?", bn: "কাজে কি খুব ব্যস্ত? এতক্ষণ তোমার খবর কেন নেই?" },
+  { speaker: "A", hanzi: "我最近有点忙，不过我一直记得你。", pinyin: "Wǒ zuìjìn yǒudiǎn máng, búguò wǒ yìzhí jìde nǐ.", en: "I've been a bit busy lately, but I've always remembered you.", bn: "সাম্প্রতিক একটু ব্যস্ত, তবে তোমার কথা মনে রাখি।" },
 ];
 
 const L4: L[] = [
-  { speaker: "A", hanzi: "哈尼夫，你有电脑吗？", pinyin: "Hānífū, nǐ yǒu diànnǎo ma?", en: "Hanif, do you have a computer?", bn: "হানিফ, তোমার কম্পিউটার আছে?" },
-  { speaker: "B", hanzi: "有。", pinyin: "Yǒu.", en: "Yes.", bn: "আছে।" },
-  { speaker: "A", hanzi: "你的电脑是新的还是旧的？", pinyin: "Nǐ de diànnǎo shì xīn de háishi jiù de?", en: "Is your computer new or old?", bn: "নতুন না পুরনো?" },
-  { speaker: "B", hanzi: "不太旧，我买了六个月。", pinyin: "Bú tài jiù, wǒ mǎi le liù ge yuè.", en: "Not too old, I bought it six months ago.", bn: "বেশি পুরনো না, ৬ মাস হলো কিনেছি।" },
-  { speaker: "A", hanzi: "我想买一台电脑。你旁边有人卖电脑吗？", pinyin: "Wǒ xiǎng mǎi yī tái diànnǎo. Nǐ pángbiān yǒu rén mài diànnǎo ma?", en: "I want to buy a computer. Is anyone near you selling one?", bn: "কম্পিউটার কিনতে চাই। আশেপাশে কেউ বিক্রি করে?" },
-  { speaker: "B", hanzi: "好，没问题。", pinyin: "Hǎo, méi wèntí.", en: "OK, no problem.", bn: "আচ্ছা, ঠিক আছে।" },
+  { speaker: "A", hanzi: "哈尼夫哥，你有电脑吗？", pinyin: "Hānífū gē, nǐ yǒu diànnǎo ma?", en: "Brother Hanif, do you have a computer?", bn: "হানিফ ভাইয়া, তোমার কম্পিউটার আছে?" },
+  { speaker: "B", hanzi: "嗯，有。", pinyin: "Èn, yǒu.", en: "Yes, I do.", bn: "হ্যাঁ, আছে।" },
+  { speaker: "A", hanzi: "你的电脑是新的吗？还是旧的？", pinyin: "Nǐ de diànnǎo shì xīn de ma? Háishi jiù de?", en: "Is your computer new? Or old?", bn: "তোমার কম্পিউটার কি নতুন? নাকি পুরনো?" },
+  { speaker: "B", hanzi: "买了六个月了，哥。", pinyin: "Mǎi le liù ge yuè le, gē.", en: "I bought it six months ago, brother.", bn: "৬ মাস হলো কিনেছি, ভাইয়া।" },
+  { speaker: "A", hanzi: "哈尼夫哥，我想买一台电脑。如果你附近有人卖电脑，请告诉我一声。", pinyin: "Hānífū gē, wǒ xiǎng mǎi yí tái diànnǎo. Rúguǒ nǐ fùjìn yǒu rén mài diànnǎo, qǐng gàosu wǒ yì shēng.", en: "Brother Hanif, I want to buy a computer. If anyone near you sells computers, please let me know.", bn: "হানিফ ভাইয়া, আমি একটা কম্পিউটার কিনতে চাই। তোমার আশেপাশে কেউ বিক্রি করলে জানিয়ে দিও।" },
+  { speaker: "B", hanzi: "好，没问题，哥。", pinyin: "Hǎo, méi wèntí, gē.", en: "OK, no problem, brother.", bn: "ঠিক আছে, কোনো সমস্যা নেই, ভাইয়া।" },
 ];
 
 const L5: L[] = [
-  { speaker: "A", hanzi: "阿纳斯，你今天没去办公室吗？", pinyin: "Ānàsī, nǐ jīntiān méi qù bàngōngshì ma?", en: "Anas, didn't you go to the office today?", bn: "আনাস, আজ অফিসে যাওনি?" },
-  { speaker: "B", hanzi: "对，今天不去，因为星期天休息。", pinyin: "Duì, jīntiān bú qù, yīnwèi xīngqītiān xiūxi.", en: "Right, not going today, Sunday is off.", bn: "হ্যাঁ, যাবো না, রবিবার বন্ধ।" },
-  { speaker: "A", hanzi: "你在哪儿工作？", pinyin: "Nǐ zài nǎr gōngzuò?", en: "Where do you work?", bn: "কোথায় কাজ করো?" },
-  { speaker: "B", hanzi: "我在中国公司工作。", pinyin: "Wǒ zài Zhōngguó gōngsī gōngzuò.", en: "I work at a Chinese company.", bn: "চাইনিজ কোম্পানিতে কাজ করি।" },
-  { speaker: "A", hanzi: "你几点上班，几点下班？", pinyin: "Nǐ jǐ diǎn shàngbān, jǐ diǎn xiàbān?", en: "What time do you start and finish?", bn: "কয়টা থেকে কয়টা ডিউটি?" },
-  { speaker: "B", hanzi: "早上八点到下午五点。", pinyin: "Zǎoshang bā diǎn dào xiàwǔ wǔ diǎn.", en: "8 in the morning to 5 in the afternoon.", bn: "সকাল ৮টা থেকে বিকাল ৫টা।" },
-  { speaker: "A", hanzi: "你的工资是多少？", pinyin: "Nǐ de gōngzī shì duōshao?", en: "What is your salary?", bn: "বেতন কত?" },
-  { speaker: "B", hanzi: "一万四千块。", pinyin: "Yī wàn sì qiān kuài.", en: "Fourteen thousand.", bn: "১৪ হাজার টাকা।" },
+  { speaker: "A", hanzi: "阿纳斯哥，你今天没去办公室吗？", pinyin: "Ānàsī gē, nǐ jīntiān méi qù bàngōngshì ma?", en: "Brother Anas, didn't you go to the office today?", bn: "আনাস ভাইয়া, আজ অফিসে যাওনি?" },
+  { speaker: "B", hanzi: "不，哥，今天不去，因为我们办公室星期天不上班。", pinyin: "Bù, gē, jīntiān bú qù, yīnwèi wǒmen bàngōngshì xīngqītiān bù shàngbān.", en: "No, brother, I'm not going today — our office doesn't work on Sundays.", bn: "না, ভাইয়া, আজ যাবো না, আমাদের অফিস রবিবার কাজ করে না।" },
+  { speaker: "A", hanzi: "哦，原来这样。阿纳斯哥，你在哪个办公室工作？", pinyin: "Ó, yuánlái zhèyàng. Ānàsī gē, nǐ zài nǎge bàngōngshì gōngzuò?", en: "Oh, so that's how it is. Brother Anas, which office do you work in?", bn: "ও, একথা। আনাস ভাইয়া, তুমি কোন অফিসে কাজ করো?" },
+  { speaker: "B", hanzi: "哥，我在一家中国公司工作。", pinyin: "Gē, wǒ zài yì jiā Zhōngguó gōngsī gōngzuò.", en: "Brother, I work at a Chinese company.", bn: "ভাইয়া, আমি একটা চাইনিজ কোম্পানিতে কাজ করি।" },
+  { speaker: "A", hanzi: "哦，哥，你几点上班，几点下班？", pinyin: "Ó, gē, nǐ jǐ diǎn shàngbān, jǐ diǎn xiàbān?", en: "Oh, brother, what time do you start and finish work?", bn: "ও, ভাইয়া, কয়টায় ডিউটি শুরু, কয়টায় ছাড়া?" },
+  { speaker: "B", hanzi: "早上八点到下午五点。", pinyin: "Zǎoshang bā diǎn dào xiàwǔ wǔ diǎn.", en: "Eight in the morning to five in the afternoon.", bn: "সকাল ৮টা থেকে বিকাল ৫টা।" },
+  { speaker: "A", hanzi: "你的工资是多少，哥？", pinyin: "Nǐ de gōngzī shì duōshao, gē?", en: "How much is your salary, brother?", bn: "বেতন কত, ভাইয়া?" },
+  { speaker: "B", hanzi: "一万四千塔卡，是基本工资。", pinyin: "Yī wàn sì qiān tǎkǎ, shì jīběn gōngzī.", en: "Fourteen thousand taka — that's the basic salary.", bn: "চৌদ্দ হাজার টাকা, এটা বেসিক বেতন।" },
 ];
 
 const L6: L[] = [
   { speaker: "A", hanzi: "萨比尔，你去哪儿？", pinyin: "Sàbǐ'ěr, nǐ qù nǎr?", en: "Sabbir, where are you going?", bn: "সাব্বির, কই যাও?" },
-  { speaker: "B", hanzi: "我去北拉的一个大商场。", pinyin: "Wǒ qù Běilā de yí ge dà shāngchǎng.", en: "I'm going to a big mall in Uttara.", bn: "উত্তরার বড় মার্কেটে যাবো।" },
-  { speaker: "A", hanzi: "你只给自己买东西吗？", pinyin: "Nǐ zhǐ gěi zìjǐ mǎi dōngxi ma?", en: "Are you shopping only for yourself?", bn: "শুধু নিজের জন্য কিনবে?" },
-  { speaker: "B", hanzi: "不，我给爸爸妈妈、两个姐姐和我太太买东西。", pinyin: "Bù, wǒ gěi bàba māma, liǎng ge jiějie hé wǒ tàitai mǎi dōngxi.", en: "No, I'm buying for my parents, two sisters and my wife.", bn: "না, আব্বু-আম্মু, ২ বোন আর স্ত্রীর জন্য কিনবো।" },
-  { speaker: "A", hanzi: "太好了！再见！", pinyin: "Tài hǎo le! Zàijiàn!", en: "Great! Bye!", bn: "খুব ভালো! বিদায়!" },
-  { speaker: "B", hanzi: "再见！", pinyin: "Zàijiàn!", en: "Bye!", bn: "বিদায়!" },
+  { speaker: "B", hanzi: "我去乌特拉的一个大商场。", pinyin: "Wǒ qù Wūtèlā de yí ge dà shāngchǎng.", en: "I'm going to a big shopping mall in Uttara.", bn: "উত্তরার একটা বড় শপিংমলে যাচ্ছি।" },
+  { speaker: "A", hanzi: "你只是给自己买东西吗？", pinyin: "Nǐ zhǐshì gěi zìjǐ mǎi dōngxi ma?", en: "Are you only buying things for yourself?", bn: "শুধু নিজের জন্য কিনছো?" },
+  { speaker: "B", hanzi: "不是，哥，我爸爸妈妈、两个姐妹，还有我的妻子，我要给大家买东西。", pinyin: "Bú shì, gē, wǒ bàba māma, liǎng ge jiěmei, hái yǒu wǒ de qīzi, wǒ yào gěi dàjiā mǎi dōngxi.", en: "No, brother — my dad, mom, two sisters and my wife. I'm buying for everyone.", bn: "না, ভাইয়া, আব্বু-আম্মু, দুই বোন, আর আমার স্ত্রী — সবার জন্য কিনছি।" },
 ];
 
 const L7: L[] = [
-  { speaker: "A", hanzi: "妈妈，我饿了，快给我饭吃。", pinyin: "Māma, wǒ è le, kuài gěi wǒ fàn chī.", en: "Mom, I'm hungry, give me food quickly.", bn: "আম্মু, ক্ষিদে লাগছে, তাড়াতাড়ি খেতে দাও।" },
-  { speaker: "B", hanzi: "好，你坐，我给你做饼。", pinyin: "Hǎo, nǐ zuò, wǒ gěi nǐ zuò bǐng.", en: "OK, sit, I'll make roti for you.", bn: "আচ্ছা বসো, রুটি বানিয়ে দিচ্ছি।" },
-  { speaker: "A", hanzi: "好，妈妈，快一点儿。", pinyin: "Hǎo, māma, kuài yì diǎnr.", en: "OK mom, hurry a bit.", bn: "ঠিক আছে মা, তাড়াতাড়ি করো।" },
-  { speaker: "B", hanzi: "里法特，拿灯来，没电了。", pinyin: "Lǐfǎtè, ná dēng lái, méi diàn le.", en: "Rifat, bring the lamp, the power is out.", bn: "রিফাত, লাইট নিয়ে আসো, কারেন্ট গেছে।" },
-  { speaker: "A", hanzi: "妈妈，灯没有电。", pinyin: "Māma, dēng méiyǒu diàn.", en: "Mom, the lamp has no charge.", bn: "মা, লাইটে চার্জ নাই।" },
-  { speaker: "B", hanzi: "好，拿我的手机来。", pinyin: "Hǎo, ná wǒ de shǒujī lái.", en: "OK, bring my phone.", bn: "আচ্ছা, আমার ফোনটা নিয়ে আসো।" },
-  { speaker: "A", hanzi: "妈妈，你的手机在哪儿？", pinyin: "Māma, nǐ de shǒujī zài nǎr?", en: "Mom, where is your phone?", bn: "মা, ফোনটা কোথায়?" },
-  { speaker: "B", hanzi: "在我房间的桌子上。", pinyin: "Zài wǒ fángjiān de zhuōzi shang.", en: "On the table in my room.", bn: "আমার রুমে টেবিলের ওপরে।" },
+  { speaker: "A", hanzi: "妈妈，我饿了，快点给我做点吃的。", pinyin: "Māma, wǒ è le, kuài diǎn gěi wǒ zuò diǎn chī de.", en: "Mom, I'm hungry — make me something to eat, quickly.", bn: "আম্মু, ক্ষিদে লাগছে, তাড়াতাড়ি কিছু বানিয়ে দাও।" },
+  { speaker: "B", hanzi: "好，你坐着，我给你做烙饼。", pinyin: "Hǎo, nǐ zuòzhe, wǒ gěi nǐ zuò làobǐng.", en: "OK, sit down — I'll make you flatbread.", bn: "ঠিক আছে, বসে থাকো, রুটি বানিয়ে দিচ্ছি।" },
+  { speaker: "A", hanzi: "好的，妈妈，你快一点。", pinyin: "Hǎo de, māma, nǐ kuài yì diǎn.", en: "OK mom, hurry up a bit.", bn: "আচ্ছা আম্মু, একটু তাড়াতাড়ি করো।" },
+  { speaker: "B", hanzi: "里法特，把手电筒拿过来，停电了。", pinyin: "Lǐfǎtè, bǎ shǒudiàntǒng ná guòlái, tíng diàn le.", en: "Rifat, bring the flashlight over — the power is out.", bn: "রিফাত, টর্চটা নিয়ে আয়, লাইট গেছে।" },
+  { speaker: "A", hanzi: "妈妈，手电筒没电了。", pinyin: "Māma, shǒudiàntǒng méi diàn le.", en: "Mom, the flashlight has no charge.", bn: "আম্মু, টর্চে চার্জ নেই।" },
+  { speaker: "B", hanzi: "好，把我的手机拿过来。", pinyin: "Hǎo, bǎ wǒ de shǒujī ná guòlái.", en: "OK, bring my phone over.", bn: "ঠিক আছে, আমার ফোনটা নিয়ে আয়।" },
+  { speaker: "A", hanzi: "妈妈，你的手机放在哪里？", pinyin: "Māma, nǐ de shǒujī fàng zài nǎlǐ?", en: "Mom, where did you put your phone?", bn: "আম্মু, তোমার ফোনটা কোথায় রেখেছো?" },
+  { speaker: "B", hanzi: "放在我房间的桌子上。", pinyin: "Fàng zài wǒ fángjiān de zhuōzi shàng.", en: "On the table in my room.", bn: "আমার রুমের টেবিলে রেখেছি।" },
 ];
 
 const L8: L[] = [
-  { speaker: "A", hanzi: "苏曼，起床，十点了。今天我们去公园玩。", pinyin: "Sūmàn, qǐchuáng, shí diǎn le. Jīntiān wǒmen qù gōngyuán wán.", en: "Suman, get up, it's 10. Today we're going to the park.", bn: "সুমন ওঠো, ১০টা বাজে। আজ পার্কে যাবো।" },
-  { speaker: "B", hanzi: "好，妈妈，公园的票多少钱一张？", pinyin: "Hǎo, māma, gōngyuán de piào duōshao qián yī zhāng?", en: "OK mom, how much is one park ticket?", bn: "টিকিট কত করে?" },
-  { speaker: "A", hanzi: "不贵，只要八十块。", pinyin: "Bú guì, zhǐ yào bāshí kuài.", en: "Not expensive, only eighty.", bn: "বেশি না, মাত্র ৮০ টাকা।" },
-  { speaker: "B", hanzi: "好，妈妈，那儿什么吃的都有吗？", pinyin: "Hǎo, māma, nàr shénme chī de dōu yǒu ma?", en: "OK, is there every kind of food there?", bn: "সব খাবার পাওয়া যায়?" },
-  { speaker: "A", hanzi: "对，什么都有。", pinyin: "Duì, shénme dōu yǒu.", en: "Yes, everything.", bn: "হ্যাঁ, সব আছে।" },
-  { speaker: "B", hanzi: "妈妈，你以前去过那儿吗？", pinyin: "Māma, nǐ yǐqián qù guo nàr ma?", en: "Mom, have you been there before?", bn: "আগে গেছিলে?" },
-  { speaker: "A", hanzi: "去过，六七个月以前去的。", pinyin: "Qù guo, liù qī ge yuè yǐqián qù de.", en: "Yes, I went six or seven months ago.", bn: "গেছিলাম ৬-৭ মাস আগে।" },
+  { speaker: "A", hanzi: "苏蒙，起床，早上十点了。今天我们去公园玩。", pinyin: "Sūméng, qǐchuáng, zǎoshang shí diǎn le. Jīntiān wǒmen qù gōngyuán wán.", en: "Sumon, get up — it's ten in the morning. Today we're going to the park.", bn: "সুমন, ওঠো, সকাল ১০টা বাজে। আজ পার্কে খেলতে যাবো।" },
+  { speaker: "B", hanzi: "好，妈妈，公园的门票一个人多少钱？", pinyin: "Hǎo, māma, gōngyuán de ménpiào yí ge rén duōshao qián?", en: "OK mom, how much is one park ticket?", bn: "ঠিক আছে আম্মু, পার্কের টিকিট মাথাপিছু কত?" },
+  { speaker: "A", hanzi: "不贵，一个人只要八十块钱。", pinyin: "Bú guì, yí ge rén zhǐ yào bāshí kuài qián.", en: "Not expensive — only eighty for one person.", bn: "বেশি না, মাথাপিছু মাত্র ৮০ টাকা।" },
+  { speaker: "B", hanzi: "妈妈，那里有各种各样的食物吗？", pinyin: "Māma, nàlǐ yǒu gèzhǒng gèyàng de shíwù ma?", en: "Mom, are there all kinds of food there?", bn: "আম্মু, ওখানে নানা রকম খাবার আছে?" },
+  { speaker: "A", hanzi: "嗯，什么吃的都有。", pinyin: "Èn, shénme chī de dōu yǒu.", en: "Yes, there's every kind of food.", bn: "হ্যাঁ, সব ধরনের খাবার আছে।" },
+  { speaker: "B", hanzi: "妈妈，你以前去过那里吗？", pinyin: "Māma, nǐ yǐqián qù guo nàlǐ ma?", en: "Mom, have you been there before?", bn: "আম্মু, আগে ওখানে গেছিলে?" },
+  { speaker: "A", hanzi: "嗯，去过，六七个月前去过。", pinyin: "Èn, qù guo, liù qī ge yuè qián qù guo.", en: "Yes, I went — six or seven months ago.", bn: "হ্যাঁ, গেছিলাম, ৬-৭ মাস আগে গেছিলাম।" },
 ];
 
 const L9: L[] = [
-  { speaker: "A", hanzi: "萨吉布，你今天怎么没去学校？", pinyin: "Sàjíbù, nǐ jīntiān zěnme méi qù xuéxiào?", en: "Sajib, why didn't you go to school today?", bn: "সজিব, আজ স্কুলে যাওনি কেন?" },
-  { speaker: "B", hanzi: "哥哥，今天学校放假。", pinyin: "Gēge, jīntiān xuéxiào fàngjià.", en: "Brother, school was closed today.", bn: "ভাইয়া, আজ বন্ধ ছিল।" },
-  { speaker: "A", hanzi: "你们学校一个星期放几天假？", pinyin: "Nǐmen xuéxiào yí ge xīngqī fàng jǐ tiān jià?", en: "How many days off does your school have per week?", bn: "সপ্তাহে কয়দিন বন্ধ?" },
-  { speaker: "B", hanzi: "一天，星期五。", pinyin: "Yì tiān, xīngqīwǔ.", en: "One day, Friday.", bn: "একদিন, শুক্রবার।" },
-  { speaker: "A", hanzi: "你们班有多少学生？", pinyin: "Nǐmen bān yǒu duōshao xuéshēng?", en: "How many students are in your class?", bn: "ক্লাসে কয়জন?" },
-  { speaker: "B", hanzi: "有五十个左右。", pinyin: "Yǒu wǔshí ge zuǒyòu.", en: "About fifty.", bn: "৫০ জনের মতো।" },
-  { speaker: "A", hanzi: "你的学号是几号？", pinyin: "Nǐ de xuéhào shì jǐ hào?", en: "What is your roll number?", bn: "রোল কত?" },
-  { speaker: "B", hanzi: "我的学号是四号。", pinyin: "Wǒ de xuéhào shì sì hào.", en: "My roll number is four.", bn: "রোল ৪।" },
-  { speaker: "A", hanzi: "你们学校每个星期考试吗？", pinyin: "Nǐmen xuéxiào měi ge xīngqī kǎoshì ma?", en: "Does your school test every week?", bn: "প্রতি সপ্তাহে পরীক্ষা হয়?" },
-  { speaker: "B", hanzi: "对。", pinyin: "Duì.", en: "Yes.", bn: "হ্যাঁ।" },
-  { speaker: "A", hanzi: "你带午饭去学校吗？", pinyin: "Nǐ dài wǔfàn qù xuéxiào ma?", en: "Do you take lunch to school?", bn: "দুপুরের খাবার নিয়ে যাও?" },
-  { speaker: "B", hanzi: "不，我回家吃，学校给三十分钟。", pinyin: "Bù, wǒ huí jiā chī, xuéxiào gěi sānshí fēnzhōng.", en: "No, I eat at home, school gives thirty minutes.", bn: "না, বাসায় খাই, ৩০ মিনিট দেয়।" },
+  { speaker: "A", hanzi: "萨吉布，你今天为什么没去学校？", pinyin: "Sàjíbù, nǐ jīntiān wèishénme méi qù xuéxiào?", en: "Sajib, why didn't you go to school today?", bn: "সজিব, আজ স্কুলে যাওনি কেন?" },
+  { speaker: "B", hanzi: "哥哥，我的学校今天放假。", pinyin: "Gēge, wǒ de xuéxiào jīntiān fàngjià.", en: "Brother, my school is closed today.", bn: "ভাইয়া, আজ আমাদের স্কুল ছুটি।" },
+  { speaker: "A", hanzi: "你的学校一周放几天假？", pinyin: "Nǐ de xuéxiào yì zhōu fàng jǐ tiān jià?", en: "How many days off does your school give in a week?", bn: "তোমার স্কুল সপ্তাহে কয়দিন ছুটি দেয়?" },
+  { speaker: "B", hanzi: "一天，星期五。", pinyin: "Yì tiān, xīngqīwǔ.", en: "One day — Friday.", bn: "একদিন — শুক্রবার।" },
+  { speaker: "A", hanzi: "你们班有多少学生？", pinyin: "Nǐmen bān yǒu duōshao xuéshēng?", en: "How many students are in your class?", bn: "তোমাদের ক্লাসে কয়জন ছাত্রছাত্রী?" },
+  { speaker: "B", hanzi: "大概五十个人。", pinyin: "Dàgài wǔshí ge rén.", en: "About fifty.", bn: "প্রায় ৫০ জন।" },
+  { speaker: "A", hanzi: "你的学号是多少？", pinyin: "Nǐ de xuéhào shì duōshao?", en: "What's your roll number?", bn: "তোমার রোল নম্বর কত?" },
+  { speaker: "B", hanzi: "我的学号是四号。", pinyin: "Wǒ de xuéhào shì sì hào.", en: "My roll number is four.", bn: "আমার রোল ৪।" },
+  { speaker: "A", hanzi: "你们学校每周考试吗？", pinyin: "Nǐmen xuéxiào měi zhōu kǎoshì ma?", en: "Does your school test every week?", bn: "তোমাদের স্কুলে প্রতি সপ্তাহে পরীক্ষা হয়?" },
+  { speaker: "B", hanzi: "嗯，会考试。", pinyin: "Èn, huì kǎoshì.", en: "Yes, we do.", bn: "হ্যাঁ, হয়।" },
+  { speaker: "A", hanzi: "你带午饭去学校吗？", pinyin: "Nǐ dài wǔfàn qù xuéxiào ma?", en: "Do you take lunch to school?", bn: "তুমি কি দুপুরের খাবার নিয়ে স্কুলে যাও?" },
+  { speaker: "B", hanzi: "不，我回家吃，学校给我们三十分钟的时间。", pinyin: "Bù, wǒ huí jiā chī, xuéxiào gěi wǒmen sānshí fēnzhōng de shíjiān.", en: "No, I go home to eat — school gives us thirty minutes.", bn: "না, বাসায় গিয়ে খাই, স্কুল আমাদের ৩০ মিনিট সময় দেয়।" },
 ];
 
 const L10: L[] = [
-  { speaker: "A", hanzi: "久韦尔，这个漂亮的房子是谁的？", pinyin: "Jiǔwéi'ěr, zhège piàoliang de fángzi shì shéi de?", en: "Jewel, whose beautiful house is this?", bn: "জুয়েল, এই সুন্দর বাড়ি কার?" },
-  { speaker: "B", hanzi: "这个房子是我表哥的堂弟的。", pinyin: "Zhège fángzi shì wǒ biǎogē de tángdì de.", en: "This house is my cousin's cousin's.", bn: "খালাতো ভাইয়ের চাচার ছেলের।" },
-  { speaker: "A", hanzi: "这么漂亮的房子是谁盖的？他在国外吗？", pinyin: "Zhème piàoliang de fángzi shì shéi gài de? Tā zài guówài ma?", en: "Who built such a beautiful house? Does he live abroad?", bn: "কে বানাল? বিদেশে থাকে?" },
-  { speaker: "B", hanzi: "对，他在国外十年了，在欧洲做翻译。", pinyin: "Duì, tā zài guówài shí nián le, zài Ōuzhōu zuò fānyì.", en: "Yes, he's been abroad ten years, translating in Europe.", bn: "হ্যাঁ, ১০ বছর ইউরোপে, দুভাষীর কাজ করে।" },
-  { speaker: "A", hanzi: "他的爸爸妈妈做什么？", pinyin: "Tā de bàba māma zuò shénme?", en: "What do his parents do?", bn: "আব্বু-আম্মু কী করেন?" },
-  { speaker: "B", hanzi: "他的爸爸不在了，他妈妈走路不太方便。", pinyin: "Tā de bàba bú zài le, tā māma zǒulù bú tài fāngbiàn.", en: "His dad passed away, his mom has difficulty walking.", bn: "আব্বু বেঁচে নেই, আম্মু হাঁটতে কষ্ট হয়।" },
+  { speaker: "A", hanzi: "朱耶尔，这栋漂亮的房子是谁的？", pinyin: "Zhūyē'ěr, zhè dòng piàoliang de fángzi shì shéi de?", en: "Juyel, whose beautiful house is this?", bn: "জুয়েল, এই সুন্দর বাড়িটা কার?" },
+  { speaker: "B", hanzi: "这栋房子是我舅舅的儿子的。", pinyin: "Zhè dòng fángzi shì wǒ jiùjiu de érzi de.", en: "This house belongs to my uncle's son.", bn: "এই বাড়িটা আমার মামার ছেলের।" },
+  { speaker: "A", hanzi: "哦，这么漂亮的房子是谁建的？他住在国外吗？", pinyin: "Ó, zhème piàoliang de fángzi shì shéi jiàn de? Tā zhù zài guówài ma?", en: "Oh, who built such a beautiful house? Does he live abroad?", bn: "ও, এত সুন্দর বাড়ি কে বানিয়েছে? সে কি বিদেশে থাকে?" },
+  { speaker: "B", hanzi: "嗯，他住在欧洲，在那里做翻译工作。", pinyin: "Èn, tā zhù zài Ōuzhōu, zài nàlǐ zuò fānyì gōngzuò.", en: "Yes, he lives in Europe and works there as a translator.", bn: "হ্যাঁ, সে ইউরোপে থাকে, ওখানে দুভাষীর কাজ করে।" },
+  { speaker: "A", hanzi: "他的爸爸妈妈做什么？", pinyin: "Tā de bàba māma zuò shénme?", en: "What do his parents do?", bn: "তার আব্বু-আম্মু কী করেন?" },
+  { speaker: "B", hanzi: "他的爸爸已经去世了，他妈妈还能自己走路。", pinyin: "Tā de bàba yǐjīng qùshì le, tā māma hái néng zìjǐ zǒulù.", en: "His father has passed away; his mother can still walk on her own.", bn: "তার আব্বু মারা গেছেন, আম্মু এখনো নিজে হাঁটতে পারেন।" },
 ];
 
 const L11: L[] = [
-  { speaker: "A", hanzi: "弟弟，起床！七点了！", pinyin: "Dìdi, qǐchuáng! Qī diǎn le!", en: "Little brother, get up! It's seven!", bn: "ভাই, ওঠো! ৭টা বাজে!" },
-  { speaker: "B", hanzi: "哥哥，我昨天十二点睡觉。", pinyin: "Gēge, wǒ zuótiān shí'èr diǎn shuìjiào.", en: "Brother, I slept at twelve yesterday.", bn: "ভাইয়া, কাল ১২টায় ঘুমিয়েছি।" },
-  { speaker: "A", hanzi: "你每天几点起床？", pinyin: "Nǐ měitiān jǐ diǎn qǐchuáng?", en: "What time do you get up every day?", bn: "প্রতিদিন কয়টায় ওঠো?" },
-  { speaker: "B", hanzi: "我六点半起床。你呢？", pinyin: "Wǒ liù diǎn bàn qǐchuáng. Nǐ ne?", en: "I get up at six thirty. And you?", bn: "সাড়ে ৬টায়। তুমি?" },
-  { speaker: "A", hanzi: "我也六点半起床。大学在哪里？", pinyin: "Wǒ yě liù diǎn bàn qǐchuáng. Dàxué zài nǎlǐ?", en: "I get up at six thirty too. Where is the university?", bn: "আমিও। বিশ্ববিদ্যালয় কোথায়?" },
-  { speaker: "B", hanzi: "大学在饭店旁边。", pinyin: "Dàxué zài fàndiàn pángbiān.", en: "The university is next to the restaurant.", bn: "রেস্টুরেন্টের পাশে।" },
-  { speaker: "A", hanzi: "好，谢谢！再见！", pinyin: "Hǎo, xièxie! Zàijiàn!", en: "OK, thanks! Bye!", bn: "ঠিক আছে, ধন্যবাদ! বিদায়!" },
-  { speaker: "B", hanzi: "再见！", pinyin: "Zàijiàn!", en: "Bye!", bn: "বিদায়!" },
+  { speaker: "A", hanzi: "朱耶尔哥，你们那边有手机店吗？", pinyin: "Zhūyē'ěr gē, nǐmen nàbiān yǒu shǒujī diàn ma?", en: "Brother Juyel, is there a phone shop in your area?", bn: "জুয়েল ভাইয়া, তোমাদের ওখানে কি মোবাইলের দোকান আছে?" },
+  { speaker: "B", hanzi: "嗯，有，不过离我家大概一公里，那里有很多好手机。", pinyin: "Èn, yǒu, búguò lí wǒ jiā dàgài yì gōnglǐ, nàlǐ yǒu hěn duō hǎo shǒujī.", en: "Yes, there is — but it's about a kilometre from my home. There are many good phones there.", bn: "হ্যাঁ, আছে, তবে আমার বাসা থেকে প্রায় ১ কিলোমিটার দূরে। ওখানে অনেক ভালো ফোন আছে।" },
+  { speaker: "A", hanzi: "朱耶尔哥，你认识那家店里的人吗？", pinyin: "Zhūyē'ěr gē, nǐ rènshi nà jiā diàn lǐ de rén ma?", en: "Brother Juyel, do you know anyone in that shop?", bn: "জুয়েল ভাইয়া, ওই দোকানের লোকদের কি চেনো?" },
+  { speaker: "B", hanzi: "嗯，认识，我跟那家店的老板很熟。", pinyin: "Èn, rènshi, wǒ gēn nà jiā diàn de lǎobǎn hěn shú.", en: "Yes, I do — I'm very close with that shop's owner.", bn: "হ্যাঁ, চেনি, ওই দোকানের মালিকের সাথে আমার বহু চেনা।" },
 ];
 
 const L12: L[] = [
-  { speaker: "A", hanzi: "今天天气怎么样？", pinyin: "Jīntiān tiānqì zěnmeyàng?", en: "How is the weather today?", bn: "আজ আবহাওয়া কেমন?" },
-  { speaker: "B", hanzi: "下雨，有点儿冷。", pinyin: "Xià yǔ, yǒudiǎnr lěng.", en: "Rainy, a bit cold.", bn: "বৃষ্টি, একটু ঠান্ডা।" },
-  { speaker: "A", hanzi: "你觉得冷吗？", pinyin: "Nǐ juéde lěng ma?", en: "Do you feel cold?", bn: "ঠান্ডা লাগছে?" },
-  { speaker: "B", hanzi: "有一点儿冷。你去公司吗？", pinyin: "Yǒu yìdiǎnr lěng. Nǐ qù gōngsī ma?", en: "A little cold. Are you going to the company?", bn: "একটু। অফিসে যাবে?" },
-  { speaker: "A", hanzi: "不去，我生病了。", pinyin: "Bú qù, wǒ shēngbìng le.", en: "No, I'm sick.", bn: "না, অসুস্থ।" },
-  { speaker: "B", hanzi: "去看病吧，多喝水。", pinyin: "Qù kànbìng ba, duō hē shuǐ.", en: "Go see a doctor, drink more water.", bn: "ডাক্তার দেখাও, বেশি পানি খাও।" },
-  { speaker: "A", hanzi: "好，我吃药，回去了。", pinyin: "Hǎo, wǒ chī yào, huí qù le.", en: "OK, I'll take medicine and head back.", bn: "ঠিক আছে, ওষুধ খেয়ে ফিরে যাই।" },
-  { speaker: "B", hanzi: "再见！", pinyin: "Zàijiàn!", en: "Bye!", bn: "বিদায়!" },
+  { speaker: "A", hanzi: "朱耶尔哥，你在哪里？", pinyin: "Zhūyē'ěr gē, nǐ zài nǎlǐ?", en: "Brother Juyel, where are you?", bn: "জুয়েল ভাইয়া, তুমি কোথায়?" },
+  { speaker: "B", hanzi: "我在加济布尔的贾伊德布尔火车站。", pinyin: "Wǒ zài Jiājìbù'ěr de Jiǎyīdébù'ěr huǒchēzhàn.", en: "I'm at Joydebpur railway station in Gazipur.", bn: "আমি গাজীপুরের জয়দেবপুর রেলস্টেশনে আছি।" },
+  { speaker: "A", hanzi: "怎么了？你要坐火车去哪里？", pinyin: "Zěnme le? Nǐ yào zuò huǒchē qù nǎlǐ?", en: "What's the matter? Where are you taking the train to?", bn: "কী হলো? ট্রেনে কোথায় যাচ্ছো?" },
+  { speaker: "B", hanzi: "嗯，我要去，我从这里去锡尔赫特。", pinyin: "Èn, wǒ yào qù, wǒ cóng zhèlǐ qù Xī'ěrhètè.", en: "Yes, I'm going — I'm heading to Sylhet from here.", bn: "হ্যাঁ, যাচ্ছি, এখান থেকে সিলেট যাচ্ছি।" },
+  { speaker: "A", hanzi: "哦，那你什么时候回来？", pinyin: "Ó, nà nǐ shénme shíhou huílái?", en: "Oh, then when will you be back?", bn: "ও, তাহলে কখন ফিরবে?" },
+  { speaker: "B", hanzi: "我去办点事，办完以后很快就回来。", pinyin: "Wǒ qù bàn diǎn shì, bàn wán yǐhòu hěn kuài jiù huílái.", en: "I'm going to get some work done — I'll be back soon after.", bn: "একটু কাজ মেটাতে যাচ্ছি, শেষ হলেই দ্রুত ফিরে আসব।" },
 ];
 
 const L13: L[] = [
-  { speaker: "A", hanzi: "服务员，你好！", pinyin: "Fúwùyuán, nǐ hǎo!", en: "Waiter, hi!", bn: "ওয়েটার!" },
-  { speaker: "B", hanzi: "先生，请坐！要什么？", pinyin: "Xiānsheng, qǐng zuò! Yào shénme?", en: "Sir, please sit! What would you like?", bn: "স্যার বসুন! কী নেবেন?" },
-  { speaker: "A", hanzi: "一杯茶，一个面包，两个鸡蛋。", pinyin: "Yì bēi chá, yí ge miànbāo, liǎng ge jīdàn.", en: "A cup of tea, one bread, two eggs.", bn: "এক কাপ চা, একটা রুটি, দুটো ডিম।" },
-  { speaker: "B", hanzi: "好。还要什么？", pinyin: "Hǎo. Hái yào shénme?", en: "OK. Anything else?", bn: "ঠিক আছে। আর কিছু?" },
-  { speaker: "A", hanzi: "不要了，谢谢。", pinyin: "Bú yào le, xièxie.", en: "Nothing else, thanks.", bn: "আর না, ধন্যবাদ।" },
-  { speaker: "B", hanzi: "好，请等一下。", pinyin: "Hǎo, qǐng děng yíxià.", en: "OK, please wait a moment.", bn: "ঠিক আছে, একটু অপেক্ষা করুন।" },
-  { speaker: "A", hanzi: "茶很好喝！", pinyin: "Chá hěn hǎo hē!", en: "The tea is delicious!", bn: "চা মজা!" },
-  { speaker: "B", hanzi: "谢谢！", pinyin: "Xièxie!", en: "Thanks!", bn: "ধন্যবাদ!" },
+  { speaker: "A", hanzi: "哥，你是不是刚来我们公司？", pinyin: "Gē, nǐ shì bu shì gāng lái wǒmen gōngsī?", en: "Brother, did you just join our company?", bn: "ভাইয়া, তুমি কি এইমাত্র আমাদের কোম্পানিতে এসেছো?" },
+  { speaker: "B", hanzi: "嗯，哥，我是新来的，今天早上刚入职。", pinyin: "Èn, gē, wǒ shì xīn lái de, jīntiān zǎoshang gāng rùzhí.", en: "Yes, brother, I'm new — I just started this morning.", bn: "হ্যাঁ, ভাইয়া, আমি নতুন, আজ সকালেই জয়েন করেছি।" },
+  { speaker: "A", hanzi: "哥，那我在这里做什么工作？你能告诉我一下吗？", pinyin: "Gē, nà wǒ zài zhèlǐ zuò shénme gōngzuò? Nǐ néng gàosu wǒ yíxià ma?", en: "Brother, then what work will I do here? Could you tell me?", bn: "ভাইয়া, তাহলে আমি এখানে কী কাজ করব? একটু বলবে?" },
+  { speaker: "B", hanzi: "你的工作是操作这里的三台大机器中的一台。会给你安排两个员工，你带着他们一起操作机器。", pinyin: "Nǐ de gōngzuò shì cāozòng zhèlǐ de sān tái dà jīqì zhōng de yí tái. Huì gěi nǐ ānpái liǎng ge yuángōng, nǐ dàizhe tāmen yìqǐ cāozòng jīqì.", en: "Your job is to run one of the three big machines here. You'll be given two workers, and you'll run the machine together with them.", bn: "তোমার কাজ এখানকার তিনটা বড় মেশিনের একটা চালানো। তোমাকে দুজন কর্মী দেওয়া হবে, তুমি ওদের নিয়ে মেশিন চালাবে।" },
+  { speaker: "A", hanzi: "我明白了，哥。", pinyin: "Wǒ míngbai le, gē.", en: "I understand, brother.", bn: "বুঝেছি, ভাইয়া।" },
+  { speaker: "B", hanzi: "哥，请问洗手间在哪边？", pinyin: "Gē, qǐngwèn xǐshǒujiān zài nǎbian?", en: "Brother, excuse me — where's the washroom?", bn: "ভাইয়া, জিজ্ঞেস করলাম — ওয়াশরুম কোন দিকে?" },
+  { speaker: "A", hanzi: "你往前走，然后往右边走一点，就在那里。", pinyin: "Nǐ wǎng qián zǒu, ránhòu wǎng yòubiān zǒu yì diǎn, jiù zài nàlǐ.", en: "Go straight ahead, then a little to the right — it's there.", bn: "সামনে এগোও, তারপর একটু ডানে যাও — ওখানেই।" },
 ];
 
 const L14: L[] = [
-  { speaker: "A", hanzi: "你明年上中学吗？", pinyin: "Nǐ míngnián shàng zhōngxué ma?", en: "Will you go to middle school next year?", bn: "আগামী বছর মিডল স্কুলে যাবে?" },
-  { speaker: "B", hanzi: "对，我明年上中学。你呢？", pinyin: "Duì, wǒ míngnián shàng zhōngxué. Nǐ ne?", en: "Yes, I will. And you?", bn: "হ্যাঁ। তুমি?" },
-  { speaker: "A", hanzi: "我还上小学。", pinyin: "Wǒ hái shàng xiǎoxué.", en: "I still go to primary school.", bn: "আমি এখনো প্রাইমারিতে।" },
-  { speaker: "B", hanzi: "你喜欢汉字吗？", pinyin: "Nǐ xǐhuan Hànzì ma?", en: "Do you like Chinese characters?", bn: "হানজি ভালো লাগে?" },
-  { speaker: "A", hanzi: "喜欢！我每天写汉字。", pinyin: "Xǐhuan! Wǒ měitiān xiě Hànzì.", en: "Yes! I write characters every day.", bn: "ভালো লাগে! প্রতিদিন লিখি।" },
-  { speaker: "B", hanzi: "中午我们一起听汉语，好吗？", pinyin: "Zhōngwǔ wǒmen yìqǐ tīng Hànyǔ, hǎo ma?", en: "At noon let's listen to Chinese together, OK?", bn: "দুপুরে একসাথে শুনি?" },
-  { speaker: "A", hanzi: "好！不要说话，听！", pinyin: "Hǎo! Bú yào shuōhuà, tīng!", en: "OK! No talking, listen!", bn: "ঠিক আছে! কথা না, শোনো!" },
-  { speaker: "B", hanzi: "听见了，很有意思。", pinyin: "Tīngjiàn le, hěn yǒu yìsi.", en: "I hear it, very interesting.", bn: "শুনছি, মজার!" },
+  { speaker: "A", hanzi: "朱耶尔哥，来，我们去买菜吧？", pinyin: "Zhūyē'ěr gē, lái, wǒmen qù mǎi cài ba?", en: "Brother Juyel, come — let's go buy vegetables?", bn: "জুয়েল ভাইয়া, আয় — তরকারি কিনতে যাই?" },
+  { speaker: "B", hanzi: "怎么了，哥？你要买菜吗？", pinyin: "Zěnme le, gē? Nǐ yào mǎi cài ma?", en: "What's the matter, brother? Do you need vegetables?", bn: "কী হলো, ভাইয়া? তরকারি কিনতে হবে?" },
+  { speaker: "A", hanzi: "嗯，哥，要买一些东西。", pinyin: "Èn, gē, yào mǎi yìxiē dōngxi.", en: "Yes, brother — need to buy a few things.", bn: "হ্যাঁ, ভাইয়া, কিছু জিনিস কিনতে হবে।" },
+  { speaker: "B", hanzi: "好，来，我们两个一起去，我也要买一些东西。", pinyin: "Hǎo, lái, wǒmen liǎng ge yìqǐ qù, wǒ yě yào mǎi yìxiē dōngxi.", en: "OK, come — let's the two of us go together. I need to buy some things too.", bn: "ঠিক আছে, আয় — আমরা দুজন একসাথে যাই, আমাকেও কিছু কিনতে হবে।" },
+  { speaker: "A", hanzi: "老板，土豆多少钱？菜豆多少钱？木瓜多少钱？", pinyin: "Lǎobǎn, tǔdòu duōshao qián? Càidòu duōshao qián? Mùguā duōshao qián?", en: "Boss, how much are potatoes? Beans? Papaya?", bn: "ভাইয়া, আলু কত? শিম কত? পেঁপে কত?" },
+  { speaker: "B", hanzi: "哥，土豆一公斤五十块，木瓜三十块，菜豆四十块。你要哪一种？", pinyin: "Gē, tǔdòu yì gōngjīn wǔshí kuài, mùguā sānshí kuài, càidòu sìshí kuài. Nǐ yào nǎ yì zhǒng?", en: "Brother, potatoes are fifty a kilo, papaya thirty, beans forty. Which one do you want?", bn: "ভাইয়া, আলু কেজিতে ৫০ টাকা, পেঁপে ৩০ টাকা, শিম ৪০ টাকা। কোনটা নেবে?" },
+  { speaker: "A", hanzi: "哥，给我一公斤土豆，再给我一些菜豆。", pinyin: "Gē, gěi wǒ yì gōngjīn tǔdòu, zài gěi wǒ yìxiē càidòu.", en: "Brother, give me a kilo of potatoes, and some beans too.", bn: "ভাইয়া, এক কেজি আলু দাও, আর একটু শিম দাও।" },
+  { speaker: "B", hanzi: "朱耶尔哥，你什么都不买，只是跟着我来吗？", pinyin: "Zhūyē'ěr gē, nǐ shénme dōu bú mǎi, zhǐshì gēnzhe wǒ lái ma?", en: "Brother Juyel, aren't you buying anything — just following me around?", bn: "জুয়েল ভাইয়া, কিছুই তো কিনছো না, শুধু আমার পেছনে পেছনে আসছো?" },
+  { speaker: "A", hanzi: "嗯，哥，我要买水果，其他的我不要。", pinyin: "Èn, gē, wǒ yào mǎi shuǐguǒ, qítā de wǒ bú yào.", en: "Right, brother — I want fruit, I don't need anything else.", bn: "হ্যাঁ, ভাইয়া, আমি ফল কিনতে চাই, বাকিটা লাগবে না।" },
+  { speaker: "B", hanzi: "哦，那我们去水果店吧！", pinyin: "Ó, nà wǒmen qù shuǐguǒ diàn ba!", en: "Oh, then let's go to the fruit shop!", bn: "ও, তাহলে ফলের দোকানে যাই!" },
+  { speaker: "A", hanzi: "老板，橙子多少钱一公斤？", pinyin: "Lǎobǎn, chéngzi duōshao qián yì gōngjīn?", en: "Boss, how much are oranges per kilo?", bn: "ভাইয়া, কমলা কেজি কত?" },
+  { speaker: "B", hanzi: "哥，四百五十块一公斤。", pinyin: "Gē, sìbǎi wǔshí kuài yì gōngjīn.", en: "Brother, four hundred and fifty a kilo.", bn: "ভাইয়া, কেজি ৪৫০ টাকা।" },
+  { speaker: "A", hanzi: "那葡萄多少钱？", pinyin: "Nà pútáo duōshao qián?", en: "And how much are grapes?", bn: "তাহলে আঙুর কত?" },
+  { speaker: "B", hanzi: "哥，要的话五百五十块一公斤。", pinyin: "Gē, yào de huà wǔbǎi wǔshí kuài yì gōngjīn.", en: "Brother, if you want them, five hundred and fifty a kilo.", bn: "ভাইয়া, নিলে কেজি ৫৫০ টাকা।" },
+  { speaker: "A", hanzi: "好的，给我一公斤葡萄。", pinyin: "Hǎo de, gěi wǒ yì gōngjīn pútáo.", en: "OK, give me a kilo of grapes.", bn: "আচ্ছা, এক কেজি আঙুর দাও।" },
 ];
 
 const L15: L[] = [
-  { speaker: "A", hanzi: "你去年去哪儿了？", pinyin: "Nǐ qùnián qù nǎr le?", en: "Where did you go last year?", bn: "গত বছর কোথায় গেছিলে?" },
-  { speaker: "B", hanzi: "我去年坐飞机去北京了。", pinyin: "Wǒ qùnián zuò fēijī qù Běijīng le.", en: "Last year I flew to Beijing.", bn: "প্লেনে বেইজিং গেছিলাম।" },
-  { speaker: "A", hanzi: "飞机坐几个小时？", pinyin: "Fēijī zuò jǐ ge xiǎoshí?", en: "How many hours by plane?", bn: "কয় ঘণ্টা লাগে?" },
-  { speaker: "B", hanzi: "三个小时。你去过吗？", pinyin: "Sān ge xiǎoshí. Nǐ qù guo ma?", en: "Three hours. Have you been?", bn: "তিন ঘণ্টা। গেছো?" },
-  { speaker: "A", hanzi: "没去过。北京好玩儿吗？", pinyin: "Méi qù guo. Běijīng hǎowánr ma?", en: "Never. Is Beijing fun?", bn: "যাইনি। মজার?" },
-  { speaker: "B", hanzi: "很好玩儿！我爱北京。", pinyin: "Hěn hǎowánr! Wǒ ài Běijīng.", en: "Very fun! I love Beijing.", bn: "অনেক মজার! ভালোবাসি।" },
-  { speaker: "A", hanzi: "你住哪儿？住你男朋友家吗？", pinyin: "Nǐ zhù nǎr? Zhù nǐ nánpéngyou jiā ma?", en: "Where did you stay? At your boyfriend's home?", bn: "কোথায় ছিলে? বয়ফ্রেন্ডের বাসায়?" },
-  { speaker: "B", hanzi: "对，我早上去机场，他来接我。", pinyin: "Duì, wǒ zǎo shang qù jīchǎng, tā lái jiē wǒ.", en: "Yes, I went to the airport in the morning, he picked me up.", bn: "হ্যাঁ, সকালে এয়ারপোর্টে গেছিলাম, ও নিতে এসেছিল।" },
+  { speaker: "A", hanzi: "妈妈，奶奶好像病得很严重，可能要送她去医院。", pinyin: "Māma, nǎinai hǎoxiàng bìng de hěn yánzhòng, kěnéng yào sòng tā qù yīyuàn.", en: "Mom, Grandma seems very seriously ill — we may have to take her to hospital.", bn: "আম্মু, ঠাকুরমা মনে হচ্ছে খুব অসুস্থ, হয়তো হাসপাতালে নিতে হবে।" },
+  { speaker: "B", hanzi: "好，你给爸爸打电话，让他回来看看怎么办。", pinyin: "Hǎo, nǐ gěi bàba dǎ diànhuà, ràng tā huílái kàn kàn zěnme bàn.", en: "OK, call your dad and tell him to come home and see what to do.", bn: "ঠিক আছে, আব্বাকে ফোন করো, ফিরে এসে দেখুক কী করব।" },
+  { speaker: "A", hanzi: "喂？爸爸，奶奶病得很严重，你快点回家。", pinyin: "Wéi? Bàba, nǎinai bìng de hěn yánzhòng, nǐ kuài diǎn huí jiā.", en: "Hello? Dad, Grandma is very ill — come home quickly.", bn: "হ্যালো? আব্বা, ঠাকুরমা খুব অসুস্থ, দ্রুত বাসায় আয়।" },
+  { speaker: "B", hanzi: "妈妈，医院现在还开门吗？", pinyin: "Māma, yīyuàn xiànzài hái kāimén ma?", en: "Mom, is the hospital still open now?", bn: "আম্মু, হাসপাতাল এখনো কি খোলা?" },
+  { speaker: "A", hanzi: "嗯，这家医院二十四小时都开门，没问题。", pinyin: "Èn, zhè jiā yīyuàn èrshísì xiǎoshí dōu kāimén, méi wèntí.", en: "Yes, this hospital is open twenty-four hours — no problem.", bn: "হ্যাঁ, এই হাসপাতাল ২৪ ঘণ্টা খোলা থাকে, কোনো সমস্যা নেই।" },
+  { speaker: "B", hanzi: "这家医院好吗？", pinyin: "Zhè jiā yīyuàn hǎo ma?", en: "Is this hospital good?", bn: "এই হাসপাতালটা কি ভালো?" },
+  { speaker: "A", hanzi: "嗯，是一家非常好的医院。", pinyin: "Èn, shì yì jiā fēicháng hǎo de yīyuàn.", en: "Yes, it's a very good hospital.", bn: "হ্যাঁ, একটা খুব ভালো হাসপাতাল।" },
+  { speaker: "B", hanzi: "去了医院，今天应该要留在那里吧？", pinyin: "Qù le yīyuàn, jīntiān yīnggāi yào liú zài nàlǐ ba?", en: "Once we're at the hospital, she'll probably have to stay there today, right?", bn: "হাসপাতালে গেলে, আজ ওখানেই থাকতে হবে তো?" },
+  { speaker: "A", hanzi: "嗯，要留，不过不用大家都留下来，留两个人左右就可以了。", pinyin: "Èn, yào liú, búguò búyòng dàjiā dōu liú xiàlái, liú liǎng ge rén zuǒyòu jiù kěyǐ le.", en: "Yes, she'll have to stay — but everyone doesn't need to. Two people or so is enough.", bn: "হ্যাঁ, থাকতে হবে, তবে সবাই না — প্রায় দুজন থাকলেই হবে।" },
+  { speaker: "B", hanzi: "妈妈，这家医院有多大？", pinyin: "Māma, zhè jiā yīyuàn yǒu duō dà?", en: "Mom, how big is this hospital?", bn: "আম্মু, এই হাসপাতালটা কত বড়?" },
+  { speaker: "A", hanzi: "很大，你去了就知道了。", pinyin: "Hěn dà, nǐ qù le jiù zhīdào le.", en: "Very big — you'll know once you go.", bn: "খুব বড়, গেলেই বুঝবে।" },
+  { speaker: "B", hanzi: "好，等爸爸回来以后我们再去。", pinyin: "Hǎo, děng bàba huílái yǐhòu wǒmen zài qù.", en: "OK, we'll go after Dad gets back.", bn: "ঠিক আছে, আব্বা ফিরে এলে গিয়ে যাব।" },
 ];
 
 export const hsk1EverydayDialogues: Record<number, L[]> = {
