@@ -79,10 +79,22 @@ type Detail = {
     totalSeconds: number;
     lastLoginAt: string | null;
     lastLogoutAt: string | null;
+    /** When the still-open visit began, so its time can count up live. */
+    activeLoginAt: string | null;
     active: boolean;
+    onlineNow: boolean;
     topPaths: Array<{ path: string; count: number }>;
+    /** Every visit with its own start and length — the history itself. */
+    recent: Array<{
+      loginAt: string;
+      logoutAt: string | null;
+      durationSec: number;
+      active: boolean;
+    }>;
   } | null;
 };
+
+const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
 function when(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -102,6 +114,34 @@ function human(seconds: number): string {
   const m = Math.round(seconds / 60);
   if (m < 60) return `${m}m`;
   return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
+/** How long one visit lasted — including one that is still running. */
+function visitLength(r: {
+  loginAt: string;
+  logoutAt: string | null;
+  durationSec: number;
+  active: boolean;
+}): number {
+  if (r.active) return Math.max(0, (Date.now() - new Date(r.loginAt).getTime()) / 1000);
+  if (r.durationSec) return r.durationSec;
+  if (r.logoutAt) {
+    return Math.max(0, (new Date(r.logoutAt).getTime() - new Date(r.loginAt).getTime()) / 1000);
+  }
+  return 0;
+}
+
+/** Total time including a visit that is still open, so "so far" means so far. */
+function liveTotal(s: {
+  totalSeconds: number;
+  onlineNow: boolean;
+  activeLoginAt: string | null;
+}): number {
+  const running =
+    s.onlineNow && s.activeLoginAt
+      ? Math.max(0, (Date.now() - new Date(s.activeLoginAt).getTime()) / 1000)
+      : 0;
+  return (s.totalSeconds ?? 0) + running;
 }
 
 export default function AdminStudentDetailPage({
@@ -130,7 +170,12 @@ export default function AdminStudentDetailPage({
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/academy/students/${roll}`, { cache: "no-store" });
+      // This route is the private record, so it wants the passcode like every
+      // other admin read. Sending the bare URL is what turned this page into a
+      // permanent "Admin passcode required." error.
+      const res = await fetch(`/api/academy/students/${roll}?passcode=${encodeURIComponent(ADMIN_PASSCODE)}`, {
+        cache: "no-store",
+      });
       const d = await res.json();
       if (!res.ok || !d.success) {
         setError(d.error || t("তথ্য পাওয়া যায়নি।", "Could not load this student."));
@@ -295,7 +340,7 @@ export default function AdminStudentDetailPage({
                     <div>
                       <dt className="text-[11px] text-text/50">{t("মোট সময়", "Total time")}</dt>
                       <dd className="font-mono text-lg font-bold tabular-nums text-text">
-                        {human(data.session.totalSeconds)}
+                        {human(liveTotal(data.session))}
                       </dd>
                     </div>
                     <div>
@@ -307,17 +352,64 @@ export default function AdminStudentDetailPage({
                       <dd className="text-text/75">{when(data.session.lastLogoutAt)}</dd>
                     </div>
                   </dl>
+
+                  {data.session.onlineNow && (
+                    <p className="mt-3 text-xs font-semibold text-ok">
+                      ● {t("এখন অনলাইন", "Online right now")}
+                    </p>
+                  )}
+
+                  {/* The history itself: when each visit started and how long it lasted. */}
+                  {data.session.recent.length > 0 && (
+                    <>
+                      <p className="mt-4 text-[11px] text-text/50">
+                        {t("সাম্প্রতিক লগইন", "Recent sign-ins")}
+                        {data.session.logins > data.session.recent.length && (
+                          <span className="text-text/40">
+                            {" "}
+                            ({t(
+                              `সর্বশেষ ${data.session.recent.length} টি`,
+                              `latest ${data.session.recent.length}`,
+                            )})
+                          </span>
+                        )}
+                      </p>
+                      <ul className="mt-1 divide-y divide-text/10 rounded-lg border border-text/10">
+                        {data.session.recent.map((r, i) => (
+                          <li
+                            key={`${r.loginAt}-${i}`}
+                            className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs"
+                          >
+                            <span className="tabular-nums text-text/60">{when(r.loginAt)}</span>
+                            <span
+                              className={`font-semibold tabular-nums ${
+                                r.active ? "text-ok" : "text-text"
+                              }`}
+                            >
+                              {r.active
+                                ? t(
+                                    `এখন চলছে · ${human(visitLength(r))}`,
+                                    `running · ${human(visitLength(r))}`,
+                                  )
+                                : human(visitLength(r))}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+
                   {data.session.topPaths.length > 0 && (
                     <>
                       <p className="mt-4 text-[11px] text-text/50">
-                        {t("সবচেয়ে বেশি দেখা পেজ", "Most read pages")}
+                        {t("সবচেয়ে বেশি দেখা পেজ", "Pages opened most")}
                       </p>
                       <ul className="mt-1 space-y-0.5 text-[12px] text-text/65">
                         {data.session.topPaths.map((p) => (
                           <li key={p.path} className="flex justify-between gap-3">
-                            <span className="truncate">{p.path}</span>
-                            <span className="font-mono tabular-nums text-text/45">
-                              {p.count}
+                            <span className="truncate font-mono text-[11px]">{p.path}</span>
+                            <span className="font-mono font-bold tabular-nums text-text/55">
+                              ×{p.count}
                             </span>
                           </li>
                         ))}

@@ -40,6 +40,22 @@ type SessionInfo = {
   lastLoginAt: string | null;
   lastLogoutAt: string | null;
   onlineNow: boolean;
+  /** Pages they opened, best first — the answer to "where do they spend it". */
+  topPages?: { path: string; count: number }[];
+};
+
+/** One student's whole sign-in history, for the activity panel. */
+type SignInDetail = {
+  summary: {
+    logins: number;
+    totalSeconds: number;
+    lastLoginAt: string | null;
+    lastLogoutAt: string | null;
+    activeLoginAt: string | null;
+    onlineNow: boolean;
+  };
+  recent: { loginAt: string; logoutAt: string | null; durationSec: number; active: boolean }[];
+  topPages: { path: string; count: number }[];
 };
 
 /** School-wide sign-in figures, for the summary strip above the table. */
@@ -67,6 +83,155 @@ function daysAgo(iso: string | null): string {
   if (days === 1) return "1d ago";
   if (days < 30) return `${days}d ago`;
   return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
+/** "06 Oct, 14:02" — when one visit in the history started. */
+function clock(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Total time including a visit that is still running, so "so far" means so far. */
+function liveSeconds(detail: SignInDetail): number {
+  const { summary } = detail;
+  const running =
+    summary.onlineNow && summary.activeLoginAt
+      ? Math.max(0, (Date.now() - new Date(summary.activeLoginAt).getTime()) / 1000)
+      : 0;
+  return (summary.totalSeconds ?? 0) + running;
+}
+
+/** How long one visit lasted — including one that has not ended yet. */
+function visitLength(r: {
+  loginAt: string;
+  logoutAt: string | null;
+  durationSec: number;
+  active: boolean;
+}): number {
+  if (r.active) return Math.max(0, (Date.now() - new Date(r.loginAt).getTime()) / 1000);
+  if (r.durationSec) return r.durationSec;
+  if (r.logoutAt) {
+    return Math.max(0, (new Date(r.logoutAt).getTime() - new Date(r.loginAt).getTime()) / 1000);
+  }
+  return 0;
+}
+
+/** Every column the students table can be sorted by — all but Actions. */
+type SortKey =
+  | "roll"
+  | "name"
+  | "track"
+  | "logins"
+  | "seconds"
+  | "lastSeen"
+  | "topPage"
+  | "whatsapp"
+  | "group"
+  | "pro";
+
+/** null means no sort is chosen, so the table keeps its natural roll order. */
+type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
+
+/** The value a column sorts on. It never renders — it only has to compare. */
+function sortValue(
+  s: Student,
+  k: SortKey,
+  info: SessionInfo | undefined,
+): string | number | null {
+  switch (k) {
+    case "roll":
+      return s.rollNumber;
+    case "name":
+      return s.nameEnglish;
+    case "track":
+      return s.enrolledCourseId || s.enrolledCourseIds?.[0] || "";
+    case "logins":
+      return info?.logins ?? 0;
+    case "seconds":
+      return info?.totalSeconds ?? 0;
+    case "lastSeen": {
+      const iso = info?.lastLoginAt;
+      if (!iso) return null;
+      const ms = new Date(iso).getTime();
+      return Number.isNaN(ms) ? null : ms;
+    }
+    case "topPage":
+      return info?.topPages?.[0]?.count ?? 0;
+    case "whatsapp":
+      return s.whatsapp;
+    case "group":
+      return s.isWhatsAppGroupJoined ? 1 : 0;
+    case "pro":
+      return s.isPro ? 1 : 0;
+    default:
+      return null;
+  }
+}
+
+function compareSortValues(a: string | number | null, b: string | number | null, dir: "asc" | "desc") {
+  // Empty cells sink to the bottom whichever way the column is sorted, the way
+  // a spreadsheet keeps blanks out of the way.
+  if (a === null) return b === null ? 0 : 1;
+  if (b === null) return -1;
+  const diff =
+    typeof a === "number" && typeof b === "number"
+      ? a - b
+      : // numeric: so 2 sorts before 10 — phone numbers and rolls are strings
+        // in the table but must not read as lexicographic noise.
+        String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+  return dir === "asc" ? diff : -diff;
+}
+
+/** A header that sorts its column on click, like a spreadsheet column head. */
+function SortTh({
+  label,
+  hint,
+  column,
+  sort,
+  onSort,
+  className = "",
+}: {
+  label: string;
+  hint: string;
+  column: SortKey;
+  sort: SortState;
+  onSort: (k: SortKey) => void;
+  className?: string;
+}) {
+  const active = sort?.key === column;
+  const dir = active ? sort?.dir : null;
+  return (
+    <Th
+      className={className}
+      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        title={`${hint}: ${label}`}
+        className="group -mx-1 inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+      >
+        <span className="truncate">{label}</span>
+        {/* Click cycles small → large → unset, so the third click clears the
+            arrow instead of leaving a column stuck sorted forever. */}
+        <span
+          aria-hidden="true"
+          className={`shrink-0 text-[9px] leading-none transition-colors ${
+            active ? "text-text/80" : "text-text/25 group-hover:text-text/60"
+          }`}
+        >
+          {dir === "asc" ? "▲" : dir === "desc" ? "▼" : "⇅"}
+        </span>
+      </button>
+    </Th>
+  );
 }
 
 export default function AdminStudentsPage() {
@@ -97,12 +262,24 @@ export default function AdminStudentsPage() {
     marks: { _id: string; level: number; lesson: number; mark: number; source: string; createdAt: string }[];
   } | null>(null);
   const [activityLoading, setActivityLoading] = useState(false);
+  /** Sign-in history and favourite pages for the student in the panel. */
+  const [signins, setSignins] = useState<SignInDetail | null>(null);
+  const [signinsLoading, setSigninsLoading] = useState(false);
 
   const openActivity = (s: Student) => {
     setActivityFor(s);
     setActivity(null);
     setActivityLoading(true);
+    setSignins(null);
+    setSigninsLoading(true);
     const qp = encodeURIComponent(s.whatsapp);
+    fetch(`/api/academy/students/sessions?passcode=${encodeURIComponent(ADMIN_PASSCODE)}&phone=${qp}`, {
+      cache: "no-store",
+    })
+      .then((r) => r.json())
+      .then((d) => setSignins(d?.success && d.summary ? (d as SignInDetail) : null))
+      .catch(() => setSignins(null))
+      .finally(() => setSigninsLoading(false));
     Promise.all([
       fetch(`/api/hw/exam-results?phone=${qp}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
       fetch(`/api/hw/dialogues?phone=${qp}`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
@@ -184,6 +361,27 @@ export default function AdminStudentsPage() {
         trackOf(s).toLowerCase().includes(q),
     );
   }, [rows, query]);
+
+  // Column sorting, spreadsheet-style: a click sorts up, the next sorts down,
+  // and a third returns the column to the natural roll order. Sorting runs over
+  // the searched list, so "who signed in most out of the rows I searched" works.
+  const [sort, setSort] = useState<SortState>(null);
+  const toggleSort = useCallback((k: SortKey) => {
+    setSort((cur) =>
+      cur?.key === k ? (cur.dir === "asc" ? { key: k, dir: "desc" } : null) : { key: k, dir: "asc" },
+    );
+  }, []);
+
+  const sorted = useMemo(() => {
+    if (!sort) return filtered;
+    return [...filtered].sort((a, b) =>
+      compareSortValues(
+        sortValue(a, sort.key, sessions[a.whatsapp]),
+        sortValue(b, sort.key, sessions[b.whatsapp]),
+        sort.dir,
+      ),
+    );
+  }, [filtered, sessions, sort]);
 
   const toggleGroup = async (s: Student) => {
     setBusy(s.rollNumber);
@@ -366,22 +564,30 @@ export default function AdminStudentsPage() {
       ) : (
         <TableFrame
           caption={t("অনুমোদিত শিক্ষার্থীর তালিকা", "Approved students")}
-          minWidth="72rem"
+          minWidth="86rem"
           head={
             <>
-              <Th className="w-14">{t("রোল", "Roll")}</Th>
-              <Th>{t("নাম", "Name")}</Th>
-              <Th>{t("ট্র্যাক", "Track")}</Th>
-              <Th>{t("লগইন", "Sign-ins")}</Th>
-              <Th>{t("সময় দিয়েছেন", "Time spent")}</Th>
-              <Th>{t("শেষ এসেছেন", "Last seen")}</Th>
-              <Th>{t("হোয়াটসঅ্যাপ", "WhatsApp")}</Th>
-              <Th>{t("গ্রুপ", "Group")}</Th>
-              <Th>{t("প্রো", "Pro")}</Th>
+              <SortTh
+                label={t("রোল", "Roll")}
+                hint={t("সাজান", "Sort")}
+                column="roll"
+                sort={sort}
+                onSort={toggleSort}
+                className="w-14"
+              />
+              <SortTh label={t("নাম", "Name")} hint={t("সাজান", "Sort")} column="name" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("ট্র্যাক", "Track")} hint={t("সাজান", "Sort")} column="track" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("লগইন", "Sign-ins")} hint={t("সাজান", "Sort")} column="logins" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("সময় দিয়েছেন", "Time spent")} hint={t("সাজান", "Sort")} column="seconds" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("শেষ এসেছেন", "Last seen")} hint={t("সাজান", "Sort")} column="lastSeen" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("বেশি দেখা পেজ", "Most visited")} hint={t("সাজান", "Sort")} column="topPage" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("হোয়াটসঅ্যাপ", "WhatsApp")} hint={t("সাজান", "Sort")} column="whatsapp" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("গ্রুপ", "Group")} hint={t("সাজান", "Sort")} column="group" sort={sort} onSort={toggleSort} />
+              <SortTh label={t("প্রো", "Pro")} hint={t("সাজান", "Sort")} column="pro" sort={sort} onSort={toggleSort} />
               <Th className="text-right">{t("কাজ", "Actions")}</Th>            </>
           }
         >
-          {filtered.map((s) => (
+          {sorted.map((s) => (
             <tr key={s.rollNumber}>
               <Td className="tabular-nums text-text/60">#{s.rollNumber}</Td>
               <Td className="font-semibold text-text">
@@ -423,6 +629,32 @@ export default function AdminStudentsPage() {
               </Td>
               <Td className="whitespace-nowrap text-text/60">
                 {daysAgo(sessions[s.whatsapp]?.lastLoginAt ?? null)}
+              </Td>
+              {/* Which page they keep coming back to. The row carries the
+                  favourite; the whole list lives in the activity panel. */}
+              <Td>
+                {(() => {
+                  const pages = sessions[s.whatsapp]?.topPages ?? [];
+                  if (pages.length === 0) {
+                    return (
+                      <span className="text-text/40" title={t("কোনো পেজ রেকর্ড নেই", "no page views recorded")}>
+                        —
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      className="block max-w-[15rem] truncate font-mono text-[11px] text-text/70"
+                      title={pages.map((p) => `${p.path} ×${p.count}`).join("\n")}
+                    >
+                      {pages[0].path}{" "}
+                      <span className="font-sans font-semibold text-text/50">×{pages[0].count}</span>
+                      {pages.length > 1 && (
+                        <span className="font-sans text-text/35"> +{pages.length - 1}</span>
+                      )}
+                    </span>
+                  );
+                })()}
               </Td>
               <Td className="tabular-nums">
                 {/* Plain text on purpose. It was a wa.me link, so clicking a row
@@ -545,6 +777,84 @@ export default function AdminStudentsPage() {
                 </div>
               );
             })()}
+
+            {/* Sign-in history first: how many times they came, how long each
+                visit lasted, and which pages they keep coming back to. */}
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold text-text">
+                🔐 {t("লগইন", "Sign-ins")}
+                {signins ? ` (${signins.summary.logins})` : ""}
+              </h4>
+              {signinsLoading ? (
+                <p className="text-[11px] text-text/40">{t("লোড হচ্ছে...", "Loading...")}</p>
+              ) : !signins ? (
+                <p className="text-[11px] text-text/40">
+                  {t("কোনো লগইন রেকর্ড নেই।", "No sign-ins recorded.")}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] leading-5 tabular-nums text-text/60">
+                    {t("মোট", "Total")}:{" "}
+                    <span className="font-semibold text-text">
+                      {signins.summary.logins} {t("বার", "times")}
+                    </span>
+                    {" · "}
+                    {t("সময়", "Time")}:{" "}
+                    <span className="font-semibold text-text">{humanTime(liveSeconds(signins))}</span>
+                    {" · "}
+                    {t("শেষ এসেছেন", "Last seen")}:{" "}
+                    <span className="font-semibold text-text">{daysAgo(signins.summary.lastLoginAt)}</span>
+                    {signins.summary.onlineNow && (
+                      <span className="ml-1 font-bold text-ok">{t("· এখন অনলাইন", "· online now")}</span>
+                    )}
+                  </p>
+                  <ul className="divide-y divide-text/10 rounded-lg border border-text/10">
+                    {signins.recent.map((r, i) => (
+                      <li
+                        key={`${r.loginAt}-${i}`}
+                        className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-[11px]"
+                      >
+                        <span className="tabular-nums text-text/60">{clock(r.loginAt)}</span>
+                        <span
+                          className={`font-semibold tabular-nums ${
+                            r.active ? "text-ok" : "text-text"
+                          }`}
+                        >
+                          {r.active
+                            ? t(
+                                `এখন অনলাইন · ${humanTime(visitLength(r))}`,
+                                `online now · ${humanTime(visitLength(r))}`,
+                              )
+                            : humanTime(visitLength(r))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold text-text">
+                📄 {t("বেশি দেখা পেজ", "Pages opened most")}
+              </h4>
+              {signinsLoading ? (
+                <p className="text-[11px] text-text/40">{t("লোড হচ্ছে...", "Loading...")}</p>
+              ) : !signins || signins.topPages.length === 0 ? (
+                <p className="text-[11px] text-text/40">
+                  {t("কোনো পেজ রেকর্ড করা হয়নি।", "No page views recorded.")}
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {signins.topPages.map((p) => (
+                    <li key={p.path} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="min-w-0 truncate font-mono text-[11px] text-text/70">{p.path}</span>
+                      <span className="font-mono font-bold tabular-nums text-text">×{p.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             <div>
               <h4 className="mb-1.5 text-xs font-bold text-text">

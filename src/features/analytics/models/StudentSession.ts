@@ -18,6 +18,14 @@ export interface IStudentSessionDoc {
   active: boolean;
   /** Distinct pages seen this session, kept as a short list for the detail view. */
   paths: string[];
+  /**
+   * The same pages with a real count, so "which page do they open most" is a
+   * number and not a set. `paths` stays because it is what the older readers
+   * expect and it is the cheaper question to ask; this is the answer to the
+   * newer one. Capped on write — a long session must not grow a document
+   * without bound.
+   */
+  pageCounts: { path: string; count: number }[];
   clicks: number;
   userAgent: string;
   createdAt: Date;
@@ -34,6 +42,7 @@ const StudentSessionSchema = new Schema<IStudentSessionDoc>(
     durationSec: { type: Number, default: 0, min: 0 },
     active: { type: Boolean, default: true, index: true },
     paths: { type: [String], default: [] },
+    pageCounts: { type: [{ path: String, count: Number }], default: [] },
     clicks: { type: Number, default: 0, min: 0 },
     userAgent: { type: String, default: "" },
   },

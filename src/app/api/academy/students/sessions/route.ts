@@ -2,16 +2,25 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Student } from "@/features/academy/models";
 import { StudentSession } from "@/features/analytics/models";
+import { signInDetailFor, topPagesByPhone } from "@/features/analytics/server/sessions";
 import { messageOf } from "@/lib/api-error";
 import { canSeeContact } from "@/lib/admin-guard";
 import { normalizePhone } from "@/features/academy/server/dialogues";
 
 /**
- * GET /api/admin/students-login-report — a compact sign-in summary per student.
+ * GET /api/academy/students/sessions — sign-in report for the students table.
  *
  * Deliberately separate from /api/analytics/overview: the students table wants
  * two numbers per row, and pulling the whole traffic report for that would be
  * wasteful on a page with 60+ rows.
+ *
+ * Two shapes come out of this one route:
+ *
+ *  - plain, for the table: one entry per phone with sign-in count, total time,
+ *    last seen and the pages they open most;
+ *  - `?phone=…`, for one student's detail view: the same totals plus every
+ *    recent visit with its own duration, which is the history the admin reads
+ *    as "how many times, and how long each time".
  *
  * This report is keyed by phone number, which is also the identity the students
  * table uses — but only when the caller is allowed to see phone numbers at all.
@@ -27,6 +36,30 @@ export async function GET(req: Request) {
     await connectDB();
 
     const staff = canSeeContact(req, url);
+
+    // One student's full history: the detail panels only ever need one.
+    const phone = url.searchParams.get("phone")?.trim() ?? "";
+    if (staff && phone) {
+      const detail = await signInDetailFor(phone);
+      if (!detail) {
+        return NextResponse.json({ success: true, restricted: false, summary: null, recent: [], topPages: [] });
+      }
+      return NextResponse.json({
+        success: true,
+        restricted: false,
+        summary: {
+          logins: detail.logins,
+          totalSeconds: detail.totalSeconds,
+          lastLoginAt: detail.lastLoginAt,
+          lastLogoutAt: detail.lastLogoutAt,
+          activeLoginAt: detail.activeLoginAt,
+          onlineNow: detail.online,
+        },
+        recent: detail.recent,
+        topPages: detail.topPages,
+      });
+    }
+
     const rows = await StudentSession.aggregate<{
       _id: string;
       logins: number;
@@ -105,6 +138,10 @@ export async function GET(req: Request) {
       });
     }
 
+    // One extra pass for the pages, not one query per row: the table shows the
+    // page a student opens most right in their row.
+    const topPages = await topPagesByPhone(8);
+
     const byPhone: Record<string, unknown> = {};
     for (const r of rows) {
       byPhone[r._id] = {
@@ -113,6 +150,7 @@ export async function GET(req: Request) {
         lastLoginAt: r.lastLoginAt ?? null,
         lastLogoutAt: r.lastLogoutAt ?? null,
         onlineNow: r.active === 1,
+        topPages: topPages[r._id] ?? [],
       };
     }
 

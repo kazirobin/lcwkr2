@@ -10,7 +10,7 @@ import {
   Student,
   StudentRegistration,
 } from "@/features/academy/models";
-import { sessionSummaries } from "@/features/analytics/server/sessions";
+import { signInDetailFor } from "@/features/analytics/server/sessions";
 import { canSeeContact } from "@/lib/admin-guard";
 
 /**
@@ -60,7 +60,7 @@ export async function GET(
       dialogueMarks,
       handwriting,
       exams,
-      sessions,
+      history,
     ] = await Promise.all([
       Course.find({ courseId: student.enrolledCourseId }).lean(),
       CourseEnrollment.find({ whatsapp: student.whatsapp }).sort({ createdAt: -1 }).lean(),
@@ -75,12 +75,26 @@ export async function GET(
         .sort({ createdAt: -1 })
         .lean(),
       HwExamResult.find({ whatsapp: student.whatsapp }).lean(),
-      sessionSummaries(500),
+      signInDetailFor(student.whatsapp, 12),
     ]);
 
-    // The session summary for this student comes back inside the full list, so
-    // pull just their row rather than querying twice.
-    const mine = sessions.find((s) => s.whatsapp === student.whatsapp) ?? null;
+    // Their own sign-in record, asked for by phone rather than pulled out of
+    // the whole school's list: one student's page has no business loading 500
+    // summaries to find a single row. `topPages` counts visits now, so the
+    // panel can say how often a page was opened, not just that it was.
+    const session = history
+      ? {
+          logins: history.logins,
+          totalSeconds: history.totalSeconds,
+          lastLoginAt: history.lastLoginAt,
+          lastLogoutAt: history.lastLogoutAt,
+          activeLoginAt: history.activeLoginAt,
+          onlineNow: history.online,
+          active: history.online,
+          topPaths: history.topPages,
+          recent: history.recent,
+        }
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -94,9 +108,12 @@ export async function GET(
         handwriting: handwriting.slice(0, 40),
         exams,
       },
-      session: mine,
+      session,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Unexpected error" },
+      { status: 500 },
+    );
   }
 }
