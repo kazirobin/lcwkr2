@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -64,6 +64,11 @@ type SortKey = "roll" | "attendanceDesc" | "attendanceAsc" | "marksDesc" | "name
 
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
+/** Only the digits, so `0`, `+880` and spaces never get in the way. */
+const digitsOnly = (s: string) => (s || "").replace(/\D/g, "");
+/** Local form — `8801673550666`, `+8801673550666` and `016735550666` all become `1673550666`. */
+const coreDigits = (s: string) => digitsOnly(s).replace(/^(?:880|0)+/, "");
+
 export default function ScholarsDirectoryPage() {
   const { language } = useLanguage();
   const t = useCallback(
@@ -87,12 +92,15 @@ export default function ScholarsDirectoryPage() {
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  /** Stops a failing contacts request from re-firing on every keystroke. */
+  const contactsTriedRef = useRef(false);
 
   /** One way out of admin mode, so the number cache is always dropped with it. */
   const lockAdminMode = useCallback(() => {
     setAdminUnlocked(false);
     setPhoneByRoll({});
     setCopied(null);
+    contactsTriedRef.current = false;
     try {
       sessionStorage.removeItem("academy_admin_unlocked");
     } catch {
@@ -130,8 +138,9 @@ export default function ScholarsDirectoryPage() {
     }
   }, []);
 
-  // Phone numbers are a second, opt-in request. A visitor never receives them
-  // at all, so "hidden" means absent from the page rather than covered up in it.
+  // Phone numbers are a second, opt-in request. They are used to match a
+  // search by number, and only rendered while admin mode is on — so "hidden"
+  // still means absent from the card, not covered up in it.
   const fetchContacts = useCallback(async () => {
     setLoadingContacts(true);
     try {
@@ -165,15 +174,41 @@ export default function ScholarsDirectoryPage() {
     });
   }, [adminUnlocked, fetchContacts]);
 
+  // A number search should still work with admin mode off. The numbers are
+  // pulled in the first time the query contains digits, then used only to
+  // match — rendering them stays behind admin mode. Without this the mobile
+  // would silently drop out of every search unless the mode was unlocked.
+  useEffect(() => {
+    if (adminUnlocked) return;
+    if (digitsOnly(query).length < 3) return;
+    if (contactsTriedRef.current) return;
+    contactsTriedRef.current = true;
+    queueMicrotask(() => {
+      void fetchContacts();
+    });
+  }, [query, adminUnlocked, fetchContacts]);
+
   const listed = useMemo(() => {
-    const q = query.toLowerCase().trim();
+    const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     return rows
       .filter((r) => {
-        const matchesQ =
-          !q ||
-          (r.nameEnglish || "").toLowerCase().includes(q) ||
-          String(r.rollNumber).includes(q) ||
-          (r.location || "").toLowerCase().includes(q);
+        // Every typed word has to find a home somewhere — name, roll,
+        // location or, when admin mode has loaded the numbers, the mobile.
+        const anyMatches = (tok: string) => {
+          const name = (r.nameEnglish || "").toLowerCase();
+          const location = (r.location || "").toLowerCase();
+          const phone = phoneByRoll[String(r.rollNumber)];
+          const tokDigits = digitsOnly(tok);
+          const tokCore = coreDigits(tok);
+          return (
+            name.includes(tok) ||
+            String(r.rollNumber).includes(tok) ||
+            location.includes(tok) ||
+            (tokDigits.length > 0 && digitsOnly(phone).includes(tokDigits)) ||
+            (tokCore.length > 0 && coreDigits(phone).includes(tokCore))
+          );
+        };
+        const matchesQ = tokens.length === 0 || tokens.every(anyMatches);
         const matchesTrack =
           track === "all" ||
           r.courseIds.some((id) => id.toLowerCase() === track.toLowerCase());
@@ -197,7 +232,7 @@ export default function ScholarsDirectoryPage() {
             return a.rollNumber - b.rollNumber;
         }
       });
-  }, [rows, query, track, only, sortBy]);
+  }, [rows, query, track, only, sortBy, phoneByRoll]);
 
   const filtersActive = query !== "" || track !== "all" || sortBy !== "roll" || only !== "all";
 
@@ -366,7 +401,7 @@ export default function ScholarsDirectoryPage() {
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="relative flex-1">
           <label htmlFor="dir-search" className="sr-only">
-            {t("নাম, রোল বা অবস্থান খুঁজুন", "Search by name, roll, or location")}
+            {t("নাম, রোল, অবস্থান বা মোবাইল খুঁজুন", "Search by name, roll, location, or mobile")}
           </label>
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text/40" aria-hidden="true" />
           <input
@@ -374,7 +409,7 @@ export default function ScholarsDirectoryPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("নাম, রোল বা অবস্থান…", "Name, roll, or location…")}
+            placeholder={t("নাম, রোল, অবস্থান বা মোবাইল…", "Name, roll, location, or mobile…")}
             className="w-full rounded-xl border border-text/15 bg-card py-2.5 pl-9 pr-9 text-sm text-text placeholder:text-text/40 focus:border-text/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text"
           />
           {query && (
