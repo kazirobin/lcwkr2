@@ -264,7 +264,7 @@ function AdminQuickBar() {
   );
 
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLLIElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   // The menu is a plain popover rather than a focus-trapping dialog: it closes
   // on Escape or an outside click, and takes the first item on Tab so a
@@ -402,119 +402,142 @@ function AdminQuickBar() {
       className="sticky top-16 z-30 border-b border-text/10 bg-background/90 backdrop-blur-sm"
     >
       <div className="relative mx-auto flex max-w-5xl items-center">
-        {/* Arrows only when there is somewhere to scroll, and never on phones
-            where a swipe is the natural gesture. */}
-        <button
-          type="button"
-          onClick={() => nudge(-1)}
-          aria-label={t("বাঁয়ে", "Scroll left")}
-          className={`absolute left-0 z-10 hidden h-full w-9 shrink-0 items-center justify-center bg-gradient-to-r from-background to-transparent text-lg leading-none text-text/60 transition-opacity hover:text-text sm:flex ${
-            edges.left ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        >
-          ‹
-        </button>
+        {/* The chips live in their own overflow container; the arrows and the
+            edge fades are absolutely positioned over it, so no matter how the
+            list scrolls the affordances always sit at the visible edges. */}
+        <div className="relative min-w-0 flex-1">
+          {/* Arrows only when there is somewhere to scroll, and never on phones
+              where a swipe is the natural gesture. */}
+          <button
+            type="button"
+            onClick={() => nudge(-1)}
+            aria-label={t("বাঁয়ে", "Scroll left")}
+            className={`absolute left-0 z-10 hidden h-full w-9 items-center justify-center bg-gradient-to-r from-background to-transparent text-lg leading-none text-text/60 transition-opacity hover:text-text sm:flex ${
+              edges.left ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            ‹
+          </button>
 
-        <ul
-          ref={listRef}
-          onScroll={measure}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onClickCapture={onClickCapture}
-          className="flex flex-1 cursor-grab touch-pan-x items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] active:cursor-grabbing sm:px-10 lg:px-12 [&::-webkit-scrollbar]:hidden"
-        >
-          {ADMIN_MODULES.map((m) => {
-            const Icon = m.icon;
-            const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
-            const count = m.badge ? counts[m.badge] : null;
-            return (
-              <li key={m.href} className="shrink-0">
-                <Link
-                  href={m.href}
-                  draggable={false}
-                  aria-current={active ? "page" : undefined}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
-                    active
-                      ? "border-primary/60 bg-primary/10 text-primary"
-                      : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
-                  }`}
-                >
-                  <Icon className="size-4" aria-hidden="true" />
-                  {t(m.bn, m.en)}
-                  {count != null && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-                        active ? "bg-primary/15 text-primary" : "bg-text/8 text-text/60"
-                      }`}
-                    >
-                      {loading ? "—" : count}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
+          <ul
+            ref={listRef}
+            onScroll={measure}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onClickCapture={onClickCapture}
+            className="flex w-full cursor-grab touch-pan-x items-center gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] active:cursor-grabbing sm:px-10 lg:px-12 [&::-webkit-scrollbar]:hidden"
+          >
+            {ADMIN_MODULES.map((m) => {
+              const Icon = m.icon;
+              const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
+              const count = m.badge ? counts[m.badge] : null;
+              return (
+                <li key={m.href} className="shrink-0">
+                  <Link
+                    href={m.href}
+                    draggable={false}
+                    aria-current={active ? "page" : undefined}
+                    className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+                      active
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
+                    }`}
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                    {t(m.bn, m.en)}
+                    {count != null && (
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                          active ? "bg-primary/15 text-primary" : "bg-text/8 text-text/60"
+                        }`}
+                      >
+                        {loading ? "—" : count}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-          {/* The overflow: same links, out of the way until asked for. */}
-          <li className="relative shrink-0" ref={moreRef}>
-            <button
-              type="button"
-              onClick={() => setMoreOpen((v) => !v)}
-              aria-expanded={moreOpen}
-              aria-haspopup="menu"
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
-                moreActive
-                  ? "border-primary/60 bg-primary/10 text-primary"
-                  : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
-              }`}
+          <button
+            type="button"
+            onClick={() => nudge(1)}
+            aria-label={t("ডানে", "Scroll right")}
+            className={`absolute right-0 z-10 hidden h-full w-9 items-center justify-center bg-gradient-to-l from-background to-transparent text-lg leading-none text-text/60 transition-opacity hover:text-text sm:flex ${
+              edges.right ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          >
+            ›
+          </button>
+
+          {/* On a phone the arrows are hidden, so the fades are the only clue
+              that more chips exist off-screen. */}
+          {edges.left && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-background to-transparent sm:hidden"
+            />
+          )}
+          {edges.right && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+            />
+          )}
+        </div>
+
+        {/* The overflow: same links, out of the way until asked for. This is a
+            sibling of the scrolling list rather than an item in it, because an
+            `overflow-x: auto` ancestor would clip the dropdown the way it used
+            to clip the menu. */}
+        <div ref={moreRef} className="relative shrink-0 pl-1 pr-3">
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text ${
+              moreActive
+                ? "border-primary/60 bg-primary/10 text-primary"
+                : "border-text/15 bg-card text-text/75 hover:border-primary/50 hover:bg-primary/[0.06] hover:text-text"
+            }`}
+          >
+            <MoreHorizontal className="size-4" aria-hidden="true" />
+            {t("আরও", "More")}
+          </button>
+
+          {moreOpen && (
+            <div
+              role="menu"
+              className="absolute top-full right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-text/12 bg-card p-1.5 shadow-2xl"
             >
-              <MoreHorizontal className="size-4" aria-hidden="true" />
-              {t("আরও", "More")}
-            </button>
-
-            {moreOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-text/12 bg-card p-1.5 shadow-2xl"
-              >
-                {ADMIN_MORE.map((m) => {
-                  const Icon = m.icon;
-                  const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
-                  return (
-                    <Link
-                      key={m.href}
-                      href={m.href}
-                      role="menuitem"
-                      draggable={false}
-                      onClick={() => setMoreOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${
-                        active
-                          ? "bg-primary/10 font-semibold text-primary"
-                          : "text-text/75 hover:bg-text/[0.05] hover:text-text"
-                      }`}
-                    >
-                      <Icon className="size-4 shrink-0 opacity-70" aria-hidden="true" />
-                      {t(m.label, m.en)}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </li>
-        </ul>
-
-        <button
-          type="button"
-          onClick={() => nudge(1)}
-          aria-label={t("ডানে", "Scroll right")}
-          className={`absolute right-0 z-10 hidden h-full w-9 shrink-0 items-center justify-center bg-gradient-to-l from-background to-transparent text-lg leading-none text-text/60 transition-opacity hover:text-text sm:flex ${
-            edges.right ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        >
-          ›
-        </button>
+              {ADMIN_MORE.map((m) => {
+                const Icon = m.icon;
+                const active = pathname === m.href || pathname.startsWith(`${m.href}/`);
+                return (
+                  <Link
+                    key={m.href}
+                    href={m.href}
+                    role="menuitem"
+                    draggable={false}
+                    onClick={() => setMoreOpen(false)}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors ${
+                      active
+                        ? "bg-primary/10 font-semibold text-primary"
+                        : "text-text/75 hover:bg-text/[0.05] hover:text-text"
+                    }`}
+                  >
+                    <Icon className="size-4 shrink-0 opacity-70" aria-hidden="true" />
+                    {t(m.label, m.en)}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

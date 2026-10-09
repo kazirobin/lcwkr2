@@ -82,7 +82,8 @@ export default function AdminProTrialsPage() {
   const toast = useToast();
   const t = useCallback((bn: string, en: string) => (language === "bn" ? bn : en), [language]);
 
-  const [filter, setFilter] = useState("Active");
+  const [filter, setFilter] = useState("All");
+  const [query, setQuery] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -152,10 +153,17 @@ export default function AdminProTrialsPage() {
 
   const shown = useMemo(() => {
     if (!rows) return null;
-    if (filter === "Active") return rows.filter((r) => r.active);
-    if (filter === "Ended") return rows.filter((r) => !r.active);
-    return rows;
-  }, [rows, filter]);
+    const byState =
+      filter === "Active" ? rows.filter((r) => r.active) : filter === "Ended" ? rows.filter((r) => !r.active) : rows;
+    const needle = query.trim().toLowerCase();
+    if (!needle) return byState;
+    return byState.filter((r) => {
+      const roll = r.rollNumber != null ? String(r.rollNumber) : "";
+      return [r.name, r.whatsapp, r.location, roll].some((part) =>
+        part.toLowerCase().includes(needle),
+      );
+    });
+  }, [rows, filter, query]);
 
   return (
     <AdminShell
@@ -204,23 +212,51 @@ export default function AdminProTrialsPage() {
         </Card>
       </div>
 
-      <div className="mb-6 max-w-xs">
-        <SelectField label={t("দেখান", "Show")} value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="Active">{t("এখন চলছে", "Running now")}</option>
-          <option value="Ended">{t("শেষ হয়েছে", "Finished")}</option>
-          <option value="All">{t("সব", "All")}</option>
-        </SelectField>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="min-w-0 max-w-sm flex-1">
+          <label className="mb-1.5 block text-[12px] font-semibold text-text/70">
+            {t("খুঁজুন", "Search")}
+          </label>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("নাম, নম্বর বা #roll", "Name, number or #roll")}
+            className="w-full rounded-xl border border-text/15 bg-card px-3.5 py-2.5 text-sm text-text outline-none transition focus-visible:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
+          />
+        </div>
+        <div className="max-w-xs">
+          <SelectField label={t("দেখান", "Show")} value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="All">{t("সব", "All")}</option>
+            <option value="Active">{t("এখন চলছে", "Running now")}</option>
+            <option value="Ended">{t("শেষ হয়েছে", "Finished")}</option>
+          </SelectField>
+        </div>
       </div>
 
       {shown === null ? (
         <LoadingBlock label={t("তথ্য আসছে…", "Loading…")} />
       ) : shown.length === 0 ? (
         <EmptyState
-          title={t("কোনো প্রিভিউ নেই", "No previews yet")}
-          description={t(
-            "কেউ HSK 2 বা কোর ওয়ার্ডস খুললেই এখানে তার সারি তৈরি হবে।",
-            "A row appears the moment somebody opens HSK 2 or the Core Words builder.",
-          )}
+          title={
+            query.trim()
+              ? t("কিছু পাওয়া যায়নি", "Nothing matches")
+              : filter === "Active"
+                ? t("এখন কারও প্রিভিউ চলছে না", "No preview running right now")
+                : t("কোনো প্রিভিউ নেই", "No previews yet")
+          }
+          description={
+            query.trim()
+              ? t("অন্য নাম বা নম্বর দিয়ে খুঁজে দেখুন।", "Try a different name or number.")
+              : filter === "Active"
+                ? t(
+                    "শেষ হওয়া প্রিভিউ দেখতে \"শেষ হয়েছে\" বাছাই করুন — সেখান থেকে আবার ১০ মিনিট দেওয়া যায়।",
+                    "Pick \"Finished\" to see the ended previews — that is where another ten minutes is granted from.",
+                  )
+                : t(
+                    "কেউ HSK 2 বা কোর ওয়ার্ডস খুললেই এখানে তার সারি তৈরি হবে।",
+                    "A row appears the moment somebody opens HSK 2 or the Core Words builder.",
+                  )
+          }
           icon={<Hourglass className="size-5" />}
         />
       ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount } from "@/features/student-auth";
 import { visitorId } from "@/features/analytics/visitor-id";
 
@@ -44,7 +44,9 @@ export type TrialRequest = {
   location: string;
 };
 
-export type StartTrialResult = { ok: true } | { ok: false; message: string };
+export type StartTrialResult =
+  | { ok: true; remainingMs?: number }
+  | { ok: false; message: string };
 
 /**
  * Ask whether this browser already has a window.
@@ -101,14 +103,45 @@ export async function startTrial(
         rollNumber: rollNumber ?? null,
       }),
     });
-    const data = (await res.json()) as { success?: boolean; message?: string };
+    const data = (await res.json()) as {
+      success?: boolean;
+      message?: string;
+      trial?: { remainingMs?: number } | null;
+    };
     if (!res.ok || !data.success) {
       return { ok: false, message: data.message ?? "Could not start the preview." };
     }
-    return { ok: true };
+    return { ok: true, remainingMs: data.trial?.remainingMs };
   } catch {
     return { ok: false, message: "Network problem. Please try again." };
   }
+}
+
+/**
+ * Only one START in flight for a given phone number at a time.
+ *
+ * The nav, the page's level gate and the corner badge each call useProAccess,
+ * and until this existed every one of them fired the auto-start for a signed-in
+ * student at the same time. A handful of POSTs raced each other; one would win
+ * and create the trial, and the losers could answer "could not start", leaving
+ * that instance without a clock and without retrying until some later render.
+ * Deduping here keeps one request per student per page load, and every instance
+ * sees the same answer.
+ */
+type Flight = { phone: string; run: Promise<StartTrialResult> };
+let flight: Flight | null = null;
+
+function flightStart(
+  request: TrialRequest,
+  rollNumber?: number | null,
+): Promise<StartTrialResult> {
+  if (flight && flight.phone === request.whatsapp) return flight.run;
+  const run = startTrial(request, rollNumber);
+  flight = { phone: request.whatsapp, run };
+  void run.finally(() => {
+    if (flight?.run === run) flight = null;
+  });
+  return run;
 }
 
 /**
@@ -167,6 +200,11 @@ export function useProAccess() {
   // rather than flashing the form at somebody who is already entitled to it.
   const [checked, setChecked] = useState(false);
 
+  // Shared between the auto-start effect and the clock effect: the clock counts
+  // down once the preview has opened, and the auto-start opens it, so both need
+  // to agree on the one boolean without either waiting for the other's render.
+  const startedRef = useRef(false);
+
   const accountPro = Boolean(account?.isPro);
   const isPro = localPro || accountPro;
 
@@ -222,8 +260,11 @@ export function useProAccess() {
    */
   useEffect(() => {
     if (!account || accountPro || status !== "unstarted") return;
-    void (async () => {
-      const result = await startTrial(
+    let alive = true;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+
+    const open = async (attempt: number) => {
+      const result = await flightStart(
         {
           name: account.nameEnglish,
           whatsapp: account.whatsapp,
@@ -231,16 +272,42 @@ export function useProAccess() {
         },
         account.rollNumber ?? null,
       );
-      if (result.ok) {
-        // Take the clock from the server rather than assuming a full ten
-        // minutes: it holds the authoritative window, and this is the one moment
-        // where reading it back cannot be a wasted request.
-        const reply = await askServer();
-        setChecked(true);
-        setStarted(true);
-        setGuestState({ remainingMs: reply?.remainingMs ?? TRIAL_MS });
+      if (!alive) return;
+      if (!result.ok) {
+        // A signed-in student has handed over all three details, so a refusal
+        // is a transient hiccup, not a judgement. Give it two more tries rather
+        // than leaving them without a clock until some later render happens to
+        // re-run this effect.
+        if (attempt < 3) {
+          retry = setTimeout(() => void open(attempt + 1), attempt * 2_500);
+        }
+        return;
       }
-    })();
+      // Take the clock from the server rather than assuming a full ten minutes:
+      // it holds the authoritative window, and this is the one moment where
+      // reading it back cannot be a wasted request. If that read fails, the
+      // START answer itself carries the remaining time.
+      const reply = await askServer().catch(() => null);
+      if (!alive) return;
+      const got = reply?.remainingMs ?? result.remainingMs ?? TRIAL_MS;
+      startedRef.current = true;
+      setChecked(true);
+      setStarted(true);
+      setGuestState({ remainingMs: got });
+      // Mirror it locally so the 1s ticker and a reload on a flaky connection
+      // count the same window instead of restarting the ten minutes.
+      try {
+        localStorage.setItem(GUEST_KEY, String(Date.now() + got - TRIAL_MS));
+      } catch {
+        /* ignore */
+      }
+    };
+
+    void open(1);
+    return () => {
+      alive = false;
+      if (retry) clearTimeout(retry);
+    };
     // `status` is a fresh string each render but only ever one of five values,
     // so naming it costs nothing and is what makes the effect fire on the
     // render where the answer finally arrives.
@@ -274,9 +341,9 @@ export function useProAccess() {
     let alive = true;
     let expiresAt = 0;
     let serverAnswered = false;
-    // Set once the server has told us there is a window. Before that, the
-    // visitor has not earned one and needs to ask for it.
-    let started = false;
+    // Whether a window exists is shared between this effect and the auto-start
+    // effect through startedRef, so one opening the clock and the other opening
+    // the trial stay in step on the same render.
 
     const onHide = () => {
       if (document.visibilityState === "hidden" && serverAnswered) reportBeatUsed(true);
@@ -301,7 +368,7 @@ export function useProAccess() {
 
     const compute = () => {
       if (!alive) return;
-      if (started) setGuestState({ remainingMs: fromServer() });
+      if (startedRef.current) setGuestState({ remainingMs: fromServer() });
     };
 
     const sync = async () => {
@@ -310,7 +377,7 @@ export function useProAccess() {
       if (reply && at > 0) {
         expiresAt = at;
         serverAnswered = true;
-        started = true;
+        startedRef.current = true;
         setStarted(true);
         // Mirror it locally so a reload or a flaky connection still counts the
         // same clock rather than restarting the ten minutes.
@@ -349,10 +416,12 @@ export function useProAccess() {
     // Re-check every half minute so a renewal granted while the tab is open
     // takes effect without a reload. This is the whole point of putting the
     // clock on the server. The same beat records what that half minute was
-    // spent on.
+    // spent on. The re-check is not skipped when the last answer was "no trial":
+    // the trial may have been opened by another tab or recovered from an error,
+    // and the check is one small POST that keeps those cases from silently
+    // staying clockless.
     const poll = setInterval(() => {
-      if (!serverAnswered) return;
-      reportBeatUsed();
+      if (serverAnswered) reportBeatUsed();
       void sync();
     }, 30_000);
 
@@ -381,8 +450,16 @@ export function useProAccess() {
       const reply = await askServer();
       setChecked(true);
       if (reply) {
+        startedRef.current = true;
         setStarted(true);
         setGuestState({ remainingMs: reply.remainingMs });
+        // Arm the 1s ticker with the same window: without the local stamp it
+        // would fall back to its own stale clock and the chip would snap back.
+        try {
+          localStorage.setItem(GUEST_KEY, String(Date.now() + reply.remainingMs - TRIAL_MS));
+        } catch {
+          /* ignore */
+        }
       }
     })();
   }, []);
