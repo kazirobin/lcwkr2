@@ -1,4 +1,4 @@
-import type { PaidEntry, PaidInput, PaidMarks, PaidSettings } from "./types";
+import type { PaidEntry, PaidInput, PaidMarks, PaidSettings, PaidTeam, PaidTeamInput } from "./types";
 
 /**
  * Lessons per HSK label: Label 1 → 15, Label 2 → 15, Label 3 → 18.
@@ -30,6 +30,32 @@ export function normalizeWaMessage(value: unknown): string {
 export function serializePaidSettings(input: unknown): PaidSettings {
   const doc = (input ?? {}) as Record<string, unknown>;
   return { waMessage: normalizeWaMessage(doc.waMessage) };
+}
+
+/** Trim, cap and de-dupe the team fields out of an untrusted body. */
+export function normalizeTeamInput(body: unknown): PaidTeamInput {
+  const raw = (body ?? {}) as Record<string, unknown>;
+  const rawIds = Array.isArray(raw.memberIds) ? raw.memberIds : [];
+  const memberIds = Array.from(new Set(rawIds.map((v) => cleanText(v, 40)).filter(Boolean))).slice(
+    0,
+    200
+  );
+  return {
+    name: cleanText(raw.name, 80),
+    captainId: cleanText(raw.captainId, 40),
+    memberIds,
+  };
+}
+
+/** Shape a team doc into its client-facing (unresolved) form. */
+export function serializePaidTeam(input: unknown): PaidTeam {
+  const doc = (input ?? {}) as Record<string, unknown>;
+  return {
+    _id: String(doc._id),
+    name: typeof doc.name === "string" ? doc.name : "",
+    captainId: typeof doc.captainId === "string" ? doc.captainId : "",
+    memberIds: Array.isArray(doc.memberIds) ? doc.memberIds.map(String) : [],
+  };
 }
 
 /**

@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Phone,
   MapPin,
-  Briefcase,
   CalendarDays,
   FileText,
   Pencil,
@@ -14,8 +13,10 @@ import {
   GraduationCap,
   BookCheck,
   ChevronDown,
+  Crown,
+  Users,
 } from "lucide-react";
-import type { MarksKind, PaidEntry, PaidInput } from "../types";
+import type { MarksKind, PaidEntry, PaidInput, PaidMemberTeam } from "../types";
 import {
   CLASS_SLOTS,
   HOMEWORK_SLOTS,
@@ -35,6 +36,8 @@ interface Props {
   isAdmin: boolean;
   /** Admin-set greeting prefilled on a WhatsApp tap. */
   waMessage: string;
+  /** The team this member belongs to, if any. */
+  team?: PaidMemberTeam | null;
   onUpdate: (updated: PaidEntry) => void;
   onDelete: (id: string) => void;
   onError: (msg: string) => void;
@@ -204,6 +207,7 @@ export default function PaidCard({
   passcode,
   isAdmin,
   waMessage,
+  team,
   onUpdate,
   onDelete,
   onError,
@@ -426,14 +430,9 @@ export default function PaidCard({
           >
             <h3 className="text-base font-semibold text-text">{entry.name}</h3>
             <span className="flex shrink-0 items-center gap-1.5">
-              {entry.hskLevel && (
-                <span className="rounded-full border border-text/10 bg-text/5 px-2.5 py-1 text-[11px] font-semibold text-text/70">
-                  {entry.hskLevel}
-                </span>
-              )}
-              {entry.occupation && (
-                <span className="hidden rounded-full border border-text/10 bg-card px-2.5 py-1 text-[11px] font-medium text-text/55 sm:inline-flex">
-                  {entry.occupation}
+              {team?.isCaptain && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                  <Crown className="h-3 w-3" aria-hidden="true" /> Captain
                 </span>
               )}
               <ChevronDown
@@ -442,6 +441,28 @@ export default function PaidCard({
               />
             </span>
           </button>
+
+          {/* Team membership — who captains whom. Visible even when collapsed. */}
+          {team && (
+            <p className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-text/60">
+              {team.isCaptain ? (
+                <>
+                  <Crown className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                  <span>
+                    Team: <span className="font-semibold text-text/75">{team.teamName || "Team"}</span>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Users className="h-3.5 w-3.5 text-text/40" aria-hidden="true" />
+                  <span>
+                    Team: <span className="font-semibold text-text/75">{team.teamName || "Team"}</span> · Captain:{" "}
+                    <span className="font-semibold text-text/75">{team.captainName}</span>
+                  </span>
+                </>
+              )}
+            </p>
+          )}
 
           {/* Overall progress across the 48 lessons — a lesson counts once its
               class and homework are both marked. Stays visible when collapsed. */}
@@ -503,9 +524,6 @@ export default function PaidCard({
             )}
             {entry.address && (
               <Detail icon={<MapPin className="h-4 w-4" />} label="Address" value={entry.address} />
-            )}
-            {entry.occupation && (
-              <Detail icon={<Briefcase className="h-4 w-4" />} label="Occupation" value={entry.occupation} />
             )}
           </div>
 

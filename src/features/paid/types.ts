@@ -42,3 +42,41 @@ export interface PaidSettings {
   /** Prefilled greeting used when a WhatsApp number is tapped. */
   waMessage: string;
 }
+
+/** A team: one captain and the students under them. Admin-managed. */
+export interface PaidTeam {
+  _id: string;
+  name: string;
+  captainId: string;
+  memberIds: string[];
+}
+
+/** Public-safe member row shown inside a team (name and level only). */
+export interface TeamMemberView {
+  _id: string;
+  name: string;
+  hskLevel: string;
+}
+
+/** A team resolved to names for display — its captain and members. */
+export interface PaidTeamView {
+  _id: string;
+  name: string;
+  captain: TeamMemberView | null;
+  members: TeamMemberView[];
+}
+
+/** Untrusted shape accepted when creating or editing a team. */
+export interface PaidTeamInput {
+  name: string;
+  captainId: string;
+  memberIds: string[];
+}
+
+/** Which team a member belongs to — shown on their card. */
+export interface PaidMemberTeam {
+  teamName: string;
+  isCaptain: boolean;
+  /** The captain's name (the member's own name when they are the captain). */
+  captainName: string;
+}

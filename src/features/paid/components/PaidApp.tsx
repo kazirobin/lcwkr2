@@ -23,7 +23,7 @@ import {
   SelectField,
   TextArea,
 } from "@/components/ui";
-import type { MarksKind, PaidEntry, PaidInput } from "../types";
+import type { MarksKind, PaidEntry, PaidInput, PaidMemberTeam, PaidTeamView } from "../types";
 import {
   CLASS_SLOTS,
   HOMEWORK_SLOTS,
@@ -33,8 +33,16 @@ import {
   labelName,
   DEFAULT_WA_MESSAGE,
 } from "../lib";
-import { listPaid, createPaid, bulkPaidMarks, getPaidSettings, savePaidMessage } from "../server/paid";
+import {
+  listPaid,
+  createPaid,
+  bulkPaidMarks,
+  getPaidSettings,
+  savePaidMessage,
+  listPaidTeams,
+} from "../server/paid";
 import PaidCard from "./PaidCard";
+import PaidTeams from "./PaidTeams";
 
 const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 const ADMIN_STORAGE_KEY = "paid:adminPasscode";
@@ -110,7 +118,17 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
   const [waSaving, setWaSaving] = useState(false);
   const [waSaved, setWaSaved] = useState(false);
 
+  const [teams, setTeams] = useState<PaidTeamView[]>([]);
+
   const isAdmin = passcode.trim() !== "" && passcode.trim() === ADMIN_PASSCODE;
+
+  const refreshTeams = () => {
+    listPaidTeams()
+      .then(setTeams)
+      .catch(() => {
+        // Teams are optional — the member list still works without them.
+      });
+  };
 
   useEffect(() => {
     listPaid()
@@ -118,6 +136,16 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load entries."))
       .finally(() => setLoading(false));
   }, []);
+
+  // Teams are public to read; admins create and manage them.
+  useEffect(() => {
+    if (showRegistration) return;
+    listPaidTeams()
+      .then(setTeams)
+      .catch(() => {
+        // ignore — teams are optional
+      });
+  }, [showRegistration]);
 
   // The WhatsApp greeting is shared by everyone; the admin can override it.
   useEffect(() => {
@@ -156,6 +184,20 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
     return entries.filter((e) => matches(e, words));
   }, [entries, query]);
 
+  const teamByMember = useMemo(() => {
+    const map = new Map<string, PaidMemberTeam>();
+    for (const team of teams) {
+      const teamName = team.name.trim() || "Team";
+      if (team.captain) {
+        map.set(team.captain._id, { teamName, isCaptain: true, captainName: team.captain.name });
+      }
+      for (const m of team.members) {
+        map.set(m._id, { teamName, isCaptain: false, captainName: team.captain?.name ?? "" });
+      }
+    }
+    return map;
+  }, [teams]);
+
   const sorted = useMemo(() => {
     const list = [...filtered];
     switch (sort) {
@@ -179,8 +221,14 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
         // Most present first — the default the page opens on.
         list.sort((a, b) => (b.classesDone ?? 0) - (a.classesDone ?? 0) || a.name.localeCompare(b.name));
     }
+    // Captains always float to the top, keeping the order chosen above.
+    list.sort(
+      (a, b) =>
+        Number(teamByMember.get(b._id)?.isCaptain ?? false) -
+        Number(teamByMember.get(a._id)?.isCaptain ?? false)
+    );
     return list;
-  }, [filtered, sort]);
+  }, [filtered, sort, teamByMember]);
 
   const set = (key: keyof PaidInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -686,15 +734,31 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
               passcode={passcode}
               isAdmin={isAdmin}
               waMessage={waMessage}
+              team={teamByMember.get(entry._id) ?? null}
               onUpdate={(updated) =>
                 setEntries((prev) => prev.map((e) => (e._id === updated._id ? updated : e)))
               }
-              onDelete={(id) => setEntries((prev) => prev.filter((e) => e._id !== id))}
+              onDelete={(id) => {
+                setEntries((prev) => prev.filter((e) => e._id !== id));
+                refreshTeams();
+              }}
               onError={setError}
             />
           ))}
         </div>
       ))}
+
+      {/* Teams — everyone sees who captains whom; managing is admin-only. */}
+      {!showRegistration && (
+        <PaidTeams
+          entries={entries}
+          teams={teams}
+          isAdmin={isAdmin}
+          passcode={passcode}
+          onChanged={refreshTeams}
+          onError={setError}
+        />
+      )}
 
       {/* Admin popup — first-load prompt to unlock admin mode with the passcode. */}
       {!showRegistration && showAdminModal && (
