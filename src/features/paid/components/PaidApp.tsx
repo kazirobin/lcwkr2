@@ -1,8 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Search, Info, ShieldCheck, Users, CheckCircle2, MessageCircle } from "lucide-react";
+import {
+  Search,
+  Info,
+  ShieldCheck,
+  Users,
+  CheckCircle2,
+  MessageCircle,
+  GraduationCap,
+} from "lucide-react";
+import {
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  Eyebrow,
+  Field,
+  LoadingBlock,
+  PageHeader,
+  SectionHanzi,
+  SelectField,
+  TextArea,
+} from "@/components/ui";
 import type { MarksKind, PaidEntry, PaidInput } from "../types";
 import {
   CLASS_SLOTS,
@@ -31,7 +51,10 @@ const emptyForm: PaidInput = {
 };
 
 const inputClass =
-  "w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none";
+  "w-full rounded-xl border border-text/15 bg-card px-3.5 py-2.5 text-sm text-text transition-colors placeholder:text-text/40 focus:border-text/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text";
+
+const selectClass =
+  "rounded-xl border border-text/15 bg-card px-3 py-2 text-sm text-text transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text";
 
 type SortKey = "classesDesc" | "classesAsc" | "homeworkDesc" | "homeworkAsc" | "name" | "newest";
 
@@ -274,65 +297,60 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
   };
 
   return (
-    <div className="flex w-full flex-col gap-6 font-sans">
+    <div className="flex w-full flex-col gap-8">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-md">
-        <div>
-          <h1 className="text-xl font-semibold tracking-wide text-primary">
-            {showRegistration ? "Paid Registration" : "Paid Members"}
-          </h1>
-          <p className="mt-0.5 text-xs text-muted">
-            {showRegistration
-              ? "Fill in your details once — your entry appears on the members list. একবার তথ্য দিলেই হবে।"
-              : "Classes & homework are set with toggle buttons by the admin. Sorted most-present first."}
-          </p>
-        </div>
-        {!showRegistration && (
-          <div className="flex flex-col items-end gap-1">
-            {isAdmin ? (
+      <div className="relative">
+        <SectionHanzi char={showRegistration ? "籍" : "员"} className="-top-10 right-0" />
+        <PageHeader
+          eyebrow={
+            <Eyebrow
+              seal={showRegistration ? "籍" : "员"}
+              label={showRegistration ? "Paid registration" : "Paid members"}
+              detail={showRegistration ? "নতুন সদস্য" : `${sorted.length} shown`}
+            />
+          }
+          title={showRegistration ? "Paid Registration" : "Paid Members"}
+          lede={
+            showRegistration
+              ? "Fill in your details once and your entry appears on the members list. · একবার তথ্য দিলেই হবে।"
+              : "Every lesson carries a class mark and a homework mark, set by the admin. Sorted most-present first. · অ্যাডমিনের টগল বাটনে ক্লাস ও হোমওয়ার্ক সেট হয়।"
+          }
+          actions={
+            showRegistration ? (
+              <ButtonLink href="/paid" variant="secondary" size="sm">
+                ← Back to members
+              </ButtonLink>
+            ) : isAdmin ? (
               <>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ok">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-ok/30 bg-ok-surface px-3 py-1.5 text-[11px] font-semibold text-ok">
                   <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Admin mode on
                 </span>
-                <button
-                  type="button"
-                  onClick={adminLogout}
-                  className="rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-muted transition hover:border-text/40 hover:text-text"
-                >
+                <Button variant="secondary" size="sm" onClick={adminLogout}>
                   Turn off admin mode
-                </button>
+                </Button>
               </>
             ) : (
-              <button
-                type="button"
+              <Button
+                size="sm"
+                iconLeft={<ShieldCheck className="h-4 w-4" aria-hidden="true" />}
                 onClick={() => {
                   setAdminError("");
                   setAdminInput("");
                   setShowAdminModal(true);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
               >
-                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Admin mode
-              </button>
-            )}
-          </div>
-        )}
+                Admin mode
+              </Button>
+            )
+          }
+        />
       </div>
-
-      {showRegistration && (
-        <Link
-          href="/paid"
-          className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-primary transition hover:opacity-80"
-        >
-          ← Back to paid members · ফিরে যান
-        </Link>
-      )}
 
       {/* Info / legend banner — English + Bangla */}
       {!showRegistration && (
-      <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/[0.05] px-4 py-3">
+      <div className="flex items-start gap-3 rounded-2xl border border-text/10 bg-text/[0.03] px-5 py-4">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-        <div className="space-y-1.5 text-[13px] leading-relaxed text-text/80">
+        <div className="space-y-2 text-[13px] leading-relaxed text-text/70">
           <p>
             <span className="font-semibold text-text">English: </span>
             Each HSK label has its own lessons — <span className="font-semibold">Label 1: {LABEL_SIZES[0]},
@@ -360,24 +378,27 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
       )}
 
       {error && (
-        <div className="rounded-lg border border-danger bg-danger-surface px-4 py-2 text-xs text-danger">
+        <div
+          role="alert"
+          className="rounded-2xl border border-danger/40 bg-danger-surface px-4 py-3 text-sm font-medium text-danger"
+        >
           {error}
         </div>
       )}
 
       {/* Bulk panel — admin only. Pick a slot, tick the students, then apply. */}
       {isAdmin && !showRegistration && (
-        <div className="rounded-lg border border-primary/30 bg-primary/[0.04] p-3">
-          <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+        <Card className="p-4">
+          <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-text/60">
             <Users className="h-3.5 w-3.5" aria-hidden="true" /> Bulk · select students · একসাথে অনেককে
           </p>
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={bulkKind}
                 onChange={(e) => setBulkKind(e.target.value as MarksKind)}
                 aria-label="Bulk kind"
-                className="rounded-md border border-border bg-background px-2 py-1 font-semibold text-text focus:border-primary focus:outline-none"
+                className={`${selectClass} font-semibold`}
               >
                 <option value="class">Class</option>
                 <option value="homework">Homework</option>
@@ -390,7 +411,7 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
                   setBulkLesson((n) => Math.min(n, LABEL_SIZES[nextLabel - 1]));
                 }}
                 aria-label="Bulk label"
-                className="rounded-md border border-border bg-background px-2 py-1 text-text focus:border-primary focus:outline-none"
+                className={selectClass}
               >
                 {LABEL_SIZES.map((_, i) => (
                   <option key={i} value={i + 1}>
@@ -402,7 +423,7 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
                 value={bulkLesson}
                 onChange={(e) => setBulkLesson(Number(e.target.value))}
                 aria-label="Bulk lesson"
-                className="rounded-md border border-border bg-background px-2 py-1 text-text focus:border-primary focus:outline-none"
+                className={selectClass}
               >
                 {Array.from({ length: LABEL_SIZES[bulkLabel - 1] }, (_, i) => (
                   <option key={i} value={i + 1}>
@@ -410,47 +431,47 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
+              <Button
+                size="sm"
                 disabled={bulkBusy || selectedIds.length === 0}
                 onClick={() => runBulk(true)}
-                className={`rounded-md px-3 py-1 font-semibold transition hover:opacity-90 disabled:opacity-40 ${
-                  bulkKind === "class" ? "bg-primary text-primary-foreground" : "bg-ok text-background"
-                }`}
               >
                 {bulkKind === "class" ? "Mark present" : "Mark done"}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={bulkBusy || selectedIds.length === 0}
                 onClick={() => runBulk(false)}
-                className="rounded-md border border-border bg-background px-3 py-1 font-medium text-text transition hover:border-text/40 disabled:opacity-40"
               >
                 Clear
-              </button>
-              <span className="ml-auto font-semibold text-muted">Selected: {selectedIds.length}</span>
+              </Button>
+              <span className="ml-auto text-xs font-semibold tabular-nums text-text/60">
+                Selected: {selectedIds.length}
+              </span>
             </div>
 
-            <div className="max-h-56 overflow-y-auto rounded-md border border-border bg-background">
-              <label className="sticky top-0 flex cursor-pointer items-center gap-2 border-b border-border bg-background px-3 py-1.5 text-xs font-semibold text-text">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+            <div className="max-h-56 overflow-y-auto rounded-xl border border-text/10 bg-card">
+              <label className="sticky top-0 flex cursor-pointer items-center gap-2 border-b border-text/10 bg-card px-3 py-2 text-sm font-semibold text-text">
+                <input type="checkbox" className="accent-text" checked={allSelected} onChange={toggleAll} />
                 Select all ({sorted.length})
               </label>
               {sorted.length === 0 ? (
-                <p className="px-3 py-3 text-xs text-muted">No members to select.</p>
+                <p className="px-3 py-3 text-sm text-text/50">No members to select.</p>
               ) : (
                 sorted.map((e) => (
                   <label
                     key={e._id}
-                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs hover:bg-border/20"
+                    className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-text/[0.04]"
                   >
                     <input
                       type="checkbox"
+                      className="accent-text"
                       checked={selectedIds.includes(e._id)}
                       onChange={() => toggleSelect(e._id)}
                     />
                     <span className="text-text">{e.name}</span>
-                    <span className="ml-auto font-mono text-[10px] text-muted">
+                    <span className="ml-auto font-mono text-[10px] tabular-nums text-text/50">
                       {e.classesDone}/{CLASS_SLOTS} · {e.homeworkDone}/{HOMEWORK_SLOTS}
                     </span>
                   </label>
@@ -458,13 +479,13 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
               )}
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Admin-only WhatsApp greeting — prefilled when a number is tapped. */}
       {isAdmin && !showRegistration && (
-        <div className="rounded-lg border border-primary/30 bg-primary/[0.04] p-3">
-          <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+        <Card className="p-4">
+          <p className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-text/60">
             <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> WhatsApp default message · হোয়াটসঅ্যাপ ডিফল্ট মেসেজ
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -479,33 +500,28 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
               aria-label="WhatsApp default message"
               className={`${inputClass} min-w-[220px] flex-1`}
             />
-            <button
-              type="button"
-              onClick={saveWa}
-              disabled={waSaving}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
-            >
-              {waSaving ? "Saving..." : "Save"}
-            </button>
+            <Button size="sm" onClick={saveWa} loading={waSaving}>
+              Save
+            </Button>
             {waSaved && <span className="text-xs font-semibold text-ok">Saved · সেভ হয়েছে</span>}
           </div>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+          <p className="mt-2 text-xs leading-relaxed text-text/55">
             Prefilled when someone taps a WhatsApp number. Empty resets to &ldquo;{DEFAULT_WA_MESSAGE}&rdquo;. ·
             কেউ নম্বরে ট্যাপ করলে এই মেসেজ আগে থেকে লেখা থাকবে।
           </p>
-        </div>
+        </Card>
       )}
 
       {/* Toolbar */}
       {!showRegistration && (
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="inline-flex items-center gap-2 text-xs text-muted">
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="inline-flex items-center gap-2 text-sm text-text/60">
           <span className="font-semibold">Sort</span>
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
             aria-label="Sort entries"
-            className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs text-text focus:border-primary focus:outline-none"
+            className={selectClass}
           >
             {SORTS.map((s) => (
               <option key={s.value} value={s.value}>
@@ -516,14 +532,17 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
         </label>
 
         <div className="relative ml-auto w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text/40"
+            aria-hidden="true"
+          />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, phone, area..."
             aria-label="Search entries"
-            className={`${inputClass} pl-8`}
+            className={`${inputClass} pl-9`}
           />
         </div>
       </div>
@@ -531,120 +550,135 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
 
       {/* Create form */}
       {showForm && (
-        <form
-          onSubmit={handleCreate}
-          className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-lg"
-        >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">Name *</span>
-              <input className={inputClass} value={form.name} onChange={set("name")} placeholder="Full name" required autoFocus />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">WhatsApp *</span>
-              <input className={inputClass} value={form.whatsapp} onChange={set("whatsapp")} placeholder="01XXXXXXXXX" inputMode="tel" required />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">Date of birth *</span>
-              <input type="date" className={inputClass} value={form.dateOfBirth} onChange={set("dateOfBirth")} required />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">Occupation *</span>
-              <input className={inputClass} value={form.occupation} onChange={set("occupation")} placeholder="Student / Job / Business" required />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">HSK level *</span>
-              <select className={inputClass} value={form.hskLevel ?? ""} onChange={set("hskLevel")} required>
+        <Card className="p-4 sm:p-6">
+          <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                label="Name"
+                required
+                value={form.name}
+                onChange={set("name")}
+                placeholder="Full name"
+                autoFocus
+              />
+              <Field
+                label="WhatsApp"
+                required
+                value={form.whatsapp}
+                onChange={set("whatsapp")}
+                placeholder="01XXXXXXXXX"
+                inputMode="tel"
+              />
+              <Field
+                type="date"
+                label="Date of birth"
+                required
+                value={form.dateOfBirth}
+                onChange={set("dateOfBirth")}
+              />
+              <Field
+                label="Occupation"
+                required
+                value={form.occupation}
+                onChange={set("occupation")}
+                placeholder="Student / Job / Business"
+              />
+              <SelectField
+                label="HSK level"
+                required
+                value={form.hskLevel ?? ""}
+                onChange={set("hskLevel")}
+              >
                 <option value="">Select your HSK level...</option>
                 {HSK_LEVELS.map((level) => (
                   <option key={level} value={level}>
                     {level}
                   </option>
                 ))}
-              </select>
-            </label>
-          </div>
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase text-primary">Address *</span>
-            <input className={inputClass} value={form.address} onChange={set("address")} placeholder="Village / Area, District" required />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase text-primary">Describe yourself *</span>
-            <textarea
-              className={`${inputClass} min-h-[120px] resize-y`}
+              </SelectField>
+            </div>
+            <Field
+              label="Address"
+              required
+              value={form.address}
+              onChange={set("address")}
+              placeholder="Village / Area, District"
+            />
+            <TextArea
+              label="Describe yourself"
+              required
               value={form.details}
               onChange={set("details")}
               placeholder="Describe yourself — why do you want to learn Chinese? What is your goal? Anything else about you..."
-              required
             />
-          </label>
-          <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
-            <button
-              type="button"
-              onClick={() => {
-                setForm(emptyForm);
-                if (!showRegistration) setShowForm(false);
-              }}
-              disabled={saving}
-              className="rounded px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-border/50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Save details"}
-            </button>
-          </div>
-        </form>
+            <div className="flex items-center justify-end gap-2 border-t border-text/10 pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setForm(emptyForm);
+                  if (!showRegistration) setShowForm(false);
+                }}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" loading={saving}>
+                Save details
+              </Button>
+            </div>
+          </form>
+        </Card>
       )}
 
       {/* Registration success */}
       {showRegistration && registered && (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-ok bg-ok/10 px-4 py-8 text-center">
-          <CheckCircle2 className="h-8 w-8 text-ok" aria-hidden="true" />
-          <p className="text-base font-semibold text-text">
+        <Card className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-ok-surface text-ok">
+            <CheckCircle2 className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <p className="text-lg font-semibold text-text">
             You&apos;re registered! · রেজিস্ট্রেশন সম্পন্ন হয়েছে
           </p>
-          <p className="max-w-md text-sm text-muted">
+          <p className="max-w-md text-sm leading-relaxed text-text/60">
             Your details have been added to the paid members list. Classes and homework are marked by
             the admin. · আপনার তথ্য পেইড মেম্বার লিস্টে যোগ হয়েছে।
           </p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={() => {
                 setRegistered(false);
                 setShowForm(true);
                 setError("");
               }}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
             >
               Register another · আরেকজন যোগ করুন
-            </button>
-            <Link
-              href="/paid"
-              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text transition hover:border-text/40"
-            >
+            </Button>
+            <ButtonLink href="/paid" variant="secondary" size="sm">
               Back to paid members
-            </Link>
+            </ButtonLink>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* List — hidden on the registration page */}
       {!showRegistration && (loading ? (
-        <p className="py-8 text-center text-sm text-muted">Loading...</p>
+        <LoadingBlock label="Loading members" />
       ) : entries.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted">
-          No details yet. Contact the admin to be added.
-        </p>
+        <EmptyState
+          icon={<GraduationCap className="h-7 w-7" aria-hidden="true" />}
+          title="No members yet"
+          description="Contact the admin to be added to the paid members list."
+        />
       ) : filtered.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted">No match for &ldquo;{query}&rdquo;.</p>
+        <EmptyState
+          title={`No match for \u201c${query}\u201d`}
+          description="Try a different name, number or area."
+        />
       ) : (
-        <div className="flex w-full flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3">
+        <div className="grid w-full gap-4 sm:grid-cols-2">
           {sorted.map((entry) => (
             <PaidCard
               key={entry._id}
@@ -665,19 +699,20 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
       {/* Admin popup — first-load prompt to unlock admin mode with the passcode. */}
       {!showRegistration && showAdminModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="Turn on admin mode"
         >
           <form
             onSubmit={submitAdmin}
-            className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-text/10 bg-card p-6 shadow-2xl"
           >
-            <h2 className="inline-flex items-center gap-1.5 text-base font-semibold text-primary">
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Admin mode
-            </h2>
-            <p className="mt-1 text-xs text-muted">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-text text-background">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <h2 className="mt-3 text-lg font-semibold text-text">Admin mode</h2>
+            <p className="mt-1 text-sm leading-relaxed text-text/60">
               Enter the passcode to unlock editing and the attendance toggles.
               <br />
               passcode দিলে admin mode চালু হবে।
@@ -691,24 +726,21 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
               }}
               placeholder="Admin passcode..."
               aria-label="Admin passcode"
-              className={`${inputClass} mt-3`}
+              className={`${inputClass} mt-4`}
               autoFocus
             />
-            {adminError && <p className="mt-1.5 text-xs font-semibold text-danger">{adminError}</p>}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={skipAdmin}
-                className="rounded px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-border/50"
-              >
+            {adminError && (
+              <p role="alert" className="mt-2 text-xs font-semibold text-danger">
+                {adminError}
+              </p>
+            )}
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={skipAdmin}>
                 Skip
-              </button>
-              <button
-                type="submit"
-                className="rounded bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
-              >
+              </Button>
+              <Button type="submit" size="sm">
                 Turn on
-              </button>
+              </Button>
             </div>
           </form>
         </div>

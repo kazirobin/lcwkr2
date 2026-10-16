@@ -27,6 +27,7 @@ import {
   whatsappLink,
 } from "../lib";
 import { updatePaid, deletePaid } from "../server/paid";
+import { Button, ProgressBar } from "@/components/ui";
 
 interface Props {
   entry: PaidEntry;
@@ -52,7 +53,7 @@ function toInput(entry: PaidEntry): PaidInput {
 }
 
 const inputClass =
-  "w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-text focus:border-primary focus:outline-none";
+  "w-full rounded-xl border border-text/15 bg-card px-3.5 py-2.5 text-sm text-text transition-colors placeholder:text-text/40 focus:border-text/40 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text";
 
 function Detail({
   icon,
@@ -67,9 +68,9 @@ function Detail({
 }) {
   if (!value && !children) return null;
   return (
-    <div className="flex items-start gap-2 text-sm">
-      <span className="mt-0.5 shrink-0 text-muted">{icon}</span>
-      <span className="text-muted">
+    <div className="flex items-start gap-2.5 text-sm">
+      <span className="mt-0.5 shrink-0 text-text/40">{icon}</span>
+      <span className="text-text/70">
         <span className="sr-only">{label}: </span>
         {children ?? value}
       </span>
@@ -96,9 +97,9 @@ function MarksGrid({
     const on = Boolean(marks[index]);
     const key = `${kind}-${index}`;
     const busy = busyKey === key;
-    const onClass = "border-transparent bg-primary text-primary-foreground";
+    const onClass = "border-transparent bg-text text-background";
     const onHw = "border-transparent bg-ok text-background";
-    const off = "border-text/15 bg-background text-text/45 hover:border-primary/40 hover:text-text";
+    const off = "border-text/15 bg-card text-text/45 hover:border-text/40 hover:text-text";
     return (
       <button
         key={index}
@@ -108,7 +109,7 @@ function MarksGrid({
         aria-pressed={on}
         aria-label={`${kind} · ${labelName(label)} ${lesson} ${on ? "present" : "absent"}`}
         title={isAdmin ? `Toggle ${kind} · ${labelName(label)} ${lesson}` : "Admin passcode required"}
-        className={`h-7 w-7 rounded-md border text-[11px] font-semibold tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text ${
+        className={`h-7 w-7 rounded-lg border text-[11px] font-semibold tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-text ${
           on ? (kind === "class" ? onClass : onHw) : off
         } ${!isAdmin ? "cursor-default" : "cursor-pointer"} ${busy ? "opacity-50" : ""}`}
       >
@@ -117,21 +118,18 @@ function MarksGrid({
     );
   };
 
-  const headerTone = (label: number) =>
-    label === 1 ? "text-primary" : label === 2 ? "text-ok" : "text-muted";
-
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       {LABEL_SIZES.map((size, li) => {
         const offset = LABEL_OFFSETS[li];
         const label = li + 1;
         let done = 0;
         for (let k = 0; k < size; k++) if (marks[offset + k]) done++;
         return (
-          <div key={label} className="flex flex-col gap-1">
-            <div className="flex items-baseline gap-1.5 text-[10px] font-semibold uppercase tracking-wide">
-              <span className={headerTone(label)}>{labelName(label)}</span>
-              <span className="font-mono tabular-nums text-muted">
+          <div key={label} className="flex flex-col gap-1.5">
+            <div className="flex items-baseline gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
+              <span className="text-text/60">{labelName(label)}</span>
+              <span className="font-mono tabular-nums text-text/40">
                 {done}/{size}
               </span>
             </div>
@@ -171,30 +169,29 @@ function MarksSection({
 }) {
   const total = kind === "class" ? CLASS_SLOTS : HOMEWORK_SLOTS;
   const done = marks.filter(Boolean).length;
-  const tone = kind === "class" ? "text-primary" : "text-ok";
   return (
     <div className="flex flex-col">
       <button
         type="button"
         onClick={onToggleOpen}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left transition hover:bg-border/30"
+        className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-text/[0.04]"
       >
-        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide ${tone}`}>
-          {icon} {label}
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-text/60">
+          <span className="text-text/40">{icon}</span> {label}
         </span>
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-2">
           <span className="font-mono text-xs font-bold tabular-nums text-text">
             {done}/{total}
           </span>
           <ChevronDown
-            className={`h-3.5 w-3.5 text-muted transition-transform ${open ? "" : "-rotate-90"}`}
+            className={`h-3.5 w-3.5 text-text/40 transition-transform ${open ? "" : "-rotate-90"}`}
             aria-hidden="true"
           />
         </span>
       </button>
       {open && (
-        <div className="mt-1.5">
+        <div className="mt-2 px-0.5">
           <MarksGrid kind={kind} marks={marks} isAdmin={isAdmin} busyKey={busyKey} onToggle={onToggle} />
         </div>
       )}
@@ -213,6 +210,7 @@ export default function PaidCard({
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [showClasses, setShowClasses] = useState(false);
   const [showHomework, setShowHomework] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -223,6 +221,13 @@ export default function PaidCard({
 
   const classMarks = entry.classMarks ?? [];
   const homeworkMarks = entry.homeworkMarks ?? [];
+
+  // A lesson counts as complete once both its class and homework are marked,
+  // so the single bar reads as progress through all 48 lessons.
+  const lessonsDone = classMarks.reduce(
+    (n, done, i) => n + (done && homeworkMarks[i] ? 1 : 0),
+    0
+  );
 
   const set = (key: keyof PaidInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -313,28 +318,28 @@ export default function PaidCard({
   const isLongDetails = (entry.details?.length ?? 0) > 220 || (entry.details?.split("\n").length ?? 0) > 4;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-sm transition hover:border-primary/40">
+    <div className="flex flex-col gap-4 rounded-2xl border border-text/10 bg-card p-5 transition-colors hover:border-text/25">
       {isEditing ? (
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">Name *</span>
+              <span className="text-[13px] font-semibold text-text">Name *</span>
               <input className={inputClass} value={form.name} onChange={set("name")} placeholder="Full name" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">WhatsApp</span>
+              <span className="text-[13px] font-semibold text-text">WhatsApp</span>
               <input className={inputClass} value={form.whatsapp} onChange={set("whatsapp")} placeholder="01XXXXXXXXX" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">Date of birth</span>
+              <span className="text-[13px] font-semibold text-text">Date of birth</span>
               <input type="date" className={inputClass} value={form.dateOfBirth} onChange={set("dateOfBirth")} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">Occupation</span>
+              <span className="text-[13px] font-semibold text-text">Occupation</span>
               <input className={inputClass} value={form.occupation} onChange={set("occupation")} placeholder="Student / Job / Business" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase text-primary">HSK level</span>
+              <span className="text-[13px] font-semibold text-text">HSK level</span>
               <select className={inputClass} value={form.hskLevel ?? ""} onChange={set("hskLevel")}>
                 <option value="">Not set</option>
                 {HSK_LEVELS.map((level) => (
@@ -346,11 +351,11 @@ export default function PaidCard({
             </label>
           </div>
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase text-primary">Address</span>
+            <span className="text-[13px] font-semibold text-text">Address</span>
             <input className={inputClass} value={form.address} onChange={set("address")} placeholder="Village / Area, District" />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase text-primary">Describe yourself</span>
+            <span className="text-[13px] font-semibold text-text">Describe yourself</span>
             <textarea
               className={`${inputClass} min-h-[96px] resize-y`}
               value={form.details}
@@ -360,8 +365,8 @@ export default function PaidCard({
           </label>
 
           {isAdmin && (
-            <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <div className="flex flex-col gap-2 rounded-xl border border-text/10 bg-text/[0.02] p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-text/60">
                 Admin · Classes &amp; Homework
               </p>
               <MarksSection
@@ -389,46 +394,69 @@ export default function PaidCard({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
-            <button
+          <div className="flex items-center justify-end gap-2 border-t border-text/10 pt-4">
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => setIsEditing(false)}
               disabled={loading}
-              className="inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-medium text-muted transition hover:bg-border/50"
+              iconLeft={<X className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <X className="h-3.5 w-3.5" aria-hidden="true" /> Cancel
-            </button>
-            <button
+              Cancel
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={handleSave}
-              disabled={loading}
-              className="inline-flex items-center gap-1 rounded bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+              loading={loading}
+              iconLeft={<Save className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <Save className="h-3.5 w-3.5" aria-hidden="true" /> {loading ? "Saving..." : "Save"}
-            </button>
+              Save
+            </Button>
           </div>
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="flex w-full items-center justify-between gap-3 rounded-lg text-left transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text"
+          >
             <h3 className="text-base font-semibold text-text">{entry.name}</h3>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <span className="flex shrink-0 items-center gap-1.5">
               {entry.hskLevel && (
-                <span className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                <span className="rounded-full border border-text/10 bg-text/5 px-2.5 py-1 text-[11px] font-semibold text-text/70">
                   {entry.hskLevel}
                 </span>
               )}
               {entry.occupation && (
-                <span className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] font-medium text-muted">
+                <span className="hidden rounded-full border border-text/10 bg-card px-2.5 py-1 text-[11px] font-medium text-text/55 sm:inline-flex">
                   {entry.occupation}
                 </span>
               )}
-            </div>
+              <ChevronDown
+                className={`h-4 w-4 text-text/40 transition-transform ${open ? "" : "-rotate-90"}`}
+                aria-hidden="true"
+              />
+            </span>
+          </button>
+
+          {/* Overall progress across the 48 lessons — a lesson counts once its
+              class and homework are both marked. Stays visible when collapsed. */}
+          <div className="flex items-center gap-3">
+            <ProgressBar value={lessonsDone} max={CLASS_SLOTS} label="Course progress" />
+            <span className="shrink-0 font-mono text-xs font-semibold tabular-nums text-text/60">
+              {lessonsDone}/{CLASS_SLOTS}
+            </span>
           </div>
 
+          {open && (
+            <>
           {/* Collapsible class / homework grids. Admin taps a number to mark it
               present; anything left untoggled stays absent. */}
-          <div className="flex flex-col gap-1 rounded-lg border border-border bg-background p-2">
+          <div className="flex flex-col gap-1 rounded-xl border border-text/10 bg-card p-2">
             <MarksSection
               kind="class"
               label="Classes"
@@ -460,7 +488,12 @@ export default function PaidCard({
             {entry.whatsapp && (
               <Detail icon={<Phone className="h-4 w-4" />} label="WhatsApp">
                 {link ? (
-                  <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-text underline decoration-text/30 underline-offset-2 transition-colors hover:decoration-text"
+                  >
                     {entry.whatsapp}
                   </a>
                 ) : (
@@ -477,10 +510,10 @@ export default function PaidCard({
           </div>
 
           {entry.details && (
-            <div className="flex items-start gap-2 border-t border-border pt-3 text-sm">
-              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
-              <div className="flex flex-col gap-1">
-                <span className="whitespace-pre-wrap break-words text-text">
+            <div className="flex items-start gap-2.5 border-t border-text/10 pt-4 text-sm">
+              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-text/40" aria-hidden="true" />
+              <div className="flex flex-col gap-1.5">
+                <span className="whitespace-pre-wrap break-words text-text/70">
                   <span className="sr-only">Describe yourself: </span>
                   <span className={!isExpanded && isLongDetails ? "line-clamp-4" : ""}>{entry.details}</span>
                 </span>
@@ -488,7 +521,7 @@ export default function PaidCard({
                   <button
                     type="button"
                     onClick={() => setIsExpanded((v) => !v)}
-                    className="self-start text-xs font-medium text-primary hover:underline"
+                    className="self-start text-xs font-semibold text-text underline decoration-text/30 underline-offset-2 transition-colors hover:decoration-text"
                   >
                     {isExpanded ? "Show less" : "Show more..."}
                   </button>
@@ -497,24 +530,30 @@ export default function PaidCard({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-1 border-t border-border pt-3">
-            <button
+          <div className="flex items-center justify-end gap-2 border-t border-text/10 pt-4">
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={startEdit}
               disabled={loading}
-              className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-border/50 hover:text-text"
+              iconLeft={<Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Edit
-            </button>
-            <button
+              Edit
+            </Button>
+            <Button
               type="button"
+              variant="danger"
+              size="sm"
               onClick={handleDelete}
               disabled={loading}
-              className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-danger transition hover:opacity-80"
+              iconLeft={<Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete
-            </button>
+              Delete
+            </Button>
           </div>
+            </>
+          )}
         </>
       )}
     </div>

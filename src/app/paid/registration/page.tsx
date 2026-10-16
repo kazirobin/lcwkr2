@@ -8,10 +8,8 @@ export const metadata: Metadata = {
 
 export default function PaidRegistrationPage() {
   return (
-    <div className="flex min-h-screen justify-center bg-background p-4 text-text sm:p-6 md:p-8">
-      <div className="w-full max-w-5xl">
-        <PaidApp showRegistration={true} />
-      </div>
+    <div className="relative isolate mx-auto max-w-5xl px-4 pt-24 pb-20 sm:px-6 lg:px-8">
+      <PaidApp showRegistration={true} />
     </div>
   );
 }
