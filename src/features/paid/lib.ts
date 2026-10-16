@@ -1,4 +1,4 @@
-import type { PaidEntry, PaidInput, PaidMarks } from "./types";
+import type { PaidEntry, PaidInput, PaidMarks, PaidSettings } from "./types";
 
 /**
  * Lessons per HSK label: Label 1 → 15, Label 2 → 15, Label 3 → 18.
@@ -17,6 +17,32 @@ export const HOMEWORK_SLOTS = TOTAL_SLOTS;
 
 /** Selectable HSK proficiency levels (old 1–6 + the combined new 7–9 band). */
 export const HSK_LEVELS = ["HSK 1", "HSK 2", "HSK 3", "HSK 4", "HSK 5", "HSK 6", "HSK 7-9"];
+
+/** Greeting prefilled on a WhatsApp tap until the admin sets their own. */
+export const DEFAULT_WA_MESSAGE = "Hi";
+
+/** Trim + cap the admin-set greeting; blank falls back to the default. */
+export function normalizeWaMessage(value: unknown): string {
+  return cleanText(value, 300) || DEFAULT_WA_MESSAGE;
+}
+
+/** Shape the settings doc into its client-facing form. */
+export function serializePaidSettings(input: unknown): PaidSettings {
+  const doc = (input ?? {}) as Record<string, unknown>;
+  return { waMessage: normalizeWaMessage(doc.waMessage) };
+}
+
+/**
+ * wa.me link for a phone number with the greeting prefilled. BD numbers typed
+ * as 01… are expanded to the 880 country code; anything shorter is left alone.
+ */
+export function whatsappLink(whatsapp: string, message: string): string | null {
+  const digits = whatsapp.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const intl = digits.startsWith("0") ? `880${digits.slice(1)}` : digits;
+  const text = message.trim();
+  return `https://wa.me/${intl}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+}
 
 export function labelName(label: number): string {
   return `Label ${label}`;

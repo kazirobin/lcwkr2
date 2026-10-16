@@ -2,10 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Info, ShieldCheck, Users, CheckCircle2 } from "lucide-react";
+import { Search, Info, ShieldCheck, Users, CheckCircle2, MessageCircle } from "lucide-react";
 import type { MarksKind, PaidEntry, PaidInput } from "../types";
-import { CLASS_SLOTS, HOMEWORK_SLOTS, HSK_LEVELS, LABEL_SIZES, LABEL_OFFSETS, labelName } from "../lib";
-import { listPaid, createPaid, bulkPaidMarks } from "../server/paid";
+import {
+  CLASS_SLOTS,
+  HOMEWORK_SLOTS,
+  HSK_LEVELS,
+  LABEL_SIZES,
+  LABEL_OFFSETS,
+  labelName,
+  DEFAULT_WA_MESSAGE,
+} from "../lib";
+import { listPaid, createPaid, bulkPaidMarks, getPaidSettings, savePaidMessage } from "../server/paid";
 import PaidCard from "./PaidCard";
 
 const ADMIN_PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
@@ -75,6 +83,10 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
   const [adminInput, setAdminInput] = useState("");
   const [adminError, setAdminError] = useState("");
 
+  const [waMessage, setWaMessage] = useState(DEFAULT_WA_MESSAGE);
+  const [waSaving, setWaSaving] = useState(false);
+  const [waSaved, setWaSaved] = useState(false);
+
   const isAdmin = passcode.trim() !== "" && passcode.trim() === ADMIN_PASSCODE;
 
   useEffect(() => {
@@ -83,6 +95,16 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load entries."))
       .finally(() => setLoading(false));
   }, []);
+
+  // The WhatsApp greeting is shared by everyone; the admin can override it.
+  useEffect(() => {
+    if (showRegistration) return;
+    getPaidSettings()
+      .then((settings) => setWaMessage(settings.waMessage))
+      .catch(() => {
+        // Settings are optional — fall back to the default greeting.
+      });
+  }, [showRegistration]);
 
   // Admin login lives behind a popup. Restore a saved passcode; otherwise show
   // the popup on first visit (unless the visitor already skipped it).
@@ -101,7 +123,7 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPasscode(saved);
     } else if (!skipped) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // First visit — prompt for the passcode.
       setShowAdminModal(true);
     }
   }, [showRegistration]);
@@ -234,6 +256,20 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
       window.localStorage.removeItem(ADMIN_SKIP_KEY);
     } catch {
       // ignore
+    }
+  };
+
+  const saveWa = async () => {
+    try {
+      setWaSaving(true);
+      setError("");
+      const settings = await savePaidMessage(waMessage, passcode);
+      setWaMessage(settings.waMessage);
+      setWaSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save message.");
+    } finally {
+      setWaSaving(false);
     }
   };
 
@@ -425,6 +461,41 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
         </div>
       )}
 
+      {/* Admin-only WhatsApp greeting — prefilled when a number is tapped. */}
+      {isAdmin && !showRegistration && (
+        <div className="rounded-lg border border-primary/30 bg-primary/[0.04] p-3">
+          <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> WhatsApp default message · হোয়াটসঅ্যাপ ডিফল্ট মেসেজ
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={waMessage}
+              onChange={(e) => {
+                setWaMessage(e.target.value);
+                if (waSaved) setWaSaved(false);
+              }}
+              maxLength={300}
+              placeholder={DEFAULT_WA_MESSAGE}
+              aria-label="WhatsApp default message"
+              className={`${inputClass} min-w-[220px] flex-1`}
+            />
+            <button
+              type="button"
+              onClick={saveWa}
+              disabled={waSaving}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
+            >
+              {waSaving ? "Saving..." : "Save"}
+            </button>
+            {waSaved && <span className="text-xs font-semibold text-ok">Saved · সেভ হয়েছে</span>}
+          </div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+            Prefilled when someone taps a WhatsApp number. Empty resets to &ldquo;{DEFAULT_WA_MESSAGE}&rdquo;. ·
+            কেউ নম্বরে ট্যাপ করলে এই মেসেজ আগে থেকে লেখা থাকবে।
+          </p>
+        </div>
+      )}
+
       {/* Toolbar */}
       {!showRegistration && (
       <div className="flex flex-wrap items-center gap-2">
@@ -580,6 +651,7 @@ export default function PaidApp({ showRegistration = false }: { showRegistration
               entry={entry}
               passcode={passcode}
               isAdmin={isAdmin}
+              waMessage={waMessage}
               onUpdate={(updated) =>
                 setEntries((prev) => prev.map((e) => (e._id === updated._id ? updated : e)))
               }

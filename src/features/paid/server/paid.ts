@@ -1,4 +1,4 @@
-import type { MarksKind, PaidEntry, PaidInput, PaidMarks } from "../types";
+import type { MarksKind, PaidEntry, PaidInput, PaidMarks, PaidSettings } from "../types";
 
 export async function listPaid(): Promise<PaidEntry[]> {
   const res = await fetch("/api/paid", { cache: "no-store" });
@@ -68,4 +68,23 @@ export async function deletePaid(id: string, passcode: string): Promise<void> {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || "Admin passcode required to delete.");
   }
+}
+
+/** Load the shared page settings (the WhatsApp greeting). */
+export async function getPaidSettings(): Promise<PaidSettings> {
+  const res = await fetch("/api/paid/settings", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to load settings");
+  return res.json();
+}
+
+/** Save the admin-set WhatsApp greeting. Passcode required. */
+export async function savePaidMessage(waMessage: string, passcode: string): Promise<PaidSettings> {
+  const res = await fetch("/api/paid/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ waMessage, passcode }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to save message");
+  return data;
 }

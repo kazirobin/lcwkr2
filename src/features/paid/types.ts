@@ -36,3 +36,9 @@ export interface PaidMarks {
 }
 
 export type MarksKind = "class" | "homework";
+
+/** Admin-managed page settings shared by everyone who opens the page. */
+export interface PaidSettings {
+  /** Prefilled greeting used when a WhatsApp number is tapped. */
+  waMessage: string;
+}

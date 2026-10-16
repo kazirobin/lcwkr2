@@ -16,23 +16,27 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type { MarksKind, PaidEntry, PaidInput } from "../types";
-import { CLASS_SLOTS, HOMEWORK_SLOTS, HSK_LEVELS, LABEL_SIZES, LABEL_OFFSETS, labelName, normalizeMarks } from "../lib";
+import {
+  CLASS_SLOTS,
+  HOMEWORK_SLOTS,
+  HSK_LEVELS,
+  LABEL_SIZES,
+  LABEL_OFFSETS,
+  labelName,
+  normalizeMarks,
+  whatsappLink,
+} from "../lib";
 import { updatePaid, deletePaid } from "../server/paid";
 
 interface Props {
   entry: PaidEntry;
   passcode: string;
   isAdmin: boolean;
+  /** Admin-set greeting prefilled on a WhatsApp tap. */
+  waMessage: string;
   onUpdate: (updated: PaidEntry) => void;
   onDelete: (id: string) => void;
   onError: (msg: string) => void;
-}
-
-function waLink(whatsapp: string): string | null {
-  const digits = whatsapp.replace(/\D/g, "");
-  if (digits.length < 10) return null;
-  const intl = digits.startsWith("0") ? `88${digits}` : digits;
-  return `https://wa.me/${intl}`;
 }
 
 function toInput(entry: PaidEntry): PaidInput {
@@ -202,6 +206,7 @@ export default function PaidCard({
   entry,
   passcode,
   isAdmin,
+  waMessage,
   onUpdate,
   onDelete,
   onError,
@@ -304,7 +309,7 @@ export default function PaidCard({
     }
   };
 
-  const link = entry.whatsapp ? waLink(entry.whatsapp) : null;
+  const link = entry.whatsapp ? whatsappLink(entry.whatsapp, waMessage) : null;
   const isLongDetails = (entry.details?.length ?? 0) > 220 || (entry.details?.split("\n").length ?? 0) > 4;
 
   return (
@@ -449,7 +454,7 @@ export default function PaidCard({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            {entry.dateOfBirth && (
+            {isAdmin && entry.dateOfBirth && (
               <Detail icon={<CalendarDays className="h-4 w-4" />} label="Date of birth" value={entry.dateOfBirth} />
             )}
             {entry.whatsapp && (
