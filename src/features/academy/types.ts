@@ -65,6 +65,9 @@ export interface ICourse {
   courseName: string;
   targetLevel: string;
   status: "Running" | "Coming Soon" | "Completed";
+  /** Set by the admin "Mark as complete" action; mirrors `status: "Completed"`. */
+  completed?: boolean;
+  completedAt?: string;
   startDate?: string;
   nextBatchRegistrationDate?: string;
   // ── new professional LMS fields ──

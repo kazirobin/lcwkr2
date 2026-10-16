@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/db";
-import { Course } from "@/features/academy/models";
+import { Course, CourseEnrollment, LiveLink, StudyGroup } from "@/features/academy/models";
 import { upsertAnnouncement, launchBroadcastText } from "./announcements";
 
 export async function listCourses() {
@@ -29,6 +29,24 @@ export async function updateCourse(courseId: string, body: unknown) {
 export async function deleteCourse(courseId: string) {
   await connectDB();
   return Course.findOneAndDelete({ courseId });
+}
+
+/**
+ * Permanently remove a course and the records that only exist because of it —
+ * its pending admissions, its study groups and its saved Meet links. Student
+ * accounts and class-log history are deliberately left untouched, so a course
+ * can be deleted without erasing anyone's attendance record.
+ */
+export async function deleteCoursePermanently(courseId: string) {
+  await connectDB();
+  const deleted = await Course.findOneAndDelete({ courseId });
+  if (!deleted) return null;
+  await Promise.all([
+    CourseEnrollment.deleteMany({ courseId }),
+    StudyGroup.deleteMany({ courseId }),
+    LiveLink.deleteMany({ courseId }),
+  ]);
+  return deleted;
 }
 
 /** The fields that describe how a course is sold and how long it runs. */
@@ -76,11 +94,23 @@ export async function updateCourseOffer(courseId: string, patch: CourseOffer) {
  * off the academy list; reopening puts it back exactly as it was, so a course
  * that was never launched does not silently start accepting enrollments.
  */
+/**
+ * Mark a batch finished, or reopen it. Completing takes the course off sale and
+ * off the academy list; reopening puts it back exactly as it was, so a course
+ * that was never launched does not silently start accepting enrollments.
+ *
+ * The legacy `status` string is kept in step with the `completed` flag so every
+ * page that still reads `status` (the academy grid, the course tabs) agrees with
+ * the admin panel instead of showing a completed batch as still running.
+ */
 export async function setCourseCompleted(courseId: string, completed: boolean) {
   await connectDB();
   const course = await Course.findOne({ courseId });
   if (!course) return null;
-  const update: Record<string, unknown> = { completed: Boolean(completed) };
+  const update: Record<string, unknown> = {
+    completed: Boolean(completed),
+    status: completed ? "Completed" : "Running",
+  };
   if (completed) {
     update.completedAt = new Date();
     update.launched = false;

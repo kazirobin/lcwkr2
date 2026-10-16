@@ -42,6 +42,14 @@ import {
 
 const ADMIN_SECRET_PIN = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "8131";
 
+/** A course is "completed" whenever the admin's complete flag is set, whether
+ *  or not the legacy `status` string has caught up with it. */
+function courseState(course: { status?: string; completed?: boolean }) {
+  if (course.completed === true || course.status === "Completed") return "completed" as const;
+  if (course.status === "Running") return "running" as const;
+  return "idle" as const;
+}
+
 export default function CoursesListPage() {
   const { language } = useLanguage();
   const t = useCallback(
@@ -518,7 +526,8 @@ export default function CoursesListPage() {
             {courses.map((c) => {
               const active = c.courseId === (selected?.courseId ?? selectedId);
               const isLive = liveCourseIds.includes(c.courseId.toLowerCase());
-              const running = c.status === "Running";
+              const state = courseState(c);
+              const running = state === "running";
               return (
                 <button
                   key={c.courseId}
@@ -537,8 +546,8 @@ export default function CoursesListPage() {
                     )}
                   </span>
                   <span className="hidden sm:inline">{c.courseName}</span>
-                  <StatusPill tone={running ? "done" : "pending"}>
-                    {running ? t("চলমান", "Run") : t("আসছে", "Soon")}
+                  <StatusPill tone={state === "completed" ? "neutral" : running ? "done" : "pending"}>
+                    {state === "completed" ? t("সম্পন্ন", "Done") : running ? t("চলমান", "Run") : t("আসছে", "Soon")}
                   </StatusPill>
                 </button>
               );
@@ -559,8 +568,12 @@ export default function CoursesListPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-bold text-text">{selected.courseName}</h2>
-                  <StatusPill tone={selected.status === "Running" ? "done" : "pending"}>
-                    {selected.status === "Running" ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
+                  <StatusPill tone={courseState(selected) === "completed" ? "neutral" : selected.status === "Running" ? "done" : "pending"}>
+                    {courseState(selected) === "completed"
+                      ? t("সম্পন্ন", "Completed")
+                      : selected.status === "Running"
+                        ? t("চলমান", "Running")
+                        : t("আসছে", "Coming soon")}
                   </StatusPill>
                   {courseLive?.open && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-danger px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">

@@ -246,7 +246,7 @@ export default function AcademyHubPage() {
   }, [courses]);
 
   const stats = useMemo(() => {
-    const running = courses.filter((c) => c.status === "Running").length;
+    const running = courses.filter((c) => c.status === "Running" && c.completed !== true).length;
     const held = courses.reduce(
       (acc, c) => acc + (c.completedClassesCount ?? c.classes?.length ?? 0),
       0,
@@ -709,7 +709,8 @@ export default function AcademyHubPage() {
             {courses.map((course) => {
               const done = course.classes?.length ?? course.completedClassesCount ?? 0;
               const planned = course.totalClassesPlanned || 24;
-              const running = course.status === "Running";
+              const completed = course.completed === true || course.status === "Completed";
+              const running = !completed && course.status === "Running";
               const time = course.classes?.[0]?.time || "9:00 PM – 10:10 PM";
               const enrolled = students.filter((s) => {
                 const cid = course.courseId.toLowerCase();
@@ -742,8 +743,12 @@ export default function AcademyHubPage() {
                           LIVE
                         </span>
                       )}
-                      <StatusPill tone={running ? "done" : "pending"}>
-                        {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
+                      <StatusPill tone={completed ? "neutral" : running ? "done" : "pending"}>
+                        {completed
+                          ? t("সম্পন্ন", "Completed")
+                          : running
+                            ? t("চলমান", "Running")
+                            : t("আসছে", "Coming soon")}
                       </StatusPill>
                     </div>
                   </div>

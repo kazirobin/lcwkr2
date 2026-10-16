@@ -912,10 +912,40 @@ export default function AdminCoursesPage() {
       course.courseId,
       { completed },
       completed
-        ? t("কোর্স সম্পন্ন হিসেবে চিহ্নিত — ভর্তি বন্ধ।", "Marked complete — enrollment closed.")
-        : t("কোর্স আবার চালু করা হয়েছে।", "Course reopened."),
+        ? t("ব্যাচ সম্পন্ন হিসেবে চিহ্নিত।", "Batch marked complete.")
+        : t("আবার চালু হয়েছে।", "Reopened."),
     );
     setCompleteBusy(null);
+  };
+
+  /** Delete a course for good — its admissions, groups and Meet links go too. */
+  const deleteCoursePermanently = async (course: Course) => {
+    const ok = await confirm({
+      title: t("কোর্স স্থায়ীভাবে মুছবেন?", "Delete this course permanently?"),
+      message: t(
+        "কোর্সটি এবং তার ভর্তি তালিকা, স্টাডি গ্রুপ ও মিট লিংক সব মুছে যাবে। এটি ফেরানো যাবে না।",
+        "The course and its enrollments, study groups and Meet links will be removed for good. This cannot be undone.",
+      ),
+      confirmLabel: t("স্থায়ীভাবে মুছুন", "Delete permanently"),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/academy/courses/${course.courseId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminPasscode: ADMIN_PASSCODE }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast(t("কোর্স স্থায়ীভাবে মুছে ফেলা হয়েছে।", "Course deleted permanently."), "success");
+        setCourses((prev) => prev.filter((c) => c.courseId !== course.courseId));
+      } else {
+        toast(data.error || data.message || t("মোছা যায়নি।", "Delete failed."), "error");
+      }
+    } catch {
+      toast(t("সমস্যা হয়েছে।", "Something went wrong."), "error");
+    }
   };
 
   /** Pin a course to the academy page banner, or unpin it. */
@@ -1521,6 +1551,14 @@ export default function AdminCoursesPage() {
                     onClick={() => openGroups(c)}
                   >
                     {t("স্টাডি গ্রুপ", "Study groups")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    iconLeft={<Trash2 className="h-4 w-4" />}
+                    onClick={() => void deleteCoursePermanently(c)}
+                  >
+                    {t("কোর্স মুছুন", "Delete course")}
                   </Button>
                 </div>
 

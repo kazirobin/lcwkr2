@@ -19,7 +19,8 @@ export default function CourseCard({
   const done = course.completedClassesCount ?? course.classes?.length ?? 0;
   const planned = course.totalClassesPlanned || 24;
   const enrolled = course.enrolledStudentRolls?.length ?? 0;
-  const running = course.status === "Running";
+  const completed = course.completed === true || course.status === "Completed";
+  const running = !completed && course.status === "Running";
 
   const regOpen =
     course.registrationOpen === true &&
@@ -54,8 +55,12 @@ export default function CourseCard({
                 {t("ভর্তি চলছে", "Admitting")}
               </span>
             )}
-            <StatusPill tone={running ? "done" : "pending"}>
-              {running ? t("চলমান", "Running") : t("আসছে", "Coming soon")}
+            <StatusPill tone={completed ? "neutral" : running ? "done" : "pending"}>
+              {completed
+                ? t("সম্পন্ন", "Completed")
+                : running
+                  ? t("চলমান", "Running")
+                  : t("আসছে", "Coming soon")}
             </StatusPill>
           </div>
         </div>
