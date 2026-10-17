@@ -37,9 +37,15 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function StrokeOrderButton({
   hanzi,
+  pinyin,
+  meaning,
   className = "size-7",
 }: {
   hanzi: string;
+  /** Shown under the character in the writer so the word can be read aloud. */
+  pinyin?: string;
+  /** Bangla gloss for the character, shown beside the pinyin. */
+  meaning?: string;
   className?: string;
 }) {
   const { language } = useLanguage();
@@ -316,6 +322,21 @@ setAnimStroke(0);
               <p lang="zh" className="font-chinese text-4xl font-bold text-text">
                 {hanzi}
               </p>
+              {(pinyin || meaning) && (
+                <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
+                  {pinyin && (
+                    <span
+                      data-pinyin
+                      className="font-mono text-sm font-medium text-secondary"
+                    >
+                      {pinyin}
+                    </span>
+                  )}
+                  {meaning && (
+                    <span className="text-sm text-text/75">{meaning}</span>
+                  )}
+                </p>
+              )}
               {isMulti && (
                 <p className="mt-1 text-xs font-mono tabular-nums text-text/55">
                   {t("ক্যারেক্টার", "Character")} {safeIdx + 1} / {chars.length} ·{" "}

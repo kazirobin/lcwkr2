@@ -19,7 +19,7 @@ export default function PinyinToggle() {
           : "border-primary/50 bg-primary/10 text-primary"
       }`}
     >
-      <span lang="zh" aria-hidden="true" className="font-chinese text-[13px] leading-none">
+      <span lang="zh" aria-hidden="true" className="font-chinese text-base leading-none">
         拼
       </span>
       <span

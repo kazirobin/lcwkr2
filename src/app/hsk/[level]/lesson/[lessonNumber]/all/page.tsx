@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import {
+  getLessonNav,
   getLessonParams,
   getText,
   getTextsForLesson,
@@ -51,6 +52,8 @@ export default async function AllTextsPage({ params }: Props) {
     .filter((r): r is VocabularyData => r != null);
   if (records.length === 0) notFound();
 
+  const nav = canonical ? getLessonNav(lvl, lsn) : null;
+
   // the whole lesson's words, deduplicated by hanzi, first occurrence wins
   const seen = new Set<string>();
   const words: VocabularyItem[] = [];
@@ -64,7 +67,13 @@ export default async function AllTextsPage({ params }: Props) {
 
   return (
     <ProLevelGate level={lvl}>
-      <FullLessonReader level={lvl} lesson={lsn} records={records} words={words} />
+      <FullLessonReader
+        level={lvl}
+        lesson={lsn}
+        records={records}
+        words={words}
+        nav={nav}
+      />
     </ProLevelGate>
   );
 }

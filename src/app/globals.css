@@ -8,9 +8,14 @@
   font-family: var(--font-noto-sans-bengali), var(--font-noto-sans-sc), sans-serif;
 }
 
-/* Chinese font class - the same Noto Sans SC face, kept for explicit use. */
-.font-chinese {
+/* Chinese font class - the same Noto Sans SC face, kept for explicit use.
+   Hanzi is always regular weight: legibility comes from size, never from a
+   heavier face, so `font-bold`/`font-medium` on a hanzi element is neutralised
+   here (an unlayered rule beats Tailwind's layered utilities). */
+.font-chinese,
+[lang="zh"] {
   font-family: var(--font-noto-sans-sc), sans-serif;
+  font-weight: 400;
 }
 
 /* Pinyin visibility: the Nav "拼" toggle adds .hide-pinyin on <html>; every

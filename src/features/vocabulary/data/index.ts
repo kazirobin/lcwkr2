@@ -18,6 +18,7 @@ import type {
   LessonSummary,
   TextSummary,
   TextNav,
+  LessonNav,
 } from "@/features/vocabulary/types";
 
 import { hsk1DataMap } from "./hsk1";
@@ -167,6 +168,21 @@ export function getText(
 /** Ordered text numbers for a lesson (used by the in-lesson jump strip). */
 export function getTextsForLesson(level: number, lesson: number): number[] {
   return textsByLesson.get(`${level}-${lesson}`) ?? [];
+}
+
+/** Where a lesson sits in its level and which lessons neighbour it. */
+export function getLessonNav(level: number, lesson: number): LessonNav | null {
+  const lessons = lessonsByLevel.get(level);
+  if (!lessons) return null;
+  const i = lessons.indexOf(lesson);
+  if (i === -1) return null;
+
+  return {
+    indexInLevel: i + 1,
+    totalLessons: lessons.length,
+    prev: i > 0 ? lessons[i - 1] : null,
+    next: i < lessons.length - 1 ? lessons[i + 1] : null,
+  };
 }
 
 /** Where a text sits in its level and where prev / next lead. */

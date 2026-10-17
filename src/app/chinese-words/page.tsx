@@ -300,6 +300,8 @@ export default function ChineseWordBuilderPage() {
                               />
                               <StrokeOrderButton
                                 hanzi={item.character}
+                                pinyin={item.pinyin}
+                                meaning={item.meaningBn}
                                 className="size-7"
                               />
                             </div>
@@ -363,7 +365,12 @@ export default function ChineseWordBuilderPage() {
                                         {rw.pinyin}
                                       </span>
                                       <SpeakerButton text={rw.word} className="size-6" />
-                                      <StrokeOrderButton hanzi={rw.word} className="size-6" />
+                                      <StrokeOrderButton
+                                      hanzi={rw.word}
+                                      pinyin={rw.pinyin}
+                                      meaning={rw.meaningBn}
+                                      className="size-6"
+                                    />
                                     </span>
                                   </div>
 
@@ -382,7 +389,7 @@ export default function ChineseWordBuilderPage() {
                                           key={eIdx}
                                           className="p-2.5 rounded-lg bg-text/[0.03] border border-text/5 text-xs space-y-0.5"
                                         >
-                                          <SelectableText className="text-sm font-chinese font-normal cursor-text">{ex.chinese}</SelectableText>
+                                          <SelectableText className="text-base font-chinese font-normal cursor-text">{ex.chinese}</SelectableText>
                                           <p className="text-[11px] font-mono text-secondary">{ex.pinyin}</p>
                                           <p className="text-text/80">
                                             {language === "bn" ? ex.meaningBn : ex.meaningEn}
@@ -530,7 +537,12 @@ export default function ChineseWordBuilderPage() {
                                 {w.hanzi}
                               </SelectableText>
                               <SpeakerButton text={w.hanzi} className="size-7" />
-                              <StrokeOrderButton hanzi={w.hanzi} className="size-7" />
+                              <StrokeOrderButton
+                                hanzi={w.hanzi}
+                                pinyin={w.pinyin}
+                                meaning={w.bn}
+                                className="size-7"
+                              />
                             </div>
                           </div>
                           <span

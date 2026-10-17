@@ -61,7 +61,7 @@ export default function DialogueSection({ questions, answers, onChange, disabled
               if (!blank) {
                 return (
                   <div key={i}>
-                    <p className="text-sm font-chinese text-text">
+                    <p className="text-base font-chinese text-text">
                       <span className="text-[10px] font-mono text-muted mr-2 align-middle">
                         {ln.s}
                       </span>
@@ -78,7 +78,7 @@ export default function DialogueSection({ questions, answers, onChange, disabled
 
               return (
                 <div key={i} className="py-1">
-                  <p className="text-sm font-chinese text-text mb-1">
+                  <p className="text-base font-chinese text-text mb-1">
                     <span className="text-[10px] font-mono text-muted mr-2 align-middle">{ln.s}</span>
                     {blank.hanzi}
                   </p>

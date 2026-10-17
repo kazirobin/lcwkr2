@@ -81,7 +81,7 @@ function StrokeCard({
       <p className="text-xs font-semibold text-text">{stroke.bn}</p>
       <p className="text-[10px] leading-4 text-text/50">
         {stroke.en}
-        <span className="mt-0.5 block font-chinese text-[11px] text-text/45">
+        <span className="mt-0.5 block font-chinese text-xs text-text/45">
           {stroke.examples}
         </span>
       </p>

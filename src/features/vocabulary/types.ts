@@ -116,3 +116,11 @@ export interface TextNav {
   prev: { lesson: number; text: number } | null;
   next: { lesson: number; text: number } | null;
 }
+
+/** Where a lesson sits in its level, and the neighbouring lessons. */
+export interface LessonNav {
+  indexInLevel: number; // 1-based
+  totalLessons: number;
+  prev: number | null; // previous lesson number in the level
+  next: number | null; // next lesson number in the level
+}

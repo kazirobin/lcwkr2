@@ -6,6 +6,7 @@ import type { VocabularyItem } from "@/features/vocabulary/types";
 import type { VocabularyCopy } from "@/features/vocabulary/i18n";
 import SpeakerButton from "@/components/ui/SpeakerButton";
 import StrokeOrderButton from "@/components/ui/StrokeOrderButton";
+import RubyText from "./RubyText";
 
 /**
  * One glossary entry in the reader. Everything a learner needs to read is
@@ -26,23 +27,24 @@ export default function VocabularyCard({
     item.characters.length > 0 || item.example != null || item.similar.length > 0;
 
   return (
-    <li className="grid gap-x-6 gap-y-2.5 border-b border-text/10 py-7 sm:grid-cols-[9.5rem_1fr]">
+    <li className="grid gap-x-6 gap-y-2.5 border-b border-text/10 py-7 sm:grid-cols-[auto_1fr]">
       {/* headword */}
       <div className="sm:pt-1">
         <div className="flex items-start gap-2">
-          <p lang="zh" className="font-chinese text-[2.2rem] font-normal leading-none text-text">
-            {item.hanzi}
-          </p>
+          <RubyText
+            hanzi={item.hanzi}
+            pinyin={item.pinyin}
+            wrap={false}
+            className="text-[2.2rem] font-normal text-text"
+          />
           <SpeakerButton text={item.hanzi} className="mt-0.5 size-8" />
-          <StrokeOrderButton hanzi={item.hanzi} className="mt-0.5 size-8" />
+          <StrokeOrderButton
+            hanzi={item.hanzi}
+            pinyin={item.pinyin}
+            meaning={item.bangla}
+            className="mt-0.5 size-8"
+          />
         </div>
-        <p
-          data-pinyin
-          lang="zh-Latn-pinyin"
-          className="mt-2 text-[15px] tracking-wide text-text/55"
-        >
-          {item.pinyin}
-        </p>
       </div>
 
       {/* meaning */}
@@ -86,10 +88,12 @@ export default function VocabularyCard({
                       key={i}
                       className="border border-text/12 bg-card/50 px-2.5 py-1.5 text-sm"
                     >
-                      <span lang="zh" className="font-chinese font-medium text-text">
-                        {ch.hanzi}
-                      </span>
-                      <span data-pinyin className="ml-1.5 text-text/55">{ch.pinyin}</span>
+                      <RubyText
+                        hanzi={ch.hanzi}
+                        pinyin={ch.pinyin}
+                        bordered={false}
+                        className="font-medium text-text"
+                      />
                       <span className="ml-1 text-text/45">· {ch.meaning}</span>
                       {ch.bangla && (
                         <span className="ml-1 text-text/70">· {ch.bangla}</span>
@@ -106,24 +110,16 @@ export default function VocabularyCard({
                     {copy.example}
                   </h4>
                   <div className="flex items-start justify-between gap-2">
-                    <p
-                      lang="zh"
-                      className="font-chinese mt-2 text-[1.2rem] leading-relaxed text-text"
-                    >
-                      {item.example.hanzi}
-                    </p>
+                    <RubyText
+                      hanzi={item.example.hanzi}
+                      pinyin={item.example.pinyin}
+                      className="mt-2 text-[1.2rem] leading-relaxed text-text"
+                    />
                     <SpeakerButton
                       text={item.example.hanzi}
                       className="mt-2 size-7 shrink-0"
                     />
                   </div>
-                  <p
-                    data-pinyin
-                    lang="zh-Latn-pinyin"
-                    className="mt-0.5 text-sm text-text/55"
-                  >
-                    {item.example.pinyin}
-                  </p>
                   <p className="mt-1.5 text-sm leading-6 text-text/70">
                     {item.example.english}
                   </p>
@@ -143,10 +139,12 @@ export default function VocabularyCard({
                   <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
                     {item.similar.map((s, i) => (
                     <li key={i} className="text-sm">
-                      <span lang="zh" className="font-chinese text-text">
-                        {s.hanzi}
-                      </span>
-                      <span data-pinyin className="ml-1.5 text-text/55">{s.pinyin}</span>
+                      <RubyText
+                        hanzi={s.hanzi}
+                        pinyin={s.pinyin}
+                        bordered={false}
+                        className="text-text"
+                      />
                       <span className="ml-1 text-text/45">· {s.english}</span>
                       {s.bangla && (
                         <span className="ml-1 text-text/70">· {s.bangla}</span>

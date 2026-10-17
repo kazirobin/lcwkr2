@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import type { Dialogue as DialogueType } from "@/features/vocabulary/types";
 import SpeakerButton from "@/components/ui/SpeakerButton";
+import RubyText from "./RubyText";
 
 /**
  * The short dialogue that opens some texts, shown as the conversation it is:
@@ -78,10 +79,12 @@ export default function Dialogue({
           if (NARRATOR.has(line.speaker)) {
             return (
               <li key={i} className="px-4 py-2 text-center">
-                {/* Narrator Chinese text with font-chinese and larger size */}
-                <p lang="zh" className="font-chinese text-4xl leading-relaxed text-text/60">
-                  {line.hanzi}
-                </p>
+                {/* Narrator Chinese text — pinyin sits above each character */}
+                <RubyText
+                  hanzi={line.hanzi}
+                  pinyin={line.pinyin}
+                  className="text-4xl leading-relaxed text-text/60"
+                />
                 {(showEnglish || line.bangla) && (
                   <p className="mt-0.5 text-[12px] italic leading-5 text-text/45">
                     {showEnglish && line.english}
@@ -134,20 +137,15 @@ export default function Dialogue({
                     {line.speaker}
                   </span>
                 )}
-                {/* Dialogue Chinese text with per-line pronunciation button */}
+                {/* Dialogue Chinese text — pinyin above each character */}
                 <div className="flex items-start justify-between gap-2">
-                  <p lang="zh" className="font-chinese text-3xl leading-relaxed text-text">
-                    {line.hanzi}
-                  </p>
+                  <RubyText
+                    hanzi={line.hanzi}
+                    pinyin={line.pinyin}
+                    className="text-3xl leading-relaxed text-text"
+                  />
                   <SpeakerButton text={line.hanzi} className="mt-1.5 size-7" />
                 </div>
-                <p
-                  data-pinyin
-                  lang="zh-Latn-pinyin"
-                  className="mt-0.5 text-[13px] leading-5 text-text/55"
-                >
-                  {line.pinyin}
-                </p>
                 {(showEnglish || line.bangla) && (
                   <p className="mt-1 text-[13px] leading-relaxed text-text/70">
                     {showEnglish && line.english}

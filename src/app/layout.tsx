@@ -49,7 +49,7 @@ const lora = Lora({
 const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sans-sc",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400"],
   display: "swap",
 });
 
