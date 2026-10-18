@@ -37,6 +37,12 @@ import { loadAccountPhone } from "@/features/student-auth";
 import ProLevelGate from "@/features/vocabulary/components/ProLevelGate";
 import { LessonPdfButton } from "@/features/vocabulary/components/LessonPdfViewer";
 import { workbookPdfUrl } from "@/features/vocabulary/pdf";
+import {
+  queueHWSubmission,
+  pendingCount,
+  getPendingSubmissions,
+  syncPendingSubmissions,
+} from "@/lib/offline-hw-queue";
 
 interface MistakeItem {
   section: string;
@@ -80,6 +86,8 @@ export default function HomeworkDynamicPage() {
   const [history, setHistory] = useState<ReturnType<typeof summarizeResults>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [pendingSync, setPendingSync] = useState(0);
+  const [syncing, setSyncing] = useState(false);
   // Everything that carries marks. Speaking is practice (0 marks), so it is
   // deliberately not required to submit.
   const requiredAnswerIds = useMemo(() => {
@@ -121,6 +129,37 @@ export default function HomeworkDynamicPage() {
   useEffect(() => {
     return () => clearAnswers(level, lessonNo);
   }, [level, lessonNo]);
+
+  // Load pending sync count on mount and when coming online
+  useEffect(() => {
+    let mounted = true;
+    const loadPending = async () => {
+      const count = await pendingCount();
+      if (mounted) setPendingSync(count);
+    };
+    loadPending();
+    const onOnline = () => loadPending();
+    window.addEventListener("online", onOnline);
+    return () => {
+      mounted = false;
+      window.removeEventListener("online", onOnline);
+    };
+  }, []);
+
+  // Manual sync function
+  const handleSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await syncPendingSubmissions();
+      const count = await pendingCount();
+      setPendingSync(count);
+    } catch (e) {
+      console.error("sync failed", e);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // redirect invalid lesson numbers to the first available lesson
   useEffect(() => {
@@ -265,19 +304,25 @@ export default function HomeworkDynamicPage() {
     // Sync to the student's account when logged in (silent, offline-safe).
     const accountPhone = loadAccountPhone();
     if (accountPhone) {
-      fetch("/api/hw/exam-results", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: accountPhone,
-          level,
-          lesson: lessonNo,
-          totalScore: round2(totalScore),
-          totalMarks: exam.totalMarks,
-        }),
-      }).catch(() => {
-        /* offline — local copy is the source of truth */
-      });
+      const payload = {
+        phone: accountPhone,
+        level,
+        lesson: lessonNo,
+        totalScore: round2(totalScore),
+        totalMarks: exam.totalMarks,
+      };
+      if (navigator.onLine) {
+        fetch("/api/hw/exam-results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).catch(() => {
+          /* offline — queue for later sync */
+          queueHWSubmission("/api/hw/exam-results", payload);
+        });
+      } else {
+        queueHWSubmission("/api/hw/exam-results", payload);
+      }
     }
     setMistakes(
       items
@@ -398,6 +443,19 @@ export default function HomeworkDynamicPage() {
             kind="workbook"
             variant="pill"
           />
+          {/* Offline sync indicator */}
+          {pendingSync > 0 && (
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-1.5 rounded-xl bg-warn/10 border border-warn/30 px-3 py-1.5 text-xs font-semibold text-warn transition hover:bg-warn/20 disabled:opacity-50"
+              title={t("অফলাইন জমা দেওয়া বাকি আছে — সিঙ্ক করুন", "Pending offline submissions — tap to sync")}
+            >
+              <span className={syncing ? "animate-spin" : ""}>🔄</span>
+              <span>{t("সিঙ্ক বাকি", "Pending sync")}: {pendingSync}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setShowHistory((v) => !v)}

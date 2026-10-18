@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
+import { queueHWSubmission } from "@/lib/offline-hw-queue";
 import SpeakerButton from "@/components/ui/SpeakerButton";
 import { speakChinese, stopSpeaking } from "@/lib/chinese-speech";
 import type { HwDialogueLine } from "../data/hsk1/lesson1-dialogue";
@@ -202,11 +203,29 @@ export default function DialoguePlayer({ level, lesson, builtin, collapsible }: 
           lesson,
           audioUrl: upJson.secure_url,
           durationSec: Math.round(upJson.duration ?? secs),
-          // Cloudinary reports the stored size; the local blob is the fallback
-          // so the student's storage total counts audio even if it doesn't.
           bytes: Math.max(0, Math.round(Number(upJson.bytes ?? blob.size ?? 0))),
         }),
       });
+      if (!navigator.onLine) {
+        // offline: queue for later sync
+        await queueHWSubmission("/api/hw/dialogues", {
+          name: account.nameEnglish,
+          phone: accountPhone,
+          level,
+          lesson,
+          audioUrl: upJson.secure_url,
+          durationSec: Math.round(upJson.duration ?? secs),
+          bytes: Math.max(0, Math.round(Number(upJson.bytes ?? blob.size ?? 0))),
+        });
+        setSentOk(true);
+        if (reviewUrlRef.current) URL.revokeObjectURL(reviewUrlRef.current);
+        reviewUrlRef.current = null;
+        pendingBlobRef.current = null;
+        setReviewUrl(null);
+        setSubsOpen(true);
+        void loadMine(accountPhone);
+        return;
+      }
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(

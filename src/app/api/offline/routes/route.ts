@@ -42,11 +42,14 @@ function hskRoutes(): string[] {
   const lessons = getLessonParams().map(
     ({ level, lessonNumber }) => `/hsk/${level}/lesson/${lessonNumber}`,
   );
+  const allPages = getLessonParams().map(
+    ({ level, lessonNumber }) => `/hsk/${level}/lesson/${lessonNumber}/all`,
+  );
   const texts = getTextParams().map(
     ({ level, lessonNumber, textNumber }) =>
       `/hsk/${level}/lesson/${lessonNumber}/text/${textNumber}`,
   );
-  return [...levels, ...lessons, ...texts];
+  return [...levels, ...lessons, ...allPages, ...texts];
 }
 
 function hwRoutes(): string[] {

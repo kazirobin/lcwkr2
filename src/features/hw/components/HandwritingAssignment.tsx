@@ -6,6 +6,7 @@ import { ChevronDown, Eye, EyeOff, Link2 as LinkIcon } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import { formatBytes } from "@/lib/format";
+import { queueHWSubmission } from "@/lib/offline-hw-queue";
 import SectionShell from "./SectionShell";
 
 interface Props {
@@ -289,6 +290,18 @@ export default function HandwritingAssignment({ level, lesson, items, collapsibl
           }),
         },
       );
+      if (!navigator.onLine) {
+        // offline: queue for later sync
+        await queueHWSubmission(
+          existing ? `/api/hw/handwriting/${existing._id}/photos` : "/api/hw/handwriting",
+          { phone: accountPhone, name: account.nameEnglish, level, lesson, images },
+        );
+        setSentOk(true);
+        clearQueue();
+        setSubsOpen(true);
+        void loadMine(accountPhone);
+        return;
+      }
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error ?? t("পাঠানো যায়নি।", "Could not submit."));
