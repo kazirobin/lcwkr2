@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, Mic, Layers, Users, Smartphone, Zap, Shield, Download, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/i18n';
 import { FacebookIcon } from '@/components/icons/FacebookIcon';
 
@@ -52,6 +52,27 @@ function useReveal<T extends HTMLElement>() {
 
     return ref;
 }
+
+function FeatureIcon({ icon: Icon, color = 'text-text/40' }: { icon: React.ComponentType<{ className?: string }>; color?: string }) {
+    return (
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-text/15 bg-background/50" aria-hidden="true">
+            <Icon className={`size-5 ${color}`} />
+        </span>
+    );
+}
+
+const featureIcons = {
+    '音': Mic,
+    '级': Layers,
+    '课': BookOpen,
+    '群': Users,
+    '免': Shield,
+    '汉': Zap,
+    '卷': CheckCircle,
+    '词': BookOpen,
+    '离': Download,
+    '校': Users,
+} as Record<string, React.ComponentType<{ className?: string }>>;
 
 function Eyebrow({
     seal,
@@ -347,39 +368,36 @@ export default function IntroContent() {
                         </p>
                     </div>
 
-                    <ul
+                    <div
                         data-reveal
                         style={{ '--r': 3 } as React.CSSProperties}
-                        className="mt-10 max-w-3xl border-t border-text/10"
+                        className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
                     >
-                        {c.answer.items.map((item) => (
-                            <li
-                                key={item.title}
-                                className="flex gap-5 border-b border-text/10 py-6"
-                            >
-                                <span
-                                    lang="zh"
-                                    aria-hidden="true"
-                                    className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-text/15 text-sm font-semibold text-text/70"
+                        {c.answer.items.map((item) => {
+                            const Icon = featureIcons[item.seal] || BookOpen;
+                            return (
+                                <article
+                                    key={item.title}
+                                    className="group relative flex flex-col gap-3 border border-text/10 bg-background/50 rounded-xl p-5 transition-all duration-300 hover:border-text/20 hover:bg-background hover:shadow-lg"
                                 >
-                                    {item.seal}
-                                </span>
-                                <div>
-                                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                        <h3 className="text-[15px] font-semibold text-text">
-                                            {item.title}
-                                        </h3>
-                                        <span className="text-[11px] font-medium uppercase tracking-wide text-text/45">
-                                            {c.answer.solvesLabel} {item.solves}
-                                        </span>
+                                    <div className="flex items-start gap-3">
+                                        <FeatureIcon icon={Icon} />
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-[15px] font-semibold text-text group-hover:text-primary transition-colors">
+                                                {item.title}
+                                            </h3>
+                                            <span className="mt-0.5 inline-block text-[11px] font-medium uppercase tracking-wide text-text/45">
+                                                {c.answer.solvesLabel} {item.solves}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <p className="mt-1.5 max-w-xl text-sm leading-6 text-text/65">
+                                    <p className="text-sm leading-6 text-text/65">
                                         {item.body}
                                     </p>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+                                </article>
+                            );
+                        })}
+                    </div>
 
                     <p
                         data-reveal
