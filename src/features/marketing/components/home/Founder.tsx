@@ -32,7 +32,7 @@ const FOUNDER = {
     { bn: "সপ্তাহে ৫ দিন লাইভ ক্লাস", en: "Live class 5 days a week" },
     { bn: "শূন্য থেকে HSK ৬ রোডম্যাপ", en: "Zero-to-HSK-6 roadmap" },
     { bn: "বাংলায় বুঝিয়ে পড়ানো", en: "Taught in Bangla" },
-    { bn: "সম্পূর্ণ বিনামূল্যে", en: "Completely free" },
+    { bn: "প্রবেশ ফি নেই", en: "No entry fee" },
   ],
 
   // TODO: confirm this wording with Kazi Robin before publishing.

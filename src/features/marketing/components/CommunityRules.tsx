@@ -237,8 +237,8 @@ export default function CommunityRules() {
 
           <p className="mt-3 text-[15px] leading-7 text-text/70">
             {t(
-              "সম্পূর্ণ বিনামূল্যে চীনা শেখার একটি সুশৃঙ্খল জায়গা। নিচের নিয়মগুলো মেনে চললে সবার জন্যই ক্লাসটা কাজে লাগে।",
-              "A structured, completely free place to learn Chinese. Following the guidelines below is what keeps the class working for everyone.",
+              "প্রবেশ ফি নেই — চীনা শেখার একটি সুশৃঙ্খল জায়গা। নিচের নিয়মগুলো মেনে চললে সবার জন্যই ক্লাসটা কাজে লাগে।",
+              "A structured place to learn Chinese with no entry fee. Following the guidelines below is what keeps the class working for everyone.",
             )}
           </p>
         </div>

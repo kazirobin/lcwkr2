@@ -159,7 +159,7 @@ export function Hero({ photoSrc }: Props) {
                 ·
               </span>
               <span className="text-xs tracking-wide text-text/55">
-                {t("বিনামূল্যে কোর্স", "Free course")}
+                {t("প্রবেশ ফি নেই", "No entry fee")}
               </span>
             </div>
 
@@ -171,7 +171,7 @@ export function Hero({ photoSrc }: Props) {
                 {t("চাইনিজ শেখা শুরু,", "Start learning Chinese,")}
               </span>
               <span className="mt-1 inline-flex items-center gap-3 text-secondary">
-                {t("একদম বিনামূল্যে", "completely free")}
+                {t("প্রবেশ ফি নেই", "no entry fee")}
                 <span
                   aria-hidden="true"
                   className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-secondary"

@@ -69,8 +69,8 @@ export const rulesData: Rule[] = [
     severity: "informative",
     isHighlighted: true,
     title: {
-      bn: "সম্পূর্ণ বিনামূল্যে চাইনিজ ভাষা শিক্ষা",
-      en: "100% Free Chinese Language Education"
+      bn: "প্রবেশ ফি ছাড়া চাইনিজ ভাষা শিক্ষা",
+      en: "Chinese Language Education — No Entry Fee"
     },
     description: {
       bn: "সবার জন্য চীনা ভাষা শেখার পথ সহজ, উন্মুক্ত ও কার্যকর করতে আমাদের কমিউনিটিতে স্বাগতম।",

@@ -87,8 +87,8 @@ const TESTIMONIALS: {
     location: { bn: "খুলনা", en: "Khulna" },
     level: "Level 3",
     quote: {
-      bn: "বাংলাদেশে বিনামূল্যে এভাবে গুছিয়ে চাইনিজ শেখানোর জায়গা আর পাইনি।",
-      en: "I couldn't find anywhere else in Bangladesh teaching Chinese this structured, for free.",
+      bn: "বাংলাদেশে প্রবেশ ফি ছাড়া এভাবে গুছিয়ে চাইনিজ শেখানোর জায়গা আর পাইনি।",
+      en: "I couldn't find anywhere else in Bangladesh teaching Chinese this structured, with no entry fee.",
     },
   },
 ];
