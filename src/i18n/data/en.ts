@@ -5,7 +5,7 @@ const en = {
     home: "Home",
     pdf: "PDF",
     vocabulary: "Vocabulary",
-    apps: "Apps",
+    apps: "Resources",
     pinyin: "Pinyin",
     intro: "Intro",
     community: "Community",
@@ -345,6 +345,47 @@ const en = {
         label: "Join the WhatsApp community",
         href: "https://chat.whatsapp.com/EBP79wEaAfAEvMtMee6HTY",
       },
+    },
+  },
+
+  translate: {
+    hero: {
+      badge: "Translator",
+      title: "Bangla → Chinese Translator",
+      subtitle: "Type in Bangla, get hanzi, pinyin & meanings",
+      description:
+        "Search any Bangla word or phrase and instantly see Chinese characters, pinyin pronunciation, and both Bangla & English meanings. Browse 11 topic categories with 200+ words and sentences.",
+      cta: { label: "Start Translating", href: "/translate" },
+    },
+    features: {
+      search: {
+        title: "Instant Search",
+        description: "Type Bangla, get Chinese instantly with pinyin and audio.",
+      },
+      topics: {
+        title: "11 Topic Categories",
+        description: "Common phrases, greetings, family, food, travel, shopping, time, weather, study, work, numbers.",
+      },
+      audio: {
+        title: "Native Audio",
+        description: "Tap any word or sentence to hear native pronunciation.",
+      },
+      offline: {
+        title: "Works Offline",
+        description: "All data bundled — works without internet after first load.",
+      },
+    },
+    ui: {
+      searchPlaceholder: "Type Bangla: food, thank you, how much, now...",
+      resultsFor: "Results for",
+      words: "Words",
+      sentences: "Sentences",
+      recent: "Recent:",
+      noResults: "No results found.",
+      tryAgain: "No match — try another word or browse topics below.",
+      topicVocabulary: "Vocabulary by Topic",
+      topicsCount: "topics",
+      tip: "Tip: Type a Bangla word and press Enter — get hanzi, pinyin, and Bangla/English meanings together.",
     },
   },
 };

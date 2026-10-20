@@ -59,6 +59,11 @@ apps: {
     bn: "রিসোর্স",
     items: [
       {
+        href: "/translate",
+        en: "Bangla → Chinese Translator",
+        bn: "বাংলা → চাইনিজ অনুবাদক",
+      },
+      {
         href: "/chinese-words",
         en: "Chinese Core Words",
         bn: "চাইনিজ কোর ওয়ার্ডস",
@@ -68,7 +73,7 @@ apps: {
         href: "/hw/hsk1/1",
         en: "HSK Homework",
         bn: "হোমওয়ার্ক ও প্র্যাকটিস",
-        isProtected: true, // চাইলে ফলস করে দিতে পারেন
+        isProtected: true,
       },
       {
         href: "/hanzi-pro",
@@ -79,7 +84,7 @@ apps: {
       { href: "/apps", en: "Suggested Apps", bn: "প্রস্তাবিত অ্যাপস" },
       { href: "/pdf", en: "PDF", bn: "পিডিএফ" },
     ],
-    activePrefixes: ["/apps", "/pdf", "/chinese-words", "/hw"],
+    activePrefixes: ["/apps", "/pdf", "/chinese-words", "/hw", "/translate"],
   },
 } as const;
 

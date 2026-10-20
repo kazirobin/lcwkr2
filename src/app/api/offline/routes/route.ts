@@ -16,6 +16,7 @@ const PAGES = [
   "/hsk",
   "/hanzi-pro",
   "/chinese-words",
+  "/translate",
   "/todos",
   "/msg",
   "/donate",
