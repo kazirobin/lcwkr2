@@ -9,6 +9,7 @@ import { useAccount } from "@/features/student-auth";
 import { summarizeDialogueMarks } from "@/features/hw/dialogue-store";
 import { EXAM_LEVELS, getExamLessonNumbers } from "@/features/hw/data/exam";
 import { Button, Card, Field } from "@/components/ui";
+import { TimeSpentNotification } from "@/components/ui/TimeSpentNotification";
 
 interface ExamRow {
   level: number;
@@ -428,6 +429,7 @@ export default function AccountPage() {
           </Link>
         </p>
       </Card>
+      <TimeSpentNotification />
     </div>
   );
 }

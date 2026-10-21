@@ -1,6 +1,7 @@
 import type { PipelineStage } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { StudentSession } from "../models";
+import { StudentSession, DailyActivity } from "../models";
+import type { IDailyActivityDoc } from "../models";
 
 /**
  * Login / logout bookkeeping for the per-student summary the admin asked for:
@@ -53,6 +54,8 @@ export async function startSession(input: StartSessionInput): Promise<void> {
       ],
       { updatePipeline: true },
     );
+    // Check if this is the student's first ever login
+    const existingCount = await StudentSession.countDocuments({ whatsapp: input.whatsapp });
     await StudentSession.create({
       whatsapp: input.whatsapp,
       rollNumber: input.rollNumber ?? null,
@@ -60,6 +63,7 @@ export async function startSession(input: StartSessionInput): Promise<void> {
       userAgent: (input.userAgent ?? "").slice(0, 200),
       loginAt: now,
       active: true,
+      firstLoginAt: existingCount === 0 ? now : null,
     });
   } catch (error) {
     // Analytics must never block a sign-in — but silence here hid a broken
@@ -323,6 +327,8 @@ export type StudentSignInDetail = {
   lastLogoutAt: Date | null;
   /** When the still-open session began, so its time can be counted live. */
   activeLoginAt: Date | null;
+  /** First ever login time for this student (across all sessions). */
+  firstLoginAt: Date | null;
   online: boolean;
   recent: SignInRow[];
   topPages: TopPage[];
@@ -346,6 +352,7 @@ export async function signInDetailFor(
     totalSeconds: number;
     lastLoginAt: Date | null;
     lastLogoutAt: Date | null;
+    firstLoginAt: Date | null;
     activeLoginAt: Date | null;
     active: boolean;
   }>([
@@ -357,6 +364,7 @@ export async function signInDetailFor(
         totalSeconds: { $sum: { $ifNull: ["$durationSec", 0] } },
         lastLoginAt: { $max: "$loginAt" },
         lastLogoutAt: { $max: "$logoutAt" },
+        firstLoginAt: { $min: "$firstLoginAt" },
         activeLoginAt: { $max: { $cond: [{ $ifNull: ["$active", false] }, "$loginAt", null] } },
         active: { $max: { $cond: [{ $ifNull: ["$active", false] }, true, false] } },
       },
@@ -381,6 +389,7 @@ export async function signInDetailFor(
     totalSeconds: summary.totalSeconds ?? 0,
     lastLoginAt: summary.lastLoginAt ?? null,
     lastLogoutAt: summary.lastLogoutAt ?? null,
+    firstLoginAt: summary.firstLoginAt ?? null,
     activeLoginAt: summary.activeLoginAt ?? null,
     online: summary.active === true,
     recent: recent.map((r) => ({
@@ -391,4 +400,267 @@ export async function signInDetailFor(
     })),
     topPages: top[0]?.pages ?? [],
   };
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Daily Activity & Gamification
+   ═══════════════════════════════════════════════════════════════════ */
+
+/** Daily goal in seconds (15 minutes default) */
+export const DAILY_GOAL_SECONDS = 15 * 60;
+
+/** Map a path to its activity category */
+function categorizePath(path: string): keyof IDailyActivityDoc["breakdown"] {
+  if (path.startsWith("/hsk/") || path.startsWith("/hw/")) return "lessons";
+  if (path.startsWith("/pinyin") || path.startsWith("/hanzi-pro")) return "practice";
+  if (path.startsWith("/exam") || path.includes("/exam-results")) return "exams";
+  if (path.startsWith("/translate")) return "translate";
+  if (path.startsWith("/chinese-words")) return "vocabulary";
+  return "other";
+}
+
+/** Get UTC midnight for a given date */
+function startOfDay(d: Date = new Date()): Date {
+  const date = new Date(d);
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+}
+
+/** Add seconds to today's daily activity for a student */
+export async function addDailyActivity(
+  whatsapp: string,
+  seconds: number,
+  path: string,
+): Promise<void> {
+  if (!whatsapp || seconds <= 0) return;
+  try {
+    await connectDB();
+    const today = startOfDay();
+    const category = categorizePath(path);
+
+    await DailyActivity.findOneAndUpdate(
+      { whatsapp, date: today },
+      {
+        $inc: {
+          totalSeconds: seconds,
+          [`breakdown.${category}`]: seconds,
+        },
+        $setOnInsert: { whatsapp, date: today, streak: 0 },
+      },
+      { upsert: true, new: true },
+    );
+  } catch {
+    /* best effort */
+  }
+}
+
+/** Check and update daily goal status */
+export async function checkDailyGoal(whatsapp: string): Promise<void> {
+  if (!whatsapp) return;
+  try {
+    await connectDB();
+    const today = startOfDay();
+    const doc = await DailyActivity.findOne({ whatsapp, date: today }).lean();
+    if (doc && !doc.goalMet && doc.totalSeconds >= DAILY_GOAL_SECONDS) {
+      await DailyActivity.updateOne(
+        { whatsapp, date: today },
+        { $set: { goalMet: true } },
+      );
+    }
+  } catch {
+    /* best effort */
+  }
+}
+
+/** Calculate current streak for a student */
+export async function calculateStreak(whatsapp: string): Promise<number> {
+  if (!whatsapp) return 0;
+  try {
+    await connectDB();
+    const today = startOfDay();
+    const days = await DailyActivity.find({ whatsapp, date: { $lte: today } })
+      .sort({ date: -1 })
+      .select("date goalMet")
+      .lean();
+
+    let streak = 0;
+    let checkDate = new Date(today);
+
+    for (const day of days) {
+      const dayDate = startOfDay(day.date);
+      const diffDays = Math.round((checkDate.getTime() - dayDate.getTime()) / 86400000);
+
+      if (diffDays === 0 || diffDays === 1) {
+        // Today or yesterday - check if goal was met
+        if (day.goalMet || dayDate.getTime() === today.getTime()) {
+          streak++;
+          checkDate = new Date(dayDate.getTime() - 86400000);
+        } else {
+          break;
+        }
+      } else if (diffDays > 1) {
+        // Gap in streak
+        break;
+      }
+    }
+
+    // Update today's streak count
+    if (streak > 0) {
+      await DailyActivity.updateOne(
+        { whatsapp, date: today },
+        { $set: { streak } },
+      ).catch(() => {});
+    }
+
+    return streak;
+  } catch {
+    return 0;
+  }
+}
+
+/** Get streak history for calendar display (last 365 days) */
+export async function getStreakHistory(whatsapp: string, days = 365): Promise<Array<{ date: Date; goalMet: boolean; totalSeconds: number }>> {
+  if (!whatsapp) return [];
+  try {
+    await connectDB();
+    const today = startOfDay();
+    const cutoff = new Date(today.getTime() - days * 86400000);
+
+    const history = await DailyActivity.find({
+      whatsapp,
+      date: { $gte: cutoff, $lte: today },
+    })
+      .select("date goalMet totalSeconds")
+      .sort({ date: 1 })
+      .lean();
+
+    return history.map((d) => ({
+      date: d.date,
+      goalMet: d.goalMet,
+      totalSeconds: d.totalSeconds,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Get weekly stats for progress ring */
+export async function getWeeklyStats(whatsapp: string): Promise<{
+  thisWeek: number;
+  lastWeek: number;
+  dailyAvg: number;
+  goalDays: number;
+}> {
+  if (!whatsapp) return { thisWeek: 0, lastWeek: 0, dailyAvg: 0, goalDays: 0 };
+  try {
+    await connectDB();
+    const today = startOfDay();
+    const thisWeekStart = new Date(today.getTime() - today.getUTCDay() * 86400000);
+    const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * 86400000);
+    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
+
+    const [thisWeekDocs, lastWeekDocs, allDocs] = await Promise.all([
+      DailyActivity.find({ whatsapp, date: { $gte: thisWeekStart, $lte: today } })
+        .select("totalSeconds goalMet")
+        .lean(),
+      DailyActivity.find({ whatsapp, date: { $gte: lastWeekStart, $lte: lastWeekEnd } })
+        .select("totalSeconds goalMet")
+        .lean(),
+      DailyActivity.find({ whatsapp, date: { $lte: today } })
+        .select("totalSeconds goalMet")
+        .lean(),
+    ]);
+
+    const thisWeek = thisWeekDocs.reduce((sum, d) => sum + d.totalSeconds, 0);
+    const lastWeek = lastWeekDocs.reduce((sum, d) => sum + d.totalSeconds, 0);
+    const goalDays = allDocs.filter((d) => d.goalMet).length;
+    const dailyAvg = allDocs.length > 0
+      ? allDocs.reduce((sum, d) => sum + d.totalSeconds, 0) / allDocs.length
+      : 0;
+
+    return { thisWeek, lastWeek, dailyAvg, goalDays };
+  } catch {
+    return { thisWeek: 0, lastWeek: 0, dailyAvg: 0, goalDays: 0 };
+  }
+}
+
+/** Milestone definitions */
+export const MILESTONES = [
+  { id: "first-day", seconds: 0, label: { bn: "প্রথম দিন", en: "First Day" }, icon: "🎉", type: "time" as const },
+  { id: "1-hour", seconds: 3600, label: { bn: "১ ঘন্টা", en: "1 Hour" }, icon: "⭐", type: "time" as const },
+  { id: "5-hours", seconds: 5 * 3600, label: { bn: "৫ ঘন্টা", en: "5 Hours" }, icon: "🌟", type: "time" as const },
+  { id: "10-hours", seconds: 10 * 3600, label: { bn: "১০ ঘন্টা", en: "10 Hours" }, icon: "🏆", type: "time" as const },
+  { id: "25-hours", seconds: 25 * 3600, label: { bn: "২৫ ঘন্টা", en: "25 Hours" }, icon: "🥇", type: "time" as const },
+  { id: "50-hours", seconds: 50 * 3600, label: { bn: "৫০ ঘন্টা", en: "50 Hours" }, icon: "💎", type: "time" as const },
+  { id: "100-hours", seconds: 100 * 3600, label: { bn: "১০০ ঘন্টা", en: "100 Hours" }, icon: "🏅", type: "time" as const },
+  { id: "streak-3", seconds: 0, label: { bn: "৩ দিন স্ট্রিক", en: "3-Day Streak" }, icon: "🔥", type: "streak" as const },
+  { id: "streak-7", seconds: 0, label: { bn: "৭ দিন স্ট্রিক", en: "7-Day Streak" }, icon: "🔥🔥", type: "streak" as const },
+  { id: "streak-30", seconds: 0, label: { bn: "৩০ দিন স্ট্রিক", en: "30-Day Streak" }, icon: "🏆🔥", type: "streak" as const },
+] as const;
+
+export type Milestone = (typeof MILESTONES)[number];
+
+/** Check and return newly earned milestones */
+export async function checkMilestones(whatsapp: string): Promise<Milestone[]> {
+  if (!whatsapp) return [];
+  try {
+    await connectDB();
+    const totalDoc = await StudentSession.aggregate<{ total: number }>([
+      { $match: { whatsapp } },
+      { $group: { _id: "$whatsapp", total: { $sum: { $ifNull: ["$durationSec", 0] } } } },
+    ]);
+    const totalSeconds = totalDoc[0]?.total ?? 0;
+    const streak = await calculateStreak(whatsapp);
+
+    // Get already earned milestones from a simple key in localStorage equivalent
+    // For now, we'll compute based on current totals
+    const earned: Milestone[] = [];
+
+    for (const m of MILESTONES) {
+      let achieved = false;
+      if (m.type === "streak") {
+        const streakNum = parseInt(m.id.replace("streak-", ""));
+        achieved = streak >= streakNum;
+      } else if (m.id === "first-day") {
+        achieved = totalSeconds > 0;
+      } else {
+        achieved = totalSeconds >= m.seconds;
+      }
+      if (achieved) earned.push(m);
+    }
+
+    return earned;
+  } catch {
+    return [];
+  }
+}
+
+/** Get next milestone to work towards */
+export async function getNextMilestone(whatsapp: string): Promise<Milestone | null> {
+  if (!whatsapp) return null;
+  try {
+    await connectDB();
+    const totalDoc = await StudentSession.aggregate<{ total: number }>([
+      { $match: { whatsapp } },
+      { $group: { _id: "$whatsapp", total: { $sum: { $ifNull: ["$durationSec", 0] } } } },
+    ]);
+    const totalSeconds = totalDoc[0]?.total ?? 0;
+    const streak = await calculateStreak(whatsapp);
+
+    for (const m of MILESTONES) {
+      let achieved = false;
+      if (m.type === "streak") {
+        const streakNum = parseInt(m.id.replace("streak-", ""));
+        achieved = streak >= streakNum;
+      } else if (m.id === "first-day") {
+        achieved = totalSeconds > 0;
+      } else {
+        achieved = totalSeconds >= m.seconds;
+      }
+      if (!achieved) return m;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

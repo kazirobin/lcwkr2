@@ -1102,3 +1102,64 @@ export function isBanglish(input: string): boolean {
 
   return latinRatio > 0.5 && hasBanglaPattern;
 }
+
+// Generate multiple Banglish transliteration suggestions
+export function getBanglishSuggestions(input: string, maxSuggestions: number = 5): string[] {
+  if (!input.trim()) return [];
+  
+  const suggestions = new Set<string>();
+  const lowerInput = input.toLowerCase().trim();
+  
+  // 1. Direct full transliteration
+  const fullTransliteration = banglishToBangla(input);
+  if (fullTransliteration !== input) {
+    suggestions.add(fullTransliteration);
+  }
+  
+  // 2. Word-by-word transliteration
+  const words = lowerInput.split(/\s+/);
+  if (words.length > 1) {
+    const wordTransliterations = words.map(w => banglishToBangla(w)).join(" ");
+    if (wordTransliterations !== fullTransliteration) {
+      suggestions.add(wordTransliterations);
+    }
+  }
+  
+  // 3. Common word matches from COMMON_WORDS
+  for (const [banglish, bangla] of Object.entries(COMMON_WORDS)) {
+    if (banglish.startsWith(lowerInput) || lowerInput.includes(banglish)) {
+      suggestions.add(bangla);
+    }
+    // Also check if input is a prefix of the banglish word
+    if (banglish.startsWith(lowerInput) && banglish !== lowerInput) {
+      suggestions.add(bangla);
+    }
+  }
+  
+  // 4. Pattern-based suggestions (BANGLISH_PATTERNS)
+  for (const [pattern, replacement] of BANGLISH_PATTERNS) {
+    const testStr = lowerInput.replace(pattern, "");
+    if (testStr !== lowerInput) {
+      // If pattern matched, suggest the replacement
+      suggestions.add(replacement);
+    }
+  }
+  
+  // 5. Partial match suggestions - words that start with input
+  const prefixMatches = Object.entries(COMMON_WORDS)
+    .filter(([banglish]) => banglish.startsWith(lowerInput) && banglish !== lowerInput)
+    .slice(0, maxSuggestions)
+    .map(([, bangla]) => bangla);
+  
+  prefixMatches.forEach(s => suggestions.add(s));
+  
+  // 6. Fuzzy suggestions - common words containing input
+  const fuzzyMatches = Object.entries(COMMON_WORDS)
+    .filter(([banglish]) => banglish.includes(lowerInput) && !banglish.startsWith(lowerInput))
+    .slice(0, maxSuggestions)
+    .map(([, bangla]) => bangla);
+  
+  fuzzyMatches.forEach(s => suggestions.add(s));
+  
+  return Array.from(suggestions).slice(0, maxSuggestions);
+}

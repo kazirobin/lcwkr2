@@ -52,6 +52,7 @@ export async function GET(req: Request) {
           totalSeconds: detail.totalSeconds,
           lastLoginAt: detail.lastLoginAt,
           lastLogoutAt: detail.lastLogoutAt,
+          firstLoginAt: detail.firstLoginAt,
           activeLoginAt: detail.activeLoginAt,
           onlineNow: detail.online,
         },
@@ -66,6 +67,7 @@ export async function GET(req: Request) {
       totalSeconds: number;
       lastLoginAt: Date | null;
       lastLogoutAt: Date | null;
+      firstLoginAt: Date | null;
       /** 1 while a session is open, 0 once it closed. Not a boolean: the
        *  placeholder rows for students who never signed in are pushed onto this
        *  same array below, and a mixed boolean/number list is a bug waiting to
@@ -80,6 +82,7 @@ export async function GET(req: Request) {
           totalSeconds: { $sum: { $ifNull: ["$durationSec", 0] } },
           lastLoginAt: { $max: "$loginAt" },
           lastLogoutAt: { $max: "$logoutAt" },
+          firstLoginAt: { $min: "$firstLoginAt" },
           // $max over a boolean is true if *any* session is still open, which
           // is the right answer: the student is online if one tab is alive.
           active: { $max: { $cond: [{ $ifNull: ["$active", false] }, 1, 0] } },
@@ -111,6 +114,7 @@ export async function GET(req: Request) {
           totalSeconds: 0,
           lastLoginAt: null,
           lastLogoutAt: null,
+          firstLoginAt: null,
           active: 0,
         });
       }
@@ -149,6 +153,7 @@ export async function GET(req: Request) {
         totalSeconds: r.totalSeconds ?? 0,
         lastLoginAt: r.lastLoginAt ?? null,
         lastLogoutAt: r.lastLogoutAt ?? null,
+        firstLoginAt: r.firstLoginAt ?? null,
         onlineNow: r.active === 1,
         topPages: topPages[r._id] ?? [],
       };

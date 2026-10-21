@@ -68,7 +68,7 @@ export function Hero({ photoSrc }: Props) {
     {
       icon: Star,
       value: "100%",
-      label: t("ফ্রি রিসোর্স", "Free resources"),
+      label: t("স্ট্রাকচার্ড পাথ", "Structured path"),
     },
   ];
 
@@ -159,7 +159,7 @@ export function Hero({ photoSrc }: Props) {
                 ·
               </span>
               <span className="text-xs tracking-wide text-text/55">
-                {t("প্রবেশ ফি নেই", "No entry fee")}
+                {t("শুধুমাত্র প্রবেশ ফি নেওয়া হয়", "only entry fee applies")}
               </span>
             </div>
 
@@ -171,7 +171,7 @@ export function Hero({ photoSrc }: Props) {
                 {t("চাইনিজ শেখা শুরু,", "Start learning Chinese,")}
               </span>
               <span className="mt-1 inline-flex items-center gap-3 text-secondary">
-                {t("প্রবেশ ফি নেই", "no entry fee")}
+                {t("শুধুমাত্র প্রবেশ ফি নেওয়া হয়", "only entry fee applies")}
                 <span
                   aria-hidden="true"
                   className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-secondary"
@@ -183,8 +183,8 @@ export function Hero({ photoSrc }: Props) {
 
             <p className="mt-6 max-w-[48ch] text-base leading-[1.8] text-text/70 sm:text-lg">
               {t(
-                "শূন্য থেকে সাবলীল পর্যন্ত — কাজী রবিনের সাথে প্রতি সপ্তাহে লাইভ ক্লাসে, ধাপে ধাপে।",
-                "From zero to fluency — step-by-step in weekly live classes with Kazi Robin.",
+                "শূন্য থেকে সাবলীল পর্যন্ত — কাজী রবিনের সাথে সপ্তাহে ৩ দিন (শনি, সোম, বুধ) লাইভ ক্লাসে, ধাপে ধাপে।",
+                "From zero to fluency — step-by-step in live classes 3 days a week (Sat, Mon, Wed) with Kazi Robin.",
               )}
             </p>
 

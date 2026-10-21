@@ -11,7 +11,7 @@ import OfflineManager from "@/components/OfflineManager";
 import { LanguageProvider } from "@/i18n";
 import { AccountProvider } from "@/features/student-auth";
 import { AcademyProviders } from "@/components/ui/feedback";
-import AnnouncementBanner from "@/features/academy/components/AnnouncementBanner";
+// import AnnouncementBanner from "@/features/academy/components/AnnouncementBanner";
 import AnalyticsTracker from "@/features/analytics/AnalyticsTracker";
 import ReviewNudge from "@/features/analytics/ReviewNudge";
 import ThemeProvider from "@/providers/ThemeProvider";
@@ -132,7 +132,7 @@ export default function RootLayout({
             <AccountProvider>
               <Nav />
               {/* Site-wide notices, e.g. "a new course has launched". */}
-              <AnnouncementBanner />
+              {/* <AnnouncementBanner /> */}
               <main id="main-content" className="flex-1 pt-16 sm:pt-20">
                 {children}
               </main>

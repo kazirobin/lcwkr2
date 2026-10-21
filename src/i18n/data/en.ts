@@ -20,19 +20,19 @@ const en = {
     watchVideo: "Watch Video",
     joinWhatsapp: "Join WhatsApp"
   },
-   hero: {
-    ...hero,
+    hero: {
+     ...hero,
 
-    title: {
-      line1: "Learn Chinese",
-      line2: "From Beginner",
-      line3: "to",
-      hsk: "HSK 6",
-      line4: "Completely",
-      free: "Free",
-      badge: "Live Class Available",
-      edu:"Education Must Be Free",
-    },
+     title: {
+       line1: "Learn Chinese",
+       line2: "From Beginner",
+       line3: "to",
+       hsk: "HSK 6",
+       line4: "Completely",
+       free: "Nominal Entry Fee",
+       badge: "Live Class Available",
+       edu:"Start learning Chinese today with just a nominal entry fee.",
+     },
 
     description:
       "Join our active WhatsApp learning community where students learn Chinese every day.",
@@ -145,18 +145,18 @@ const en = {
   classRoutine: {
     badge: "Weekly rhythm",
 
-    title: "Five live classes and a weekly exam",
+    title: "Three live classes (Sat, Mon, Wed) and a weekly exam",
 
     description:
-      "Classes run six days a week on a fixed schedule, with one rest day. The exam every Thursday checks that week's work before you move on.",
+      "Three live classes per week (Saturday, Monday, Wednesday), one exam day, three rest days. The exam every Thursday checks that week's work before you move on.",
 
     weekLabel: "The teaching week",
 
     days: [
       { short: "Sat", zh: "周六", note: "Live class", kind: "class" },
-      { short: "Sun", zh: "周日", note: "Live class", kind: "class" },
+      { short: "Sun", zh: "周日", note: "Rest day", kind: "rest" },
       { short: "Mon", zh: "周一", note: "Live class", kind: "class" },
-      { short: "Tue", zh: "周二", note: "Live class", kind: "class" },
+      { short: "Tue", zh: "周二", note: "Rest day", kind: "rest" },
       { short: "Wed", zh: "周三", note: "Live class", kind: "class" },
       { short: "Thu", zh: "周四", note: "Weekly exam", kind: "exam" },
       { short: "Fri", zh: "周五", note: "Rest day", kind: "rest" },
@@ -198,7 +198,7 @@ const en = {
       eyebrow: "Start here",
       detail: "how the class works",
       titleLead: "Start learning Chinese from zero —",
-      titleAccent: "free, in Bangla",
+      titleAccent: "nominal entry fee, in Bangla",
       lede: "This page walks through the whole thing: where beginners get stuck, how this class is set up to answer each part, and what you need to join. About three minutes to read.",
       ctaPrimary: { label: "See the first step", href: "/#pinyin" },
       ctaSecondary: {
@@ -276,8 +276,8 @@ const en = {
         },
         {
           seal: "免",
-          title: "Free — that is the whole point",
-          body: "No fee for the classes, the community, or the notes. No one should fall behind on a language because of money.",
+          title: "Nominal entry fee — that is the whole point",
+          body: "Start learning Chinese today with just a nominal entry fee. No one should fall behind on a language because of money.",
           solves: "3",
         },
         {

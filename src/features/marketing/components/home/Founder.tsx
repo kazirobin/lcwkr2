@@ -29,10 +29,10 @@ const FOUNDER = {
 
   // Non-numeric, verifiable facts about how the community runs.
   marks: [
-    { bn: "সপ্তাহে ৫ দিন লাইভ ক্লাস", en: "Live class 5 days a week" },
+    { bn: "সপ্তাহে ৩ দিন লাইভ ক্লাস (শনি, সোম, বুধ)", en: "Live class 3 days a week (Sat, Mon, Wed)" },
     { bn: "শূন্য থেকে HSK ৬ রোডম্যাপ", en: "Zero-to-HSK-6 roadmap" },
     { bn: "বাংলায় বুঝিয়ে পড়ানো", en: "Taught in Bangla" },
-    { bn: "প্রবেশ ফি নেই", en: "No entry fee" },
+    { bn: "শুধুমাত্র প্রবেশ ফি নেওয়া হয়", en: "Only entry fee applies" },
   ],
 
   // TODO: confirm this wording with Kazi Robin before publishing.

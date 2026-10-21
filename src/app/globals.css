@@ -24,6 +24,29 @@
   display: none !important;
 }
 
+/* Ruby/pinyin styling for proper alignment above hanzi */
+ruby {
+  ruby-align: center;
+  ruby-position: over;
+  display: inline-flex;
+  flex-direction: column;
+  text-align: center;
+  line-height: 1.2;
+}
+
+rt {
+  font-size: 0.65em;
+  line-height: 1;
+  white-space: nowrap;
+  color: hsl(var(--muted));
+  font-weight: 500;
+}
+
+ruby > span {
+  font-size: 1.5em;
+  line-height: 1.2;
+}
+
 /* Bangla carries taller vowel signs and low-hanging
    conjuncts than Latin — tight Tailwind line-heights clip them. On the
    /hsk workbook, give Bangla headings and compact UI text enough

@@ -28,6 +28,8 @@ export interface IStudentSessionDoc {
   pageCounts: { path: string; count: number }[];
   clicks: number;
   userAgent: string;
+  /** First ever login time for this student (across all sessions). */
+  firstLoginAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +47,7 @@ const StudentSessionSchema = new Schema<IStudentSessionDoc>(
     pageCounts: { type: [{ path: String, count: Number }], default: [] },
     clicks: { type: Number, default: 0, min: 0 },
     userAgent: { type: String, default: "" },
+    firstLoginAt: { type: Date, default: null, index: true },
   },
   { timestamps: true },
 );
