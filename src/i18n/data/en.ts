@@ -31,7 +31,7 @@ const en = {
        line4: "Completely",
        free: "Nominal Entry Fee",
        badge: "Live Class Available",
-       edu:"Start learning Chinese today with just a nominal entry fee.",
+       edu:"Start learning Chinese today with just a entry fee.",
      },
 
     description:
@@ -197,8 +197,8 @@ const en = {
       seal: "门",
       eyebrow: "Start here",
       detail: "how the class works",
-      titleLead: "Start learning Chinese from zero —",
-      titleAccent: "nominal entry fee, in Bangla",
+      titleLead: "Start learning Chinese from zero",
+      titleAccent: "Just a entry fee.",
       lede: "This page walks through the whole thing: where beginners get stuck, how this class is set up to answer each part, and what you need to join. About three minutes to read.",
       ctaPrimary: { label: "See the first step", href: "/#pinyin" },
       ctaSecondary: {
