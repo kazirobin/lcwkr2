@@ -5,6 +5,7 @@ import { useLanguage } from "@/i18n";
 import { useAccount } from "@/features/student-auth";
 import { SelectableText } from "@/features/chinese-words";
 import SpeakerButton from "@/components/ui/SpeakerButton";
+import StrokeOrderButton from "@/components/ui/StrokeOrderButton";
 import { Mic, MicOff, ArrowRightLeft, ExternalLink, Plus, Edit2, Trash2, Save, X, UserPlus } from "lucide-react";
 import { TOPICS, translateBanglaToChinese, type Topic, type TranslateWord, type TranslateSentence } from "@/features/translate";
 import { banglishToBangla, searchWithBanglishSupport, isBanglish, getBanglishSuggestions } from "@/features/translate";
@@ -658,23 +659,24 @@ export default function TranslatePage() {
                                 </rt>
                               </ruby>
                             </div>
-                         <div className="flex items-center gap-2.5">
-                               <SpeakerButton text={w.hanzi} className="size-7" />
-                               <button
-                                 type="button"
-                                 onClick={() => {
-                                   setSearchQuery(w.hanzi);
-                                   saveRecent(w.hanzi);
-                                   setRecentSearches(loadRecent());
-                                   setShowTopics(false);
-                                 }}
-                                 className="p-1.5 rounded-lg border border-text/15 hover:bg-text/5 hover:border-secondary/30 transition"
-                                 aria-label={t("সার্চ বক্সে কপি করুন", "Copy to search")}
-                                 title={t("সার্চ বক্সে কপি করুন", "Copy to search")}
-                               >
-                                 <Mic className="w-4 h-4 text-text/50 hover:text-secondary" />
-                               </button>
-                             </div>
+<div className="flex items-center gap-2.5">
+                                <SpeakerButton text={w.hanzi} className="size-7" />
+                                <StrokeOrderButton hanzi={w.hanzi} pinyin={w.pinyin} meaning={language === "bn" ? w.meaningBn : w.meaningEn} className="size-7" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSearchQuery(w.hanzi);
+                                    saveRecent(w.hanzi);
+                                    setRecentSearches(loadRecent());
+                                    setShowTopics(false);
+                                  }}
+                                  className="p-1.5 rounded-lg border border-text/15 hover:bg-text/5 hover:border-secondary/30 transition"
+                                  aria-label={t("সার্চ বক্সে কপি করুন", "Copy to search")}
+                                  title={t("সার্চ বক্সে কপি করুন", "Copy to search")}
+                                >
+                                  <Mic className="w-4 h-4 text-text/50 hover:text-secondary" />
+                                </button>
+                              </div>
                           </div>
                         </div>
                         <div className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -720,23 +722,24 @@ export default function TranslatePage() {
                                ({language === "bn" ? s.meaningEn : s.meaningBn})
                              </span>
                            </div>
-                           <div className="flex items-center gap-2">
-                             <SpeakerButton text={s.chinese} className="size-6" />
-                             <button
-                               type="button"
-                               onClick={() => {
-                                 setSearchQuery(s.chinese);
-                                 saveRecent(s.chinese);
-                                 setRecentSearches(loadRecent());
-                                 setShowTopics(false);
-                               }}
-                               className="p-1.5 rounded-lg border border-text/15 hover:bg-text/5 hover:border-secondary/30 transition"
-                               aria-label={t("সার্চ বক্সে কপি করুন", "Copy to search")}
-                               title={t("সার্চ বক্সে কপি করুন", "Copy to search")}
-                             >
-                               <Mic className="w-4 h-4 text-text/50 hover:text-secondary" />
-                             </button>
-                           </div>
+<div className="flex items-center gap-2">
+                              <SpeakerButton text={s.chinese} className="size-6" />
+                              <StrokeOrderButton hanzi={s.chinese} pinyin={s.pinyin} meaning={language === "bn" ? s.meaningBn : s.meaningEn} className="size-6" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSearchQuery(s.chinese);
+                                  saveRecent(s.chinese);
+                                  setRecentSearches(loadRecent());
+                                  setShowTopics(false);
+                                }}
+                                className="p-1.5 rounded-lg border border-text/15 hover:bg-text/5 hover:border-secondary/30 transition"
+                                aria-label={t("সার্চ বক্সে কপি করুন", "Copy to search")}
+                                title={t("সার্চ বক্সে কপি করুন", "Copy to search")}
+                              >
+                                <Mic className="w-4 h-4 text-text/50 hover:text-secondary" />
+                              </button>
+                            </div>
                         </div>
                       </div>
                     ))}
@@ -789,8 +792,9 @@ export default function TranslatePage() {
                             </ruby>
                           ))}
                         </div>
-                        <div className="flex items-center gap-2">
+<div className="flex items-center gap-2">
                           <SpeakerButton text={fullTranslation.translatedText} className="size-8" />
+                          <StrokeOrderButton hanzi={fullTranslation.translatedText} pinyin={chineseToCharPinyinPairs(fullTranslation.translatedText).map(p => p.pinyin).join(" ")} meaning={fullTranslation.text} className="size-8" />
                           <button
                             type="button"
                             onClick={() => {
@@ -809,25 +813,26 @@ export default function TranslatePage() {
                       </>
                     ) : (
                      <>
-                       <SelectableText>{fullTranslation.translatedText}</SelectableText>
-                       <div className="flex items-center gap-2">
-                         <SpeakerButton text={fullTranslation.translatedText} className="size-8" />
-                         <button
-                           type="button"
-                           onClick={() => {
-                             setSearchQuery(fullTranslation.translatedText);
-                             saveRecent(fullTranslation.translatedText);
-                             setRecentSearches(loadRecent());
-                             setShowTopics(false);
-                           }}
-                           className="p-2 rounded-lg border border-text/15 hover:bg-text/5 hover:border-secondary/30 transition"
-                           aria-label={t("সার্চ বক্সে কপি করুন", "Copy to search")}
-                           title={t("সার্চ বক্সে কপি করুন", "Copy to search")}
-                         >
-                           <Mic className="w-5 h-5 text-text/50 hover:text-secondary" />
-                         </button>
-                       </div>
-                     </>
+                        <SelectableText>{fullTranslation.translatedText}</SelectableText>
+                        <div className="flex items-center gap-2">
+                          <SpeakerButton text={fullTranslation.translatedText} className="size-8" />
+                          <StrokeOrderButton hanzi={fullTranslation.translatedText} meaning={fullTranslation.text} className="size-8" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(fullTranslation.translatedText);
+                              saveRecent(fullTranslation.translatedText);
+                              setRecentSearches(loadRecent());
+                              setShowTopics(false);
+                            }}
+                            className="p-2 rounded-lg border border-text/15 hover:bg-text/5 hover:border-secondary/30 transition"
+                            aria-label={t("সার্চ বক্সে কপি করুন", "Copy to search")}
+                            title={t("সার্চ বক্সে কপি করুন", "Copy to search")}
+                          >
+                            <Mic className="w-5 h-5 text-text/50 hover:text-secondary" />
+                          </button>
+                        </div>
+                      </>
                    )}
                  </div>
                </div>

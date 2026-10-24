@@ -225,6 +225,17 @@ self.addEventListener("fetch", (event) => {
 
   if (req.method !== "GET" || url.origin !== self.location.origin) return;
 
+  /* ---- Skip caching for auth-required pages ---- */
+  const isAuthPage =
+    url.pathname.startsWith("/account") ||
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/api/");
+
+  if (isAuthPage && req.mode === "navigate") {
+    event.respondWith(fetch(req));
+    return;
+  }
+
   /* ---- API: network-first, fall back to last good response ---- */
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(

@@ -1,0 +1,2 @@
+npm notice run lcwkr@0.1.0 npx
+npm notice run next start
