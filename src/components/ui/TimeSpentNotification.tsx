@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Clock,
   Minimize2,
@@ -91,7 +91,10 @@ function getProgressColor(progress: number): string {
 export function TimeSpentNotification() {
   const { language } = useLanguage();
   const { student } = useAccount();
-  const t = (bn: string, en: string) => (language === "bn" ? bn : en);
+  const t = useCallback(
+    (bn: string, en: string) => (language === "bn" ? bn : en),
+    [language],
+  );
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [basicData, setBasicData] = useState<TimeSpentData | null>(null);
@@ -191,7 +194,7 @@ export function TimeSpentNotification() {
   const memberSince = basicData.firstLoginAt ? daysAgo(basicData.firstLoginAt) : "—";
   const streak = dashboard?.streak ?? 0;
   const todayProgress = dashboard?.dailyGoalProgress ?? 0;
-  const motivationalMsg = useMemo(() => getMotivationalMessage(streak, todayProgress, t), [streak, todayProgress, t]);
+  const motivationalMsg = getMotivationalMessage(streak, todayProgress, t);
 
   const streakIcon = streak >= 30 ? "🏆🔥" : streak >= 7 ? "🔥🔥" : streak >= 3 ? "🔥" : "🌱";
 
