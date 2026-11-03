@@ -382,6 +382,7 @@ export default function TaskPage() {
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const phone = student?.whatsapp || null;
@@ -391,16 +392,27 @@ export default function TaskPage() {
   const fetchTasks = useCallback(async () => {
     if (!phone) return;
     setLoading(true);
+    setLoadProgress(0);
     setError(null);
+
+    const progressInterval = setInterval(() => {
+      setLoadProgress((prev) => Math.min(prev + Math.random() * 15, 90));
+    }, 100);
+
     try {
       const res = await fetch("/api/tasks", { headers: apiHeaders });
       if (!res.ok) throw new Error("Failed to load tasks");
       const data = await res.json();
       setTodos(data);
+      setLoadProgress(100);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tasks");
     } finally {
-      setLoading(false);
+      clearInterval(progressInterval);
+      setTimeout(() => {
+        setLoading(false);
+        setLoadProgress(0);
+      }, 300);
     }
   }, [phone, apiHeaders]);
 
@@ -595,6 +607,28 @@ export default function TaskPage() {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center text-text/60">Loading...</div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#f5f7fb] py-8 px-4">
+        <div className="fixed top-0 left-0 right-0 h-1.5 bg-indigo-600/20 z-50">
+          <div
+            className="h-full bg-indigo-600 transition-all duration-200 ease-out"
+            style={{ width: `${loadProgress}%` }}
+          />
+        </div>
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-4 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              <p className="text-lg font-medium text-[#172033]">Loading tasks...</p>
+              <p className="text-sm text-[#718096] mt-2">{Math.round(loadProgress)}%</p>
+            </div>
           </div>
         </div>
       </main>
