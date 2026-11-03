@@ -2,19 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/i18n";
+import { useAccount } from "@/features/student-auth/context";
 import Image from "next/image";
 
 type Task = {
   id: string;
+  userId: string;
   title: string;
   description: string;
   labels: string[];
   photo: string | null;
-  createdAt: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
   completed: boolean;
 };
-
-const STORAGE_KEY = "lcwkr-todo-list";
 
 function cleanLabels(values: string[]): string[] {
   const seen = new Set<string>();
@@ -124,9 +125,7 @@ function TaskItem({
     return (
       <article
         key={todo.id}
-        className={`flex items-start gap-3 p-4 border border-[#e9edf4] rounded-xl bg-white shadow-sm ${
-          todo.completed ? "bg-[#fbfcfe]" : ""
-        }`}
+        className={`flex items-start gap-3 p-4 border border-[#e9edf4] rounded-xl bg-white shadow-sm ${todo.completed ? "bg-[#fbfcfe]" : ""}`}
         data-id={todo.id}
         draggable
       >
@@ -146,7 +145,7 @@ function TaskItem({
               type="text"
               maxLength={180}
               value={editTitle}
-              onChange={(e) => {}} // handled by parent
+              onChange={(e) => {}}
               placeholder="Task title"
               className="w-full border border-[#e1e6ef] bg-[#fbfcfe] text-[#172033] rounded-xl px-4 py-3 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none transition"
               autoFocus
@@ -155,7 +154,7 @@ function TaskItem({
               maxLength={1000}
               rows={2}
               value={editDescription}
-              onChange={(e) => {}} // handled by parent
+              onChange={(e) => {}}
               placeholder="Description (optional)"
               className="w-full border border-[#e1e6ef] bg-[#fbfcfe] text-[#172033] rounded-xl px-4 py-3 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none transition resize-y"
             />
@@ -186,7 +185,7 @@ function TaskItem({
               type="text"
               maxLength={240}
               value={editLabels}
-              onChange={(e) => {}} // handled by parent
+              onChange={(e) => {}}
               placeholder="Labels separated by commas"
               className="w-full border border-[#e1e6ef] bg-[#fbfcfe] text-[#172033] rounded-xl px-4 py-3 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none transition"
             />
@@ -225,9 +224,7 @@ function TaskItem({
   return (
     <article
       key={todo.id}
-      className={`flex items-start gap-3 p-4 border border-[#e9edf4] rounded-xl bg-white shadow-sm ${
-        todo.completed ? "bg-[#fbfcfe]" : ""
-      }`}
+      className={`flex items-start gap-3 p-4 border border-[#e9edf4] rounded-xl bg-white shadow-sm ${todo.completed ? "bg-[#fbfcfe]" : ""}`}
       data-id={todo.id}
       draggable
       onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", todo.id); }}
@@ -375,6 +372,7 @@ function TaskList({
 
 export default function TaskPage() {
   const { language } = useLanguage();
+  const { student, checking } = useAccount();
   const t = useCallback(
     (bn: string, en: string) => (language === "bn" ? bn : en),
     [language],
@@ -395,82 +393,32 @@ export default function TaskPage() {
   const [editPhoto, setEditPhoto] = useState<string | null>(null);
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load from localStorage
-  useEffect(() => {
+  const phone = student?.whatsapp || null;
+
+  const apiHeaders: Record<string, string> = phone ? { "x-user-phone": phone } : {};
+
+  const fetchTasks = useCallback(async () => {
+    if (!phone) return;
+    setLoading(true);
+    setError(null);
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      const raw = Array.isArray(saved) ? saved : (Array.isArray(saved?.todos) ? saved.todos : []);
-      const parsed = raw.map((todo: any) => ({
-        id: todo.id || `${Date.now()}-${Math.random()}`,
-        title: todo.title || todo.text || "Untitled task",
-        description: typeof todo.description === "string" ? todo.description : "",
-        labels: Array.isArray(todo.labels) ? cleanLabels(todo.labels) : [],
-        createdAt: Number.isFinite(Number(todo.createdAt)) && todo.createdAt !== null ? Number(todo.createdAt) : null,
-        photo: typeof todo.photo === "string" && todo.photo.startsWith("data:image/") ? todo.photo : null,
-        completed: Boolean(todo.completed),
-      }));
-      setTodos(parsed);
-    } catch {
-      setTodos([]);
+      const res = await fetch("/api/tasks", { headers: apiHeaders });
+      if (!res.ok) throw new Error("Failed to load tasks");
+      const data = await res.json();
+      setTodos(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load tasks");
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [phone, apiHeaders]);
 
-  // Save to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-  }, [todos]);
-
-  const save = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-  }, [todos]);
-
-  const filteredTodos = todos.filter((todo) => {
-    const statusMatch =
-      filter === "all" ||
-      (filter === "active" && !todo.completed) ||
-      (filter === "completed" && todo.completed);
-    const labelMatch = labelFilter === "all" || todo.labels.includes(labelFilter);
-    return statusMatch && labelMatch;
-  });
-
-  const allLabels = [...new Set(todos.flatMap((t) => t.labels))].sort((a, b) =>
-    a.localeCompare(b),
-  );
-
-  const remaining = todos.filter((t) => !t.completed).length;
-  const completed = todos.length - remaining;
-
-  const addTask = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-
-    let photoData = pendingPhoto;
-    if (photoFile && !pendingPhoto) {
-      try {
-        photoData = await compressPhoto(photoFile);
-      } catch {
-        photoData = null;
-      }
-    }
-
-    const newTask: Task = {
-      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-      title: title.trim(),
-      description: description.trim(),
-      labels: parseLabels(labels),
-      photo: photoData,
-      createdAt: Date.now(),
-      completed: false,
-    };
-
-    setTodos((prev) => [newTask, ...prev]);
-    setTitle("");
-    setDescription("");
-    setLabels("");
-    setPendingPhoto(null);
-    setPhotoFile(null);
-  }, [title, description, labels, pendingPhoto, photoFile]);
+    fetchTasks();
+  }, [fetchTasks]);
 
   const handlePhotoChange = useCallback(async (file: File | null, setter: (data: string | null) => void, fileSetter: (f: File | null) => void) => {
     if (!file) {
@@ -487,15 +435,73 @@ export default function TaskPage() {
     }
   }, []);
 
-  const toggleComplete = useCallback((id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-    );
-  }, []);
+  const addTask = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !phone) return;
 
-  const deleteTask = useCallback((id: string) => {
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+    let photoData = pendingPhoto;
+    if (photoFile && !pendingPhoto) {
+      try {
+        photoData = await compressPhoto(photoFile);
+      } catch {
+        photoData = null;
+      }
+    }
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...apiHeaders },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          labels: parseLabels(labels),
+          photo: photoData,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create task");
+      const newTask = await res.json();
+      setTodos((prev) => [newTask, ...prev]);
+      setTitle("");
+      setDescription("");
+      setLabels("");
+      setPendingPhoto(null);
+      setPhotoFile(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to create task");
+    }
+  }, [title, description, labels, pendingPhoto, photoFile, phone, apiHeaders]);
+
+  const toggleComplete = useCallback(async (id: string) => {
+    const task = todos.find((t) => t.id === id);
+    if (!task) return;
+    
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...apiHeaders },
+        body: JSON.stringify({ completed: !task.completed }),
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updated = await res.json();
+      setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update task");
+    }
+  }, [todos, apiHeaders]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: "DELETE",
+        headers: apiHeaders,
+      });
+      if (!res.ok) throw new Error("Failed to delete task");
+      setTodos((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete task");
+    }
+  }, [apiHeaders]);
 
   const startEdit = useCallback((task: Task) => {
     setEditingId(task.id);
@@ -527,21 +533,25 @@ export default function TaskPage() {
       }
     }
 
-    setTodos((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? {
-              ...t,
-              title: editTitle.trim(),
-              description: editDescription.trim(),
-              labels: parseLabels(editLabels),
-              photo: photoData,
-            }
-          : t,
-      ),
-    );
-    cancelEdit();
-  }, [editTitle, editDescription, editLabels, editPhoto, editPhotoFile]);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...apiHeaders },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          labels: parseLabels(editLabels),
+          photo: photoData,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updated = await res.json();
+      setTodos((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      cancelEdit();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update task");
+    }
+  }, [editTitle, editDescription, editLabels, editPhoto, editPhotoFile, apiHeaders, cancelEdit]);
 
   const moveTask = useCallback((id: string, direction: number) => {
     setTodos((prev) => {
@@ -552,10 +562,6 @@ export default function TaskPage() {
       [copy[index], copy[next]] = [copy[next], copy[index]];
       return copy;
     });
-  }, []);
-
-  const clearCompleted = useCallback(() => {
-    setTodos((prev) => prev.filter((t) => !t.completed));
   }, []);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
@@ -593,6 +599,55 @@ export default function TaskPage() {
     document.querySelectorAll(".dragging, .drag-over").forEach((el) => el.classList.remove("dragging", "drag-over"));
   }, []);
 
+  const filteredTodos = todos.filter((todo) => {
+    const statusMatch =
+      filter === "all" ||
+      (filter === "active" && !todo.completed) ||
+      (filter === "completed" && todo.completed);
+    const labelMatch = labelFilter === "all" || todo.labels.includes(labelFilter);
+    return statusMatch && labelMatch;
+  });
+
+  const allLabels = [...new Set(todos.flatMap((t) => t.labels))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  const remaining = todos.filter((t) => !t.completed).length;
+  const completed = todos.length - remaining;
+
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-[#f5f7fb] py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center text-text/60">Loading...</div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!phone) {
+    return (
+      <main className="min-h-screen bg-[#f5f7fb] py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white border border-[#edf0f5] rounded-2xl shadow-[0_10px_35px_rgba(25,39,70,0.07)] p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
+              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-[#172033] mb-2">{t("Sign in to use Tasks", "Sign in to use Tasks")}</h2>
+            <p className="text-[#718096] mb-6">{t("Your tasks are saved to your account and synced across devices.", "Your tasks are saved to your account and synced across devices.")}</p>
+            <a href="/account" className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-3 shadow-[0_4px_10px_rgba(79,70,229,0.15)] transition">
+              {t("Go to Account", "Go to Account")}
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#f5f7fb] py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -614,6 +669,13 @@ export default function TaskPage() {
             })}
           </time>
         </header>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" role="alert">
+            {error}
+            <button onClick={fetchTasks} className="ml-2 underline hover:no-underline">Retry</button>
+          </div>
+        )}
 
         <section className="bg-white border border-[#edf0f5] rounded-2xl shadow-[0_10px_35px_rgba(25,39,70,0.07)] p-5 mb-5">
           <p className="text-xs font-bold text-[#475569] mb-3">＋ Create a task</p>
@@ -764,11 +826,15 @@ export default function TaskPage() {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-6 pt-4 px-1">
           <p className="text-xs text-[#9aa4b3]">
-            {t("Your tasks are saved on this device.", "Your tasks are saved on this device.")}
+            {t("Your tasks are saved to your account and synced across devices.", "Your tasks are saved to your account and synced across devices.")}
           </p>
           {completed > 0 && (
             <button
-              onClick={clearCompleted}
+              onClick={() => {
+                if (confirm(t("Delete all completed tasks?", "Delete all completed tasks?"))) {
+                  todos.filter(t => t.completed).forEach(t => deleteTask(t.id));
+                }
+              }}
               className="text-sm font-semibold text-[#8a96a8] hover:text-[#dc5252] transition py-2"
             >
               {t("Clear completed", "Clear completed")}
