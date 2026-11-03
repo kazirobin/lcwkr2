@@ -44,7 +44,7 @@ export async function PATCH(
 
     return NextResponse.json(
       {
-        _id: task._id.toString(),
+        id: task._id.toString(),
         userId: task.userId.toString(),
         title: task.title,
         description: task.description,

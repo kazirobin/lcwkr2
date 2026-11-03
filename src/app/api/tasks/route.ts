@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     const tasks = await Task.find({ userId }).sort({ createdAt: -1 }).lean();
     
     const formatted = tasks.map((task) => ({
-      _id: task._id.toString(),
+      id: task._id.toString(),
       userId: task.userId.toString(),
       title: task.title,
       description: task.description,
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        _id: newTask._id.toString(),
+        id: newTask._id.toString(),
         userId: newTask.userId.toString(),
         title: newTask.title,
         description: newTask.description,
