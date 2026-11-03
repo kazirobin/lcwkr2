@@ -29,35 +29,23 @@ function parseLabels(value: string): string[] {
   return cleanLabels(value.split(","));
 }
 
-function compressPhoto(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) {
-      reject(new Error("Please choose an image file."));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Could not read this image."));
-    reader.onload = () => {
-      const image = new window.Image();
-      image.onerror = () => reject(new Error("Could not open this image."));
-      image.onload = () => {
-        const maxSide = 1200;
-        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-        const context = canvas.getContext("2d");
-        if (!context) {
-          reject(new Error("Canvas context unavailable."));
-          return;
-        }
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.78));
-      };
-      image.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
+async function uploadPhoto(file: File, phone: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "x-user-phone": phone },
+    body: formData,
   });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Upload failed");
+  }
+
+  const data = await res.json();
+  return data.url;
 }
 
 interface TaskListProps {
@@ -426,27 +414,22 @@ export default function TaskPage() {
       fileSetter(null);
       return;
     }
+    if (!phone) {
+      alert("Please sign in to upload photos");
+      return;
+    }
     try {
-      const data = await compressPhoto(file);
-      setter(data);
+      const url = await uploadPhoto(file, phone);
+      setter(url);
       fileSetter(file);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Unable to use this image.");
+      alert(err instanceof Error ? err.message : "Upload failed");
     }
-  }, []);
+  }, [phone]);
 
   const addTask = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !phone) return;
-
-    let photoData = pendingPhoto;
-    if (photoFile && !pendingPhoto) {
-      try {
-        photoData = await compressPhoto(photoFile);
-      } catch {
-        photoData = null;
-      }
-    }
 
     try {
       const res = await fetch("/api/tasks", {
@@ -456,7 +439,7 @@ export default function TaskPage() {
           title: title.trim(),
           description: description.trim(),
           labels: parseLabels(labels),
-          photo: photoData,
+          photo: pendingPhoto,
         }),
       });
       if (!res.ok) throw new Error("Failed to create task");
@@ -524,15 +507,6 @@ export default function TaskPage() {
   const saveEdit = useCallback(async (task: Task) => {
     if (!editTitle.trim()) return;
 
-    let photoData = editPhoto;
-    if (editPhotoFile && editPhoto !== task.photo) {
-      try {
-        photoData = await compressPhoto(editPhotoFile);
-      } catch {
-        photoData = task.photo;
-      }
-    }
-
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
@@ -541,7 +515,7 @@ export default function TaskPage() {
           title: editTitle.trim(),
           description: editDescription.trim(),
           labels: parseLabels(editLabels),
-          photo: photoData,
+          photo: editPhoto,
         }),
       });
       if (!res.ok) throw new Error("Failed to update task");
@@ -551,7 +525,7 @@ export default function TaskPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update task");
     }
-  }, [editTitle, editDescription, editLabels, editPhoto, editPhotoFile, apiHeaders, cancelEdit]);
+  }, [editTitle, editDescription, editLabels, editPhoto, apiHeaders, cancelEdit]);
 
   const moveTask = useCallback((id: string, direction: number) => {
     setTodos((prev) => {
