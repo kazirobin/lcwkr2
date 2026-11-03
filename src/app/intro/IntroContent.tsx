@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, BookOpen, Mic, Layers, Users, Smartphone, Zap, Shield, Download, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, Mic, Layers, Users, Smartphone, Zap, Shield, Download, CheckCircle, MousePointerClick } from 'lucide-react';
 import { useLanguage } from '@/i18n';
 import { FacebookIcon } from '@/components/icons/FacebookIcon';
 
@@ -196,11 +196,18 @@ export default function IntroContent() {
 
                 <div className="relative z-10 mx-auto max-w-6xl px-3 pt-28 pb-16 sm:px-6 md:pt-32 md:pb-24 lg:px-8">
                     <div className="max-w-2xl">
-                        <Eyebrow
-                            seal={c.hero.seal}
-                            label={c.hero.eyebrow}
-                            detail={c.hero.detail}
-                        />
+                        <Link
+                            href="/task"
+                            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                            aria-label={language === 'bn' ? 'টাস্ক পেজে যান' : 'Go to Task page'}
+                        >
+                            <Eyebrow
+                                seal={c.hero.seal}
+                                label={c.hero.eyebrow}
+                                detail={c.hero.detail}
+                            />
+                            <MousePointerClick className="size-4 text-text/40 transition-transform hover:translate-x-1 motion-reduce:transform-none" aria-hidden="true" />
+                        </Link>
 
                         <h1
                             id="intro-title"
