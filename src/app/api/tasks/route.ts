@@ -9,9 +9,14 @@ async function getUserIdFromRequest(req: Request): Promise<string | null> {
   const phone = req.headers.get("x-user-phone");
   if (!phone) return null;
   
-  await connectDB();
-  const student = await Student.findOne({ whatsapp: phone }).lean();
-  return student ? student._id.toString() : null;
+  try {
+    await connectDB();
+    const student = await Student.findOne({ whatsapp: phone }).lean();
+    return student ? student._id.toString() : null;
+  } catch (error: any) {
+    console.error("[getUserIdFromRequest] Error:", error.message);
+    return null;
+  }
 }
 
 export async function GET(req: Request) {
@@ -38,7 +43,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json(formatted, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[GET /api/tasks] Error:", error.message);
+    return NextResponse.json({ error: error.message || "Failed to load tasks" }, { status: 500 });
   }
 }
 
@@ -80,6 +86,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[POST /api/tasks] Error:", error.message);
+    return NextResponse.json({ error: error.message || "Failed to create task" }, { status: 500 });
   }
 }

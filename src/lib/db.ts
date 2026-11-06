@@ -7,7 +7,7 @@ function mongoUri(): string {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     throw new Error(
-      "Please define the MONGODB_URI environment variable inside .env.local"
+      "MONGODB_URI environment variable is not configured. Please add it in Vercel Environment Variables."
     );
   }
   return uri;

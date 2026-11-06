@@ -9,9 +9,14 @@ async function getUserIdFromRequest(req: Request): Promise<string | null> {
   const phone = req.headers.get("x-user-phone");
   if (!phone) return null;
   
-  await connectDB();
-  const student = await Student.findOne({ whatsapp: phone }).lean();
-  return student ? student._id.toString() : null;
+  try {
+    await connectDB();
+    const student = await Student.findOne({ whatsapp: phone }).lean();
+    return student ? student._id.toString() : null;
+  } catch (error: any) {
+    console.error("[getUserIdFromRequest] Error:", error.message);
+    return null;
+  }
 }
 
 export async function PATCH(
@@ -57,7 +62,8 @@ export async function PATCH(
       { status: 200 }
     );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[PATCH /api/tasks/[id]] Error:", error.message);
+    return NextResponse.json({ error: error.message || "Failed to update task" }, { status: 500 });
   }
 }
 
@@ -82,6 +88,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[DELETE /api/tasks/[id]] Error:", error.message);
+    return NextResponse.json({ error: error.message || "Failed to delete task" }, { status: 500 });
   }
 }
